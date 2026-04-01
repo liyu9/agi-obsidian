@@ -1,0 +1,364 @@
+{
+  "main": {
+    "id": "46e8e78a0fa27aa1",
+    "type": "split",
+    "children": [
+      {
+        "id": "edae9fc36cad03b2",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "0c9fdde209fdc9bd",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "AI产品经理视角：6 款 AI 产品的核心定位与关系全景.md",
+                "mode": "preview",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "AI产品经理视角：6 款 AI 产品的核心定位与关系全景"
+            }
+          },
+          {
+            "id": "0e55467653206376",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "飞书多维表格API.md",
+                "mode": "preview",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "飞书多维表格API"
+            }
+          },
+          {
+            "id": "004b7653d98e70c5",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "飞书多维表格 x Openclaw 插件和API列表.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "飞书多维表格 x Openclaw 插件和API列表"
+            }
+          },
+          {
+            "id": "ea1182ee5fa6a6fd",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "无代码产品 MCP 开放能力产品化指南.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "无代码产品 MCP 开放能力产品化指南"
+            }
+          },
+          {
+            "id": "fabe10575cd9b0ab",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "飞书多维表格API（46）.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "飞书多维表格API（46）"
+            }
+          },
+          {
+            "id": "cec99dace62fb11c",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "飞书多维表格API（46）.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "飞书多维表格API（46）"
+            }
+          },
+          {
+            "id": "83efeaa6ff3c1b32",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "飞书多维表格API与权限列表（完整）.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "飞书多维表格API与权限列表（完整）"
+            }
+          },
+          {
+            "id": "bf0aac099ffa8c11",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "无代码提供 API 方案（现实）撰写中.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "无代码提供 API 方案（现实）撰写中"
+            }
+          },
+          {
+            "id": "6ec1b5b16bfb7dd3",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "06-AI落地实践/05-Agent应用/Agent Skills替代Workflow方法论.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Agent Skills替代Workflow方法论"
+            }
+          },
+          {
+            "id": "98555747db5cd470",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "新标签页"
+            }
+          }
+        ],
+        "currentTab": 9
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "b883690478fbdb14",
+    "type": "split",
+    "children": [
+      {
+        "id": "5b0339a75cbe0327",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4bc6572c27f9194b",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "文件列表"
+            }
+          },
+          {
+            "id": "8915a3ae17d0a7e6",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜索"
+            }
+          },
+          {
+            "id": "ae5441abf16207c1",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "书签"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 430.5
+  },
+  "right": {
+    "id": "11117506aa29ba30",
+    "type": "split",
+    "children": [
+      {
+        "id": "fde0b61de000158b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4b68efc1deeca991",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "常用命令.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "常用命令 的反向链接列表"
+            }
+          },
+          {
+            "id": "579e8a77c8a7eeb6",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "常用命令.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "常用命令 的出链列表"
+            }
+          },
+          {
+            "id": "0c2c963e951cab93",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "标签"
+            }
+          },
+          {
+            "id": "43cf48e20ad58e22",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "添加笔记属性"
+            }
+          },
+          {
+            "id": "e979f3abefe3c550",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "常用命令.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "常用命令 的大纲"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "bases:新建数据库": false,
+      "workspaces:管理工作区布局": false,
+      "terminal:Open terminal": false,
+      "obsidian-local-images-plus:Local Images Plus  0.16.4\r\nLocalize attachments (plugin folder)": false,
+      "obshare:分享当前页面": false,
+      "obsidian-git:Open Git source control": false,
+      "templater-obsidian:Templater": false
+    }
+  },
+  "active": "98555747db5cd470",
+  "lastOpenFiles": [
+    "06-AI落地实践/05-Agent应用/Agent Skills替代Workflow方法论.md",
+    "完整页面HTML.txt",
+    "06-AI落地实践/AI Agent应用案例/多Agent协作数据分析Agent实战.md",
+    "06-AI落地实践/AI Agent应用案例",
+    "cdp_scripts/skills/chrome-cdp/scripts/cdp.mjs",
+    "cdp_scripts/skills/chrome-cdp/SKILL.md",
+    "cdp_scripts/skills/chrome-cdp/scripts",
+    "cdp_scripts/skills/chrome-cdp",
+    "cdp_scripts/skills",
+    "cdp_scripts/package.json",
+    "cdp_scripts/README.md",
+    "cdp_scripts/LICENSE",
+    "cdp_scripts",
+    "TRAE智能体配置指南.md",
+    "package-lock.json",
+    "node_modules/playwright-core/lib/vite/traceViewer/playwright-logo.svg",
+    "node_modules/playwright-core/lib/vite/recorder/playwright-logo.svg",
+    "AGI通用知识库/策划案产出自动化流程/guides/Coze执行指南.md",
+    "AGI通用知识库/策划案产出自动化流程/guides/OpenClaw Skill沉淀指南.md",
+    "AGI通用知识库/策划案产出自动化流程/流程总览.md",
+    "AGI通用知识库/策划案产出自动化流程/prompts/阶段2-轮次2-交互细节还原.md",
+    "AGI通用知识库/策划案产出自动化流程/prompts/阶段2-轮次1-数据模型梳理.md",
+    "AGI通用知识库/策划案产出自动化流程/prompts/阶段1-C-亮点短板与总结建议.md",
+    "AGI通用知识库/策划案产出自动化流程/prompts/阶段1-B-核心功能深度解析.md",
+    "AGI通用知识库/策划案产出自动化流程/prompts/阶段1-A-产品基础画像与功能全景地图.md",
+    "AGI通用知识库/策划案产出自动化流程/prompts/阶段2-轮次3-业务规则与逻辑补充.md",
+    "AGI通用知识库/策划案产出自动化流程/prompts/阶段3-后台PRD.md",
+    "AGI通用知识库/策划案产出自动化流程/prompts/阶段4-汇总归档.md",
+    "代码平台项目文档/04-产品知识沉淀库/01-产品全局手册/测试视图.md",
+    "AGI通用知识库/产品策划案/火山引擎PromptPilot-Prompt调优模块/02-功能调研/智能优化阶段-数据模型.md",
+    "AGI通用知识库/产品策划案/火山引擎PromptPilot-Prompt调优模块/02-功能调研/批量阶段-业务规则.md",
+    "AGI通用知识库/产品策划案/火山引擎PromptPilot-Prompt调优模块/02-功能调研/批量阶段-交互细节.md",
+    "AGI通用知识库/产品策划案/火山引擎PromptPilot-Prompt调优模块/02-功能调研/批量阶段-数据模型.md",
+    "AGI通用知识库/产品策划案/火山引擎PromptPilot-Prompt调优模块/02-功能调研/调试阶段-业务规则.md",
+    "AGI通用知识库/产品策划案/火山引擎PromptPilot-Prompt调优模块/02-功能调研/调试阶段-交互细节.md",
+    "AGI通用知识库/产品策划案/火山引擎PromptPilot-Prompt调优模块/功能页面截图/Prompt批量验证.md",
+    "AGI通用知识库/产品策划案/火山引擎PromptPilot-Prompt调优模块/功能页面截图/image.png",
+    "AGI通用知识库/产品策划案/火山引擎PromptPilot-Prompt调优模块/功能页面截图/image-1.png",
+    "AGI通用知识库/产品策划案/火山引擎PromptPilot-Prompt调优模块/功能页面截图/image-2.png",
+    "AGI通用知识库/产品策划案/火山引擎PromptPilot-Prompt调优模块/02-功能调研/调试阶段-数据模型.md",
+    "AGI通用知识库/产品策划案/火山引擎PromptPilot-Prompt调优模块/01-概览调研/官方文档完整梳理.md",
+    "AGI通用知识库/产品策划案/功能页面截图/image.png",
+    "AGI通用知识库/产品策划案/功能页面截图/image-2.png",
+    "AGI通用知识库/产品策划案/功能页面截图/image-1.png",
+    "AGI通用知识库/产品策划案/功能页面截图/图片位置/image-2.png",
+    "AGI通用知识库/产品策划案/功能页面截图/图片位置/image-1.png"
+  ]
+}

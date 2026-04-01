@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Obsidian
+.trash/
+
+# Logs
+*.log
