@@ -1,0 +1,603 @@
+{
+  "index": 23,
+  "title": "23｜Orchestrator范式：任务层的主 Agent + 子 Agent",
+  "chapter": "模块四：协作与设计模式，掌握5大架构设计模式 (7讲)",
+  "duration": "时长 36:05",
+  "blocks": [
+    {
+      "type": "quote",
+      "text": "模块四 · 多智能体协作\n前置课程：第 19 课（上下文生命周期）、第 22 课（XiaoPaw 长记忆篇）"
+    },
+    {
+      "type": "text",
+      "text": "欢迎来到模块四！前三个模块我们一路走来，从 Agent 的基础结构、工具调用，到 CrewAI 框架，再到上下文工程、长记忆——你已经能构建出一个\"有记忆、有工具、会推理\"的 XiaoPaw。"
+    },
+    {
+      "type": "paragraph",
+      "text": "但有一个问题始终悬在那里：当任务真正复杂起来，XiaoPaw 还够用吗？不是\"帮我写一段代码\"那种简单任务，而是：完整交付一个功能模块——需求分析、架构设计、前后端开发、接口联调、测试验收，全部自主完成。"
+    },
+    {
+      "type": "paragraph",
+      "text": "这就是模块四要解决的事情：多智能体协作。本节课先讲清楚业界已经收敛的那个答案——Orchestrator 范式。它是接下来所有课的基础，也是目前工程实践中最稳健的 multi-agent 架构。"
+    },
+    {
+      "type": "text",
+      "text": "一、认知原点：单 Agent 有三堵墙，剪裁压缩都绕不过去"
+    },
+    {
+      "type": "text",
+      "text": "第 22 课结束时，XiaoPaw 已经能用三层记忆\"懂\"你了。但现在来一个真实工程任务：独立完成员工假期管理系统的前后端开发。不是聊几句，是一个完整的工程交付。"
+    },
+    {
+      "type": "text",
+      "text": "这时你会发现，第 19、20 课的上下文工程会出手帮忙——剪裁（prune）和压缩（compress）会介入，维持上下文在可用范围内。"
+    },
+    {
+      "type": "text",
+      "text": "但有三堵墙，它们绕不过去。"
+    },
+    {
+      "type": "paragraph",
+      "text": "第一堵：效果瓶颈。 任务越复杂，推理质量越差。上下文越长，模型对早期细节的注意力就越稀释——Context Rot 是真实存在的，研究显示这是 n² 级别的衰减。更关键的是，每次压缩本质上是用摘要替代原文，摘要意味着信息损失，被压缩掉的那些推理过程和中间决策就再也回不来了。到了复杂任务的后期，模型前面做的决策和当时的理由，都模糊了。"
+    },
+    {
+      "type": "paragraph",
+      "text": "第二堵：性能瓶颈。 单点串行处理。前端设计做完，才能做后端开发，做完才能写测试。所有任务排队，总时间是每个子任务时间的叠加。一个复杂项目二三十个步骤，这是真正等不起的。"
+    },
+    {
+      "type": "paragraph",
+      "text": "第三堵：成本瓶颈。 复杂项目的上下文始终处于\"比较暖\"的状态，每次处理都要携带大量历史。Token 消耗随任务规模线性增长，大型项目的开发成本会非常高。"
+    },
+    {
+      "type": "paragraph",
+      "text": "这三堵墙，不是提示词的问题，是单点处理的结构性瓶颈。 上下文工程解决了\"在上下文范围内更好地工作\"，但解决不了\"超出单点处理能力范围的任务\"。"
+    },
+    {
+      "type": "text",
+      "text": "工程上需要一个不同层次的解法。"
+    },
+    {
+      "type": "text",
+      "text": "二、为什么需要它：行业走过哪些弯路，最终收敛到 Orchestrator"
+    },
+    {
+      "type": "text",
+      "text": "多 Agent 系统不是新想法。但工程实践走了一段弯路，才找到今天的主流答案。"
+    },
+    {
+      "type": "paragraph",
+      "text": "第一代：顺序工作流（Pipeline）"
+    },
+    {
+      "type": "paragraph",
+      "text": "工程师把整个流程提前编排好：步骤 1 完成传给步骤 2，步骤 2 完成传给步骤 3。逻辑清晰，可调试，但有一个根本问题——流程是写死的。任务的中间状态是预先假设的，一旦实际情况和假设不符，整条流水线要么卡住，要么输出错误结果。现实中的任务很少能完美匹配提前写死的编排。"
+    },
+    {
+      "type": "paragraph",
+      "text": "第二代：Swarm（去中心化）"
+    },
+    {
+      "type": "text",
+      "text": "没有中心节点，多个 Agent 自由互调，谁有能力处理谁上。理论上更灵活，实际问题是——没有协调中心，谁来判断任务是否完成？谁来解决 Agent 之间的输出冲突？误差叠加，难以验收，最后的结果往往没人知道哪里出了问题。这类方案已被验证是难以收敛的。"
+    },
+    {
+      "type": "paragraph",
+      "text": "收敛答案：Orchestrator 范式"
+    },
+    {
+      "type": "paragraph",
+      "text": "主 Agent 负责调度，子 Agent 负责执行。但这里有一个关键的范式转变，值得专门说一下："
+    },
+    {
+      "type": "paragraph",
+      "text": "旧思路是\"以 Agent 为视角\"——先定好几个 Agent，然后考虑谁干什么。新思路是“以任务（Task）为视角”——主 Agent 先把 subtask 写出来，再根据这个任务动态决定：需要什么角色的子 Agent？给它什么工具？背景信息是什么？"
+    },
+    {
+      "type": "text",
+      "text": "这个转变意味着：你不再需要在代码里预定义所有 Agent，而是由主 Agent LLM 在运行时，根据实际任务内容动态创建子 Agent。这是 Orchestrator 范式比 Pipeline 更灵活的根本原因。"
+    },
+    {
+      "type": "text",
+      "text": "今天这个范式已经是工程主流。如果你用过 Claude Code，你已经在享受它的好处了——Claude Code 的五种工作模式（通用型、fork 型、子 Agent 预定义型、协调者型等），本质上都是主 Agent + 子 Agent 的变体。尤其是协调者模式（Orchestrator mode），它明确限制主 Agent 不许执行，只允许子 Agent 干活——这和我们今天要讲的设计几乎一模一样。"
+    },
+    {
+      "type": "paragraph",
+      "text": "你已经在用 Orchestrator 了。现在我们来自己造一个。"
+    },
+    {
+      "type": "text",
+      "text": "三、工作机制：主 Agent 委派，子 Agent 执行，文件路径回传"
+    },
+    {
+      "type": "quote",
+      "text": "🧠 回忆一下：第 13 课我们用 CrewAI 构建过多 Agent Crew——每个 Agent 有 role、goal、backstory、tools，每个 Task 有 description 和 expected_output。带着这个印象，来看 Orchestrator 是怎么把这些概念重新组合的。"
+    },
+    {
+      "type": "text",
+      "text": "Orchestrator 范式的工作原理抓住三个关键设计，我们用本课实战项目（员工假期 CRUD 系统）来具体说明。"
+    },
+    {
+      "type": "text",
+      "text": "关键设计 ① ：用 Task 对象传递工作，不传上下文"
+    },
+    {
+      "type": "text",
+      "text": "主 Agent 把工作打包成一个 Task 对象："
+    },
+    {
+      "type": "code",
+      "text": "role:    后端 Developer\n\n\tgoal:    实现员工假期管理系统的 CRUD 接口\n\n\ttask:    根据接口规范实现 FastAPI + 内存存储后端\n\n\ttools:   FileReadTool, FileWriterTool\n\n\tinput:   workspace/api_spec.md（接口规范文档路径）\n\n\toutput:  将代码写入 workspace/backend/main.py"
+    },
+    {
+      "type": "paragraph",
+      "text": "这个 Task 对象只包含这个子 Agent 完成任务所需要的信息。主 Agent 的全局历史——之前和用户的对话、之前其他子 Agent 的执行细节——全都不传。"
+    },
+    {
+      "type": "text",
+      "text": "你可能会问：为什么不把主 Agent 的上下文一起传过去，让子 Agent 有更多背景？"
+    },
+    {
+      "type": "text",
+      "text": "因为传得越多，问题越多。子 Agent 会被主 Agent 的执行过程\"污染\"——看到大量与它无关的内容，反而干扰它的专注度。而且一旦主 Agent 的上下文被传到每个子 Agent，上下文就开始膨胀，回到了单 Agent 的老问题。"
+    },
+    {
+      "type": "paragraph",
+      "text": "精准传递，而不是全量传递，这是 Orchestrator 范式的第一个工程原则。"
+    },
+    {
+      "type": "text",
+      "text": "关键设计 ② ：子 Agent 在独立 Crew 中运行——真正的隔离沙箱"
+    },
+    {
+      "type": "paragraph",
+      "text": "每次 spawn_sub_agent 调用，都会创建一个全新的 Crew 实例：一个全新的 Agent 对象，一个全新的 Task 对象，上下文从零开始。这不是\"切换角色\"，是真正的隔离。"
+    },
+    {
+      "type": "text",
+      "text": "在本课实战代码里："
+    },
+    {
+      "type": "code",
+      "text": "def _run_one_sub_crew( \n\n\t    role: str, goal: str, task: str,\n\n\t    context: str, tool_names: str, output_file: str,\n\n\t ) -> str:\n\n\t    # 💡 核心点：tool_names 是逗号分隔字符串，由主 Agent 运行时填入\n\n\t    #    如 \"FileReadTool,FileWriterTool\"，工程师只预定义工具池\n\n\t    tools = [\n\n\t        TOOL_REGISTRY[t.strip()]\n\n\t        for t in tool_names.split(\",\")\n\n\t        if t.strip() in TOOL_REGISTRY\n\n\t    ]\n\n\t \n\n\t    # 确保输出目录存在（子 Agent 可能需要写新目录）\n\n\t    output_path = Path(output_file)\n\n\t    if not output_path.is_absolute():\n\n\t        output_path = WORKSPACE_DIR / output_file\n\n\t    output_path.parent.mkdir(parents=True, exist_ok=True)\n\n\t \n\n\t    agent = Agent(\n\n\t        role=role,\n\n\t        goal=goal,\n\n\t        backstory=context,  # 💡 核心点：只传这个子任务需要的背景，不是主 Agent 的历史\n\n\t        tools=tools,\n\n\t        llm=_llm(),\n\n\t    )\n\n\t    task_obj = Task(\n\n\t        description=task,\n\n\t        expected_output=f\"将结果写入 {output_path}，返回该文件的绝对路径字符串\",\n\n\t        agent=agent,\n\n\t        output_file=str(output_path),  # 💡 核心点：结果写文件，不是直接返回内容\n\n\t    )\n\n\t    Crew(agents=[agent], tasks=[task_obj]).kickoff()\n\n\t    return str(output_path)  # 💡 核心点：只返回路径"
+    },
+    {
+      "type": "text",
+      "text": "每次调用都是全新实例，主 Agent 的执行历史对子 Agent 完全不可见。"
+    },
+    {
+      "type": "text",
+      "text": "关键设计 ③ ：结果传路径，不传内容"
+    },
+    {
+      "type": "paragraph",
+      "text": "子 Agent 完成任务后，把结果写入文件，把文件路径返回给主 Agent，不把文件内容直接传回。"
+    },
+    {
+      "type": "paragraph",
+      "text": "主 Agent 收到的是：\"workspace/backend/main.py\""
+    },
+    {
+      "type": "paragraph",
+      "text": "而不是：\"def create_leave(...):\\n ...[300 行代码]...\""
+    },
+    {
+      "type": "paragraph",
+      "text": "为什么这个区别很重要？如果把所有子 Agent 的输出内容直接推回主 Agent 的上下文，主 Agent 的上下文会迅速膨胀——回到了单 Agent 的老问题。传文件引用，主 Agent 需要时再读取，上下文保持轻量。"
+    },
+    {
+      "type": "text",
+      "text": "关键设计的一个推论：主 Agent 没有写工具"
+    },
+    {
+      "type": "paragraph",
+      "text": "看 build_orchestrator 函数，它负责创建主 Agent，其中工具列表是这样的："
+    },
+    {
+      "type": "code",
+      "text": "def build_orchestrator() -> tuple[Agent, Task]:\n\n\t    sop_content = load_sop_skill()  # 💡 核心点：SOP 以 Skill 方式注入 backstory\n\n\t \n\n\t    orchestrator = Agent(\n\n\t        role=\"Software Development Orchestrator\",\n\n\t        goal=\"接收需求文档，按 SOP 一次性连续跑完各阶段，协调子 Agent 完成设计、实现与交付\",\n\n\t        backstory=(\n\n\t            \"你是一名有 10 年全栈经验的技术负责人。\\n\"\n\n\t            \"你的工具：\\n\"\n\n\t            \"- spawn_sub_agent：开一个子 Agent 执行单个任务（串行）\\n\"\n\n\t            \"- spawn_sub_agents_parallel：同时开多个互相独立的子 Agent（并发）\\n\"\n\n\t            \"- FileReadTool：读取文件内容（读需求文档、验收子 Agent 输出）\\n\\n\"\n\n\t            \"━━━ SOP 流程（必须遵守）━━━\\n\\n\"\n\n\t            f\"{sop_content}\"   # 💡 整个 SOP 文件内容直接嵌入 backstory\n\n\t        ),\n\n\t        # 💡 核心点：只有 3 个工具，没有任何写工具（FileWriterTool、BashTool）\n\n\t        tools=[SpawnSubAgentTool(), SpawnParallelTool(), FileReadTool()],\n\n\t        llm=_llm(),\n\n\t    )\n\n\t    ..."
+    },
+    {
+      "type": "paragraph",
+      "text": "主 Agent 没有任何写工具——它不能写文件、不能执行代码。所有\"干活\"都必须通过 spawn 工具派发出去。这个限制是刻意的：一旦主 Agent 自己动手，它的上下文就开始被执行细节污染，验收就失去了独立性。"
+    },
+    {
+      "type": "text",
+      "text": "你可能会问：那主 Agent 怎么知道\"什么时候串行、什么时候并发、需要哪些角色\"？"
+    },
+    {
+      "type": "paragraph",
+      "text": "答案就在 backstory 里那段 SOP——它告诉主 Agent 完整的工作流程，包括哪些阶段有依赖（必须串行），哪些阶段独立（可以并发）。主 Agent 在理解 SOP 之后，自己决定每次 spawn 用哪个工具、传什么参数。这是 SOP as Skill 模式的核心价值：工程师把决策逻辑写在 SOP 里，而不是写在代码里。"
+    },
+    {
+      "type": "text",
+      "text": "四、三个核心价值：隔离·并发·验收，逐一击穿三堵墙"
+    },
+    {
+      "type": "text",
+      "text": "Orchestrator 范式的三个核心设计，各自针对第一节讲的三堵墙之一。"
+    },
+    {
+      "type": "paragraph",
+      "text": "① 上下文分割：切断认知污染，解决效果瓶颈"
+    },
+    {
+      "type": "text",
+      "text": "每个子 Agent 只带完成自己任务所需的信息。主 Agent 不被执行细节污染，子 Agent 也不被其他子 Agent 的思路干扰。"
+    },
+    {
+      "type": "paragraph",
+      "text": "这带来一个有趣的副作用：认知多样性。负责 Code Review 的 Agent，它没有参与代码的编写过程，没有\"这段代码我花了两小时写的\"这种执行包袱。它能看到 Developer Agent 因为过度投入而视而不见的问题——就像一个没有参与过 PR 编写的 Reviewer，才能给出最客观的评审意见。"
+    },
+    {
+      "type": "paragraph",
+      "text": "② 并发执行：解决性能瓶颈"
+    },
+    {
+      "type": "text",
+      "text": "多个子 Agent 同时运行。前端开发、后端开发可以并行进行，总时间不是两者相加，而是接近最慢的那个。"
+    },
+    {
+      "type": "paragraph",
+      "text": "在实战代码里，spawn_sub_agents_parallel 用 ThreadPoolExecutor 并发启动多个子 Crew："
+    },
+    {
+      "type": "code",
+      "text": "class SpawnParallelTool(BaseTool):\n\n\t    name: str = \"spawn_sub_agents_parallel\"\n\n\t    description: str = \"并发启动多个子 Agent，适用于互相独立的子任务\"\n\n\t \n\n\t    def _run(self, subtasks_json: str) -> str:\n\n\t        subtasks: list[dict] = json.loads(subtasks_json)\n\n\t        results: dict[str, str] = {}\n\n\t \n\n\t        with ThreadPoolExecutor(max_workers=len(subtasks)) as executor:\n\n\t            # 💡 核心点：用 dict 映射 future → output_file，方便收集结果\n\n\t            futures = {\n\n\t                executor.submit(_run_one_sub_crew, **st): st[\"output_file\"]\n\n\t                for st in subtasks\n\n\t            }\n\n\t            # as_completed：哪个先完成就先收，不阻塞等最慢的那个\n\n\t            for future in as_completed(futures):\n\n\t                output_file = futures[future]\n\n\t                try:\n\n\t                    results[output_file] = future.result()\n\n\t                except Exception as e:\n\n\t                    results[output_file] = f\"error: {e}\"  # 失败不崩溃，记录错误继续\n\n\t \n\n\t        return json.dumps(results, ensure_ascii=False, indent=2)"
+    },
+    {
+      "type": "paragraph",
+      "text": "注意：子任务要不要并发、并发几个——这些决策都是主 Agent LLM 在运行时做的，不是代码里写死的。工程师只提供了并发能力，主 Agent 自己决定什么时候用。"
+    },
+    {
+      "type": "paragraph",
+      "text": "③ 验收机制：解决质量问题，主动 reject + retry"
+    },
+    {
+      "type": "text",
+      "text": "主 Agent 是独立的验收方。子 Agent 输出的结果，主 Agent 会读取、判断，不合格就 reject 并要求重试，直到达标。"
+    },
+    {
+      "type": "paragraph",
+      "text": "这个机制的关键在于执行者和评审者上下文的隔离。执行者在执行过程中，上下文里会有大量的逻辑\"证明\"它做的是对的。如果让同一个 Agent 自我评审，它会被这些逻辑影响。而主 Agent 没有看到这些执行细节，才能以客观标准判断输出质量。"
+    },
+    {
+      "type": "text",
+      "text": "Galileo + PwC 的生产数据：同一任务，有独立验收的准确率是 70%，没有的只有 10%——相差 7 倍。这个数字值得记住。"
+    },
+    {
+      "type": "text",
+      "text": "五、实战：开发者小队跑通员工假期管理系统"
+    },
+    {
+      "type": "quote",
+      "text": "💡 课程说明：本节代码已同步至 GitHub，路径：code/crewai_mas_demo/m4l23~28/m4l23/"
+    },
+    {
+      "type": "paragraph",
+      "text": "我们用本课实战代码跑一遍完整流程。需求文档在 workspace/requirements.md："
+    },
+    {
+      "type": "quote",
+      "text": "开发一个员工假期管理系统，包含 CRUD 接口和简单前端页面。字段：员工姓名、假期类型、开始 / 结束日期、审批状态等。"
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": ""
+    },
+    {
+      "type": "text",
+      "text": "主 Agent 怎么知道该怎么干？——SOP as Skill"
+    },
+    {
+      "type": "paragraph",
+      "text": "主 Agent 不是凭空规划的。它的 backstory 里注入了一个 SOP Skill（skills/software-dev-sop/SKILL.md），这个 SOP 告诉它：当你面对一个开发项目时，推进的标准步骤是什么。"
+    },
+    {
+      "type": "text",
+      "text": "这和我们在 Claude Code 里用 CLAUDE.md 给 AI 制定工作规范是一模一样的逻辑——你把 SOP 写清楚，Agent 就有了行为框架。"
+    },
+    {
+      "type": "text",
+      "text": "SOP 里的关键约定："
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "必须产出中间产物：架构设计文档 → 接口规范 → Mock 测试 → 前后端代码 → 审查报告 → 交付报告",
+        "明确里程碑：每个阶段有明确的文件产出，主 Agent 验收这些文件，而不是验收执行过程",
+        "主 Agent 只读不写：主 Agent 负责规划和验收，所有写操作都通过 spawn 工具派发"
+      ]
+    },
+    {
+      "type": "text",
+      "text": "四个阶段的串 / 并行设计"
+    },
+    {
+      "type": "paragraph",
+      "text": "阶段 1（串行）：架构设计"
+    },
+    {
+      "type": "paragraph",
+      "text": "主 Agent 首先自己做架构设计——不是派子 Agent，而是它自己输出 workspace/api_spec.md，明确前后端接口规范、数据结构、字段定义。"
+    },
+    {
+      "type": "text",
+      "text": "这一步必须串行，因为后续所有子 Agent 都要依据这个规范工作。共享规范必须在并发前确定。"
+    },
+    {
+      "type": "paragraph",
+      "text": "阶段 2（串行）：接口 Mock + 单测"
+    },
+    {
+      "type": "paragraph",
+      "text": "主 Agent 调用 spawn_sub_agent（串行工具），启动一个 Mock 工程师子 Agent，根据 api_spec.md 生成接口 Mock 和单测框架。"
+    },
+    {
+      "type": "text",
+      "text": "这一步也必须串行：Mock 就绪后，前端可以用 Mock 做联调测试，后端可以用 API 接口测试验证自己的实现。两边都依赖这个产物，所以它必须先完成。"
+    },
+    {
+      "type": "paragraph",
+      "text": "阶段 3（并发）：前后端开发"
+    },
+    {
+      "type": "paragraph",
+      "text": "Mock 就绪后，主 Agent 调用 spawn_sub_agents_parallel，同时启动两个子 Agent："
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "前端 Developer：实现 HTML/JS CRUD 页面，写入 workspace/frontend/index.html",
+        "后端 Developer：实现 FastAPI 接口，写入 workspace/backend/main.py"
+      ]
+    },
+    {
+      "type": "text",
+      "text": "两个子 Agent 并发运行，互不感知对方的上下文。运行时终端可以看到两个 Crew 同时在跑。"
+    },
+    {
+      "type": "paragraph",
+      "text": "阶段 4（串行）：验收"
+    },
+    {
+      "type": "text",
+      "text": "主 Agent 读取两份输出文件，用 FileReadTool 检查："
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "前后端接口是否对齐（字段命名、数据结构）",
+        "功能是否覆盖需求文档"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "如果不通过，主 Agent 构造 reject 描述，重新 spawn 指定的修复子 Agent 重试。通过后输出 workspace/delivery_report.md。"
+    },
+    {
+      "type": "text",
+      "text": "一个关键体会"
+    },
+    {
+      "type": "paragraph",
+      "text": "主 Agent 在整个过程中没有写一行业务代码。 它做的是：读需求 → 做规划 → 派任务 → 验收结果。业务代码全部由子 Agent 完成。"
+    },
+    {
+      "type": "paragraph",
+      "text": "这就是 Orchestrator 的本质——它是一个以任务为视角的协调者，而不是一个\"会干很多事情的超级 Agent\"。"
+    },
+    {
+      "type": "text",
+      "text": "六、避坑指南：最佳实践与反模式"
+    },
+    {
+      "type": "paragraph",
+      "text": "Orchestrator 范式的工程陷阱，大多来自一个共同根因：设计者低估了误差的复利效应。"
+    },
+    {
+      "type": "text",
+      "text": "🚫 严重破坏稳定性的\"反模式\""
+    },
+    {
+      "type": "paragraph",
+      "text": "AP-1：无 kill switch，失控账单"
+    },
+    {
+      "type": "paragraph",
+      "text": "现象：没有预算上限，没有最大迭代次数，Agent 在外部 API 调用上无限循环。"
+    },
+    {
+      "type": "paragraph",
+      "text": "致命后果：HackerNews 上有真实案例——用户睡前启动了一个任务，早上醒来账单 $600，输出为零。Multi-agent 系统的循环机制天然容易失控，一旦陷入反复 reject-retry 的死循环，Token 消耗是指数级的。"
+    },
+    {
+      "type": "paragraph",
+      "text": "每个 multi-agent 系统必须内置：最大迭代次数、Token 预算上限、异常终止条件。这不是可选项，是运行前必须确认的基础设施。"
+    },
+    {
+      "type": "paragraph",
+      "text": "AP-2：主 Agent 规划失误，全链放大错误"
+    },
+    {
+      "type": "paragraph",
+      "text": "现象：主 Agent 在规划阶段理解错需求，后续每个子 Agent 都在错误前提下工作。"
+    },
+    {
+      "type": "paragraph",
+      "text": "致命后果：Galileo 研究表明，规划错误是 multi-agent 系统失败的最大单因。错误逐级放大，最终产物与需求完全偏离，且难以溯源。"
+    },
+    {
+      "type": "paragraph",
+      "text": "规划结果必须先做自检（让主 Agent 自我 Review）或用独立 Agent 做规划 Review，确认无误再分发。主 Agent 使用更强的模型，子 Agent 可以用轻量模型——这是合理的资源分配。"
+    },
+    {
+      "type": "paragraph",
+      "text": "AP-3：并行写任务冲突，产物无法调和"
+    },
+    {
+      "type": "paragraph",
+      "text": "现象：多个子 Agent 并发设计各自模块，互不感知，最终产物接口命名、数据格式、风格约定全不一样。"
+    },
+    {
+      "type": "paragraph",
+      "text": "致命后果：合并 Agent 没有足够的上下文来调和这些冲突，最终产物无法集成。"
+    },
+    {
+      "type": "paragraph",
+      "text": "共享规范（接口 spec、命名约定、数据结构）必须在并发前确定并显式传给每个子 Agent，不能假设它们会自行对齐。这就是阶段 1 和阶段 2 必须串行的原因。"
+    },
+    {
+      "type": "paragraph",
+      "text": "AP-4：无层级的 Agent 堆，误差 17 倍放大"
+    },
+    {
+      "type": "paragraph",
+      "text": "现象：没有 Orchestrator 层，多个 Agent 平铺互调，谁有能力就谁上。"
+    },
+    {
+      "type": "paragraph",
+      "text": "致命后果：Google DeepMind 的研究数据：在这种无层级结构下，误差最差情况放大 17.2 倍。每层误差向下传递叠加，最终产物质量极差且难以调试。"
+    },
+    {
+      "type": "paragraph",
+      "text": "层级结构不是架构洁癖，是控制误差传递的工程必需。Orchestrator 的层级，就是误差的防火墙。"
+    },
+    {
+      "type": "text",
+      "text": "💡 稳健落地的\"最佳实践\""
+    },
+    {
+      "type": "paragraph",
+      "text": "BP-1：独立验收 Agent——执行者不能自我评审"
+    },
+    {
+      "type": "paragraph",
+      "text": "落地心法：评审 Agent 必须对执行过程一无所知。它只看产物，不看过程。如果用主 Agent 做验收，要确保主 Agent 在验收时拿不到子 Agent 的执行日志，只拿到输出文件路径。Galileo + PwC 数据：有独立验收 70% 准确率，无独立验收 10%——这 7 倍的差距，只是因为加了一个\"不知道过程的评审者\"。"
+    },
+    {
+      "type": "paragraph",
+      "text": "BP-2：先跑单 Agent，有明确收益再扩"
+    },
+    {
+      "type": "paragraph",
+      "text": "落地心法：工程数据显示，有效 Agent 数量的天花板大约是 2-3 个，超过之后协调开销会超过并行收益。从单 Agent 跑通，发现明确的性能瓶颈或上下文瓶颈后再拆分，比一开始就堆 Agent 更稳健。不要为了\"看起来更智能\"而加 Agent。"
+    },
+    {
+      "type": "paragraph",
+      "text": "BP-3：每步可靠性必须 ≥ 99%"
+    },
+    {
+      "type": "paragraph",
+      "text": "落地心法：这条要现场算一遍才有感觉。10 个步骤，每步成功率 90%，整体成功率是 $0.9^{10} \\approx 35\\%$。每步提到 99%，整体是 $0.99^{10} \\approx 90.4\\%$。可靠性不是线性叠加，是指数衰减。每个子 Agent 的稳健性直接决定整个系统的上限。先把每个子 Agent 单独测稳，再组合。"
+    },
+    {
+      "type": "paragraph",
+      "text": "BP-4：显式传递上下文，不假设 Agent 间自动知晓"
+    },
+    {
+      "type": "paragraph",
+      "text": "落地心法：Anthropic 工程 Blog 记录过一个真实案例——把\"研究问题 X\"分给三个子 Agent 各自执行，结果三个 Agent 各自独立调查，最后发现调查的是同一个 bug 的三个不同侧面，完全重复劳动。主 Agent 在 SOP 里必须写清楚：哪些已经做了、哪些不需要重复、每个子 Agent 需要的上下文是什么——不能假设 Agent 之间有任何隐式知晓。"
+    },
+    {
+      "type": "text",
+      "text": "七、升维：从任务小队到数字员工团队"
+    },
+    {
+      "type": "text",
+      "text": "这支开发小队刚才跑完了交付任务。但有一个现实：如果下周又来一个类似的功能需求，它们会从零开始。同样的架构决策要重新做，同样的风格约定要重新确立，之前踩过的坑还可能再踩一遍。"
+    },
+    {
+      "type": "paragraph",
+      "text": "这是 Orchestrator 范式在任务层的特征：接任务 → 完成 → 结束。这很好——它非常适合单次、结构清晰、可明确分解的任务。生成报告、交付代码、分析数据，在这类场景里，Orchestrator 小队是完美的。"
+    },
+    {
+      "type": "paragraph",
+      "text": "但实践中，我们真正需要的往往不是一次性小队，而是一只能持续工作的数字员工团队："
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "产品经理有自己的偏好和判断风格，能记住上次需求评审的决策",
+        "工程师有技术选型的倾向和历史经验，知道这个项目用的是什么栈",
+        "测试工程师知道这个项目之前踩过哪些坑，不会反复踩"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "这些不是一个 Orchestrator 调用就能构建出来的——需要的是角色，是有 soul、有记忆、有 SOP 的数字员工。"
+    },
+    {
+      "type": "text",
+      "text": "Orchestrator 范式是基础，不会被取代：当这些有角色的 Agent 需要协作时，仍然需要 Orchestrator 的调度机制。但调度的对象，从临时创建的执行节点，变成了持续运营的数字员工。"
+    },
+    {
+      "type": "paragraph",
+      "text": "同一个 Orchestrator 原理——用上角色，就变成了团队。"
+    },
+    {
+      "type": "text",
+      "text": "本课总结"
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "我们识别了单 Agent 在复杂任务上的三堵墙——效果、性能、成本，以及为什么上下文工程无法根治它们。",
+        "我们追踪了行业演进的路径：Pipeline 流程僵化、Swarm 难以收敛，最终收敛到Orchestrator 范式——以任务驱动子 Agent，而非预先编排多 Agent。",
+        "我们掌握了 Orchestrator 的三个关键设计：Task 对象精准传参、子 Crew 完全隔离、结果传路径不传内容——主 Agent 只有三个工具，没有写权限。",
+        "我们理解了三个核心价值：上下文分割解决效果瓶颈、并发执行解决性能瓶颈、独立验收解决质量问题，三把钥匙各解一堵墙。",
+        "我们亲手跑通了员工假期管理系统的完整四阶段流程，体会了串行 / 并发的设计决策，以及 SOP as Skill 的工程模式。"
+      ]
+    },
+    {
+      "type": "quote",
+      "text": "下节课预告： 既然 Orchestrator 范式已经跑通，那我们还能做什么？下一节课，我们将构建第一个数字员工——它不只是完成一次任务，而是有角色、有记忆、有判断风格的持续协作者。我们下节课见！"
+    },
+    {
+      "type": "text",
+      "text": "本课代码"
+    },
+    {
+      "type": "paragraph",
+      "text": "实战代码：code/crewai_mas_demo/m4l23~28/m4l23/"
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "m4l23_orchestrator.py：主 Agent + spawn 工具 + TOOL_REGISTRY",
+        "test_orchestrator.py：8 个单元测试（全部通过）",
+        "workspace/requirements.md：员工假期管理系统需求文档",
+        "skills/software-dev-sop/SKILL.md：软件开发 SOP（主 Agent backstory 注入）"
+      ]
+    },
+    {
+      "type": "text",
+      "text": "运行方式："
+    },
+    {
+      "type": "code",
+      "text": "cd code/crewai_mas_demo/m4l23~28/m4l23\n\n\tpython3 m4l23_orchestrator.py\n\n\t \n\n\t---"
+    },
+    {
+      "type": "text",
+      "text": "课末学习活动"
+    },
+    {
+      "type": "quote",
+      "text": "费曼检验：在你脑中，用一句话把\"Orchestrator 范式\"解释给一个没学过的同事听——不许用\"主 Agent\"“子 Agent”\"多智能体\"这几个术语。"
+    },
+    {
+      "type": "paragraph",
+      "text": "思考题："
+    },
+    {
+      "type": "numbered",
+      "items": [
+        "本课说\"主 Agent 规划失误，全链放大错误\"。那如果你要设计一个机制来减少规划失误，你会怎么做？（提示：不只是\"换更强的模型\"）",
+        "不看代码，你能说出本课实战中，哪些步骤是串行的、哪些是并发的，以及串行 / 并发选择的依据是什么吗？"
+      ]
+    }
+  ],
+  "text": "模块四 · 多智能体协作\n前置课程：第 19 课（上下文生命周期）、第 22 课（XiaoPaw 长记忆篇）\n\n欢迎来到模块四！前三个模块我们一路走来，从 Agent 的基础结构、工具调用，到 CrewAI 框架，再到上下文工程、长记忆——你已经能构建出一个\"有记忆、有工具、会推理\"的 XiaoPaw。\n\n但有一个问题始终悬在那里：当任务真正复杂起来，XiaoPaw 还够用吗？不是\"帮我写一段代码\"那种简单任务，而是：完整交付一个功能模块——需求分析、架构设计、前后端开发、接口联调、测试验收，全部自主完成。\n\n这就是模块四要解决的事情：多智能体协作。本节课先讲清楚业界已经收敛的那个答案——Orchestrator 范式。它是接下来所有课的基础，也是目前工程实践中最稳健的 multi-agent 架构。\n\n一、认知原点：单 Agent 有三堵墙，剪裁压缩都绕不过去\n\n第 22 课结束时，XiaoPaw 已经能用三层记忆\"懂\"你了。但现在来一个真实工程任务：独立完成员工假期管理系统的前后端开发。不是聊几句，是一个完整的工程交付。\n\n这时你会发现，第 19、20 课的上下文工程会出手帮忙——剪裁（prune）和压缩（compress）会介入，维持上下文在可用范围内。\n\n但有三堵墙，它们绕不过去。\n\n第一堵：效果瓶颈。 任务越复杂，推理质量越差。上下文越长，模型对早期细节的注意力就越稀释——Context Rot 是真实存在的，研究显示这是 n² 级别的衰减。更关键的是，每次压缩本质上是用摘要替代原文，摘要意味着信息损失，被压缩掉的那些推理过程和中间决策就再也回不来了。到了复杂任务的后期，模型前面做的决策和当时的理由，都模糊了。\n\n第二堵：性能瓶颈。 单点串行处理。前端设计做完，才能做后端开发，做完才能写测试。所有任务排队，总时间是每个子任务时间的叠加。一个复杂项目二三十个步骤，这是真正等不起的。\n\n第三堵：成本瓶颈。 复杂项目的上下文始终处于\"比较暖\"的状态，每次处理都要携带大量历史。Token 消耗随任务规模线性增长，大型项目的开发成本会非常高。\n\n这三堵墙，不是提示词的问题，是单点处理的结构性瓶颈。 上下文工程解决了\"在上下文范围内更好地工作\"，但解决不了\"超出单点处理能力范围的任务\"。\n\n工程上需要一个不同层次的解法。\n\n二、为什么需要它：行业走过哪些弯路，最终收敛到 Orchestrator\n\n多 Agent 系统不是新想法。但工程实践走了一段弯路，才找到今天的主流答案。\n\n第一代：顺序工作流（Pipeline）\n\n工程师把整个流程提前编排好：步骤 1 完成传给步骤 2，步骤 2 完成传给步骤 3。逻辑清晰，可调试，但有一个根本问题——流程是写死的。任务的中间状态是预先假设的，一旦实际情况和假设不符，整条流水线要么卡住，要么输出错误结果。现实中的任务很少能完美匹配提前写死的编排。\n\n第二代：Swarm（去中心化）\n\n没有中心节点，多个 Agent 自由互调，谁有能力处理谁上。理论上更灵活，实际问题是——没有协调中心，谁来判断任务是否完成？谁来解决 Agent 之间的输出冲突？误差叠加，难以验收，最后的结果往往没人知道哪里出了问题。这类方案已被验证是难以收敛的。\n\n收敛答案：Orchestrator 范式\n\n主 Agent 负责调度，子 Agent 负责执行。但这里有一个关键的范式转变，值得专门说一下：\n\n旧思路是\"以 Agent 为视角\"——先定好几个 Agent，然后考虑谁干什么。新思路是“以任务（Task）为视角”——主 Agent 先把 subtask 写出来，再根据这个任务动态决定：需要什么角色的子 Agent？给它什么工具？背景信息是什么？\n\n这个转变意味着：你不再需要在代码里预定义所有 Agent，而是由主 Agent LLM 在运行时，根据实际任务内容动态创建子 Agent。这是 Orchestrator 范式比 Pipeline 更灵活的根本原因。\n\n今天这个范式已经是工程主流。如果你用过 Claude Code，你已经在享受它的好处了——Claude Code 的五种工作模式（通用型、fork 型、子 Agent 预定义型、协调者型等），本质上都是主 Agent + 子 Agent 的变体。尤其是协调者模式（Orchestrator mode），它明确限制主 Agent 不许执行，只允许子 Agent 干活——这和我们今天要讲的设计几乎一模一样。\n\n你已经在用 Orchestrator 了。现在我们来自己造一个。\n\n三、工作机制：主 Agent 委派，子 Agent 执行，文件路径回传\n\n🧠 回忆一下：第 13 课我们用 CrewAI 构建过多 Agent Crew——每个 Agent 有 role、goal、backstory、tools，每个 Task 有 description 和 expected_output。带着这个印象，来看 Orchestrator 是怎么把这些概念重新组合的。\n\nOrchestrator 范式的工作原理抓住三个关键设计，我们用本课实战项目（员工假期 CRUD 系统）来具体说明。\n\n关键设计 ① ：用 Task 对象传递工作，不传上下文\n\n主 Agent 把工作打包成一个 Task 对象：\n\n\trole:    后端 Developer\n\n\tgoal:    实现员工假期管理系统的 CRUD 接口\n\n\ttask:    根据接口规范实现 FastAPI + 内存存储后端\n\n\ttools:   FileReadTool, FileWriterTool\n\n\tinput:   workspace/api_spec.md（接口规范文档路径）\n\n\toutput:  将代码写入 workspace/backend/main.py\n\n这个 Task 对象只包含这个子 Agent 完成任务所需要的信息。主 Agent 的全局历史——之前和用户的对话、之前其他子 Agent 的执行细节——全都不传。\n\n你可能会问：为什么不把主 Agent 的上下文一起传过去，让子 Agent 有更多背景？\n\n因为传得越多，问题越多。子 Agent 会被主 Agent 的执行过程\"污染\"——看到大量与它无关的内容，反而干扰它的专注度。而且一旦主 Agent 的上下文被传到每个子 Agent，上下文就开始膨胀，回到了单 Agent 的老问题。\n\n精准传递，而不是全量传递，这是 Orchestrator 范式的第一个工程原则。\n\n关键设计 ② ：子 Agent 在独立 Crew 中运行——真正的隔离沙箱\n\n每次 spawn_sub_agent 调用，都会创建一个全新的 Crew 实例：一个全新的 Agent 对象，一个全新的 Task 对象，上下文从零开始。这不是\"切换角色\"，是真正的隔离。\n\n在本课实战代码里：\n\n\tdef _run_one_sub_crew( \n\n\t    role: str, goal: str, task: str,\n\n\t    context: str, tool_names: str, output_file: str,\n\n\t ) -> str:\n\n\t    # 💡 核心点：tool_names 是逗号分隔字符串，由主 Agent 运行时填入\n\n\t    #    如 \"FileReadTool,FileWriterTool\"，工程师只预定义工具池\n\n\t    tools = [\n\n\t        TOOL_REGISTRY[t.strip()]\n\n\t        for t in tool_names.split(\",\")\n\n\t        if t.strip() in TOOL_REGISTRY\n\n\t    ]\n\n\t \n\n\t    # 确保输出目录存在（子 Agent 可能需要写新目录）\n\n\t    output_path = Path(output_file)\n\n\t    if not output_path.is_absolute():\n\n\t        output_path = WORKSPACE_DIR / output_file\n\n\t    output_path.parent.mkdir(parents=True, exist_ok=True)\n\n\t \n\n\t    agent = Agent(\n\n\t        role=role,\n\n\t        goal=goal,\n\n\t        backstory=context,  # 💡 核心点：只传这个子任务需要的背景，不是主 Agent 的历史\n\n\t        tools=tools,\n\n\t        llm=_llm(),\n\n\t    )\n\n\t    task_obj = Task(\n\n\t        description=task,\n\n\t        expected_output=f\"将结果写入 {output_path}，返回该文件的绝对路径字符串\",\n\n\t        agent=agent,\n\n\t        output_file=str(output_path),  # 💡 核心点：结果写文件，不是直接返回内容\n\n\t    )\n\n\t    Crew(agents=[agent], tasks=[task_obj]).kickoff()\n\n\t    return str(output_path)  # 💡 核心点：只返回路径\n\n每次调用都是全新实例，主 Agent 的执行历史对子 Agent 完全不可见。\n\n关键设计 ③ ：结果传路径，不传内容\n\n子 Agent 完成任务后，把结果写入文件，把文件路径返回给主 Agent，不把文件内容直接传回。\n\n主 Agent 收到的是：\"workspace/backend/main.py\"\n\n而不是：\"def create_leave(...):\\n ...[300 行代码]...\"\n\n为什么这个区别很重要？如果把所有子 Agent 的输出内容直接推回主 Agent 的上下文，主 Agent 的上下文会迅速膨胀——回到了单 Agent 的老问题。传文件引用，主 Agent 需要时再读取，上下文保持轻量。\n\n关键设计的一个推论：主 Agent 没有写工具\n\n看 build_orchestrator 函数，它负责创建主 Agent，其中工具列表是这样的：\n\n\tdef build_orchestrator() -> tuple[Agent, Task]:\n\n\t    sop_content = load_sop_skill()  # 💡 核心点：SOP 以 Skill 方式注入 backstory\n\n\t \n\n\t    orchestrator = Agent(\n\n\t        role=\"Software Development Orchestrator\",\n\n\t        goal=\"接收需求文档，按 SOP 一次性连续跑完各阶段，协调子 Agent 完成设计、实现与交付\",\n\n\t        backstory=(\n\n\t            \"你是一名有 10 年全栈经验的技术负责人。\\n\"\n\n\t            \"你的工具：\\n\"\n\n\t            \"- spawn_sub_agent：开一个子 Agent 执行单个任务（串行）\\n\"\n\n\t            \"- spawn_sub_agents_parallel：同时开多个互相独立的子 Agent（并发）\\n\"\n\n\t            \"- FileReadTool：读取文件内容（读需求文档、验收子 Agent 输出）\\n\\n\"\n\n\t            \"━━━ SOP 流程（必须遵守）━━━\\n\\n\"\n\n\t            f\"{sop_content}\"   # 💡 整个 SOP 文件内容直接嵌入 backstory\n\n\t        ),\n\n\t        # 💡 核心点：只有 3 个工具，没有任何写工具（FileWriterTool、BashTool）\n\n\t        tools=[SpawnSubAgentTool(), SpawnParallelTool(), FileReadTool()],\n\n\t        llm=_llm(),\n\n\t    )\n\n\t    ...\n\n主 Agent 没有任何写工具——它不能写文件、不能执行代码。所有\"干活\"都必须通过 spawn 工具派发出去。这个限制是刻意的：一旦主 Agent 自己动手，它的上下文就开始被执行细节污染，验收就失去了独立性。\n\n你可能会问：那主 Agent 怎么知道\"什么时候串行、什么时候并发、需要哪些角色\"？\n\n答案就在 backstory 里那段 SOP——它告诉主 Agent 完整的工作流程，包括哪些阶段有依赖（必须串行），哪些阶段独立（可以并发）。主 Agent 在理解 SOP 之后，自己决定每次 spawn 用哪个工具、传什么参数。这是 SOP as Skill 模式的核心价值：工程师把决策逻辑写在 SOP 里，而不是写在代码里。\n\n四、三个核心价值：隔离·并发·验收，逐一击穿三堵墙\n\nOrchestrator 范式的三个核心设计，各自针对第一节讲的三堵墙之一。\n\n① 上下文分割：切断认知污染，解决效果瓶颈\n\n每个子 Agent 只带完成自己任务所需的信息。主 Agent 不被执行细节污染，子 Agent 也不被其他子 Agent 的思路干扰。\n\n这带来一个有趣的副作用：认知多样性。负责 Code Review 的 Agent，它没有参与代码的编写过程，没有\"这段代码我花了两小时写的\"这种执行包袱。它能看到 Developer Agent 因为过度投入而视而不见的问题——就像一个没有参与过 PR 编写的 Reviewer，才能给出最客观的评审意见。\n\n② 并发执行：解决性能瓶颈\n\n多个子 Agent 同时运行。前端开发、后端开发可以并行进行，总时间不是两者相加，而是接近最慢的那个。\n\n在实战代码里，spawn_sub_agents_parallel 用 ThreadPoolExecutor 并发启动多个子 Crew：\n\n\tclass SpawnParallelTool(BaseTool):\n\n\t    name: str = \"spawn_sub_agents_parallel\"\n\n\t    description: str = \"并发启动多个子 Agent，适用于互相独立的子任务\"\n\n\t \n\n\t    def _run(self, subtasks_json: str) -> str:\n\n\t        subtasks: list[dict] = json.loads(subtasks_json)\n\n\t        results: dict[str, str] = {}\n\n\t \n\n\t        with ThreadPoolExecutor(max_workers=len(subtasks)) as executor:\n\n\t            # 💡 核心点：用 dict 映射 future → output_file，方便收集结果\n\n\t            futures = {\n\n\t                executor.submit(_run_one_sub_crew, **st): st[\"output_file\"]\n\n\t                for st in subtasks\n\n\t            }\n\n\t            # as_completed：哪个先完成就先收，不阻塞等最慢的那个\n\n\t            for future in as_completed(futures):\n\n\t                output_file = futures[future]\n\n\t                try:\n\n\t                    results[output_file] = future.result()\n\n\t                except Exception as e:\n\n\t                    results[output_file] = f\"error: {e}\"  # 失败不崩溃，记录错误继续\n\n\t \n\n\t        return json.dumps(results, ensure_ascii=False, indent=2)\n\n注意：子任务要不要并发、并发几个——这些决策都是主 Agent LLM 在运行时做的，不是代码里写死的。工程师只提供了并发能力，主 Agent 自己决定什么时候用。\n\n③ 验收机制：解决质量问题，主动 reject + retry\n\n主 Agent 是独立的验收方。子 Agent 输出的结果，主 Agent 会读取、判断，不合格就 reject 并要求重试，直到达标。\n\n这个机制的关键在于执行者和评审者上下文的隔离。执行者在执行过程中，上下文里会有大量的逻辑\"证明\"它做的是对的。如果让同一个 Agent 自我评审，它会被这些逻辑影响。而主 Agent 没有看到这些执行细节，才能以客观标准判断输出质量。\n\nGalileo + PwC 的生产数据：同一任务，有独立验收的准确率是 70%，没有的只有 10%——相差 7 倍。这个数字值得记住。\n\n五、实战：开发者小队跑通员工假期管理系统\n\n💡 课程说明：本节代码已同步至 GitHub，路径：code/crewai_mas_demo/m4l23~28/m4l23/\n\n我们用本课实战代码跑一遍完整流程。需求文档在 workspace/requirements.md：\n\n开发一个员工假期管理系统，包含 CRUD 接口和简单前端页面。字段：员工姓名、假期类型、开始 / 结束日期、审批状态等。\n\n主 Agent 怎么知道该怎么干？——SOP as Skill\n\n主 Agent 不是凭空规划的。它的 backstory 里注入了一个 SOP Skill（skills/software-dev-sop/SKILL.md），这个 SOP 告诉它：当你面对一个开发项目时，推进的标准步骤是什么。\n\n这和我们在 Claude Code 里用 CLAUDE.md 给 AI 制定工作规范是一模一样的逻辑——你把 SOP 写清楚，Agent 就有了行为框架。\n\nSOP 里的关键约定：\n\n必须产出中间产物：架构设计文档 → 接口规范 → Mock 测试 → 前后端代码 → 审查报告 → 交付报告\n\n明确里程碑：每个阶段有明确的文件产出，主 Agent 验收这些文件，而不是验收执行过程\n\n主 Agent 只读不写：主 Agent 负责规划和验收，所有写操作都通过 spawn 工具派发\n\n四个阶段的串 / 并行设计\n\n阶段 1（串行）：架构设计\n\n主 Agent 首先自己做架构设计——不是派子 Agent，而是它自己输出 workspace/api_spec.md，明确前后端接口规范、数据结构、字段定义。\n\n这一步必须串行，因为后续所有子 Agent 都要依据这个规范工作。共享规范必须在并发前确定。\n\n阶段 2（串行）：接口 Mock + 单测\n\n主 Agent 调用 spawn_sub_agent（串行工具），启动一个 Mock 工程师子 Agent，根据 api_spec.md 生成接口 Mock 和单测框架。\n\n这一步也必须串行：Mock 就绪后，前端可以用 Mock 做联调测试，后端可以用 API 接口测试验证自己的实现。两边都依赖这个产物，所以它必须先完成。\n\n阶段 3（并发）：前后端开发\n\nMock 就绪后，主 Agent 调用 spawn_sub_agents_parallel，同时启动两个子 Agent：\n\n前端 Developer：实现 HTML/JS CRUD 页面，写入 workspace/frontend/index.html\n\n后端 Developer：实现 FastAPI 接口，写入 workspace/backend/main.py\n\n两个子 Agent 并发运行，互不感知对方的上下文。运行时终端可以看到两个 Crew 同时在跑。\n\n阶段 4（串行）：验收\n\n主 Agent 读取两份输出文件，用 FileReadTool 检查：\n\n前后端接口是否对齐（字段命名、数据结构）\n\n功能是否覆盖需求文档\n\n如果不通过，主 Agent 构造 reject 描述，重新 spawn 指定的修复子 Agent 重试。通过后输出 workspace/delivery_report.md。\n\n一个关键体会\n\n主 Agent 在整个过程中没有写一行业务代码。 它做的是：读需求 → 做规划 → 派任务 → 验收结果。业务代码全部由子 Agent 完成。\n\n这就是 Orchestrator 的本质——它是一个以任务为视角的协调者，而不是一个\"会干很多事情的超级 Agent\"。\n\n六、避坑指南：最佳实践与反模式\n\nOrchestrator 范式的工程陷阱，大多来自一个共同根因：设计者低估了误差的复利效应。\n\n🚫 严重破坏稳定性的\"反模式\"\n\nAP-1：无 kill switch，失控账单\n\n现象：没有预算上限，没有最大迭代次数，Agent 在外部 API 调用上无限循环。\n\n致命后果：HackerNews 上有真实案例——用户睡前启动了一个任务，早上醒来账单 $600，输出为零。Multi-agent 系统的循环机制天然容易失控，一旦陷入反复 reject-retry 的死循环，Token 消耗是指数级的。\n\n每个 multi-agent 系统必须内置：最大迭代次数、Token 预算上限、异常终止条件。这不是可选项，是运行前必须确认的基础设施。\n\nAP-2：主 Agent 规划失误，全链放大错误\n\n现象：主 Agent 在规划阶段理解错需求，后续每个子 Agent 都在错误前提下工作。\n\n致命后果：Galileo 研究表明，规划错误是 multi-agent 系统失败的最大单因。错误逐级放大，最终产物与需求完全偏离，且难以溯源。\n\n规划结果必须先做自检（让主 Agent 自我 Review）或用独立 Agent 做规划 Review，确认无误再分发。主 Agent 使用更强的模型，子 Agent 可以用轻量模型——这是合理的资源分配。\n\nAP-3：并行写任务冲突，产物无法调和\n\n现象：多个子 Agent 并发设计各自模块，互不感知，最终产物接口命名、数据格式、风格约定全不一样。\n\n致命后果：合并 Agent 没有足够的上下文来调和这些冲突，最终产物无法集成。\n\n共享规范（接口 spec、命名约定、数据结构）必须在并发前确定并显式传给每个子 Agent，不能假设它们会自行对齐。这就是阶段 1 和阶段 2 必须串行的原因。\n\nAP-4：无层级的 Agent 堆，误差 17 倍放大\n\n现象：没有 Orchestrator 层，多个 Agent 平铺互调，谁有能力就谁上。\n\n致命后果：Google DeepMind 的研究数据：在这种无层级结构下，误差最差情况放大 17.2 倍。每层误差向下传递叠加，最终产物质量极差且难以调试。\n\n层级结构不是架构洁癖，是控制误差传递的工程必需。Orchestrator 的层级，就是误差的防火墙。\n\n💡 稳健落地的\"最佳实践\"\n\nBP-1：独立验收 Agent——执行者不能自我评审\n\n落地心法：评审 Agent 必须对执行过程一无所知。它只看产物，不看过程。如果用主 Agent 做验收，要确保主 Agent 在验收时拿不到子 Agent 的执行日志，只拿到输出文件路径。Galileo + PwC 数据：有独立验收 70% 准确率，无独立验收 10%——这 7 倍的差距，只是因为加了一个\"不知道过程的评审者\"。\n\nBP-2：先跑单 Agent，有明确收益再扩\n\n落地心法：工程数据显示，有效 Agent 数量的天花板大约是 2-3 个，超过之后协调开销会超过并行收益。从单 Agent 跑通，发现明确的性能瓶颈或上下文瓶颈后再拆分，比一开始就堆 Agent 更稳健。不要为了\"看起来更智能\"而加 Agent。\n\nBP-3：每步可靠性必须 ≥ 99%\n\n落地心法：这条要现场算一遍才有感觉。10 个步骤，每步成功率 90%，整体成功率是 $0.9^{10} \\approx 35\\%$。每步提到 99%，整体是 $0.99^{10} \\approx 90.4\\%$。可靠性不是线性叠加，是指数衰减。每个子 Agent 的稳健性直接决定整个系统的上限。先把每个子 Agent 单独测稳，再组合。\n\nBP-4：显式传递上下文，不假设 Agent 间自动知晓\n\n落地心法：Anthropic 工程 Blog 记录过一个真实案例——把\"研究问题 X\"分给三个子 Agent 各自执行，结果三个 Agent 各自独立调查，最后发现调查的是同一个 bug 的三个不同侧面，完全重复劳动。主 Agent 在 SOP 里必须写清楚：哪些已经做了、哪些不需要重复、每个子 Agent 需要的上下文是什么——不能假设 Agent 之间有任何隐式知晓。\n\n七、升维：从任务小队到数字员工团队\n\n这支开发小队刚才跑完了交付任务。但有一个现实：如果下周又来一个类似的功能需求，它们会从零开始。同样的架构决策要重新做，同样的风格约定要重新确立，之前踩过的坑还可能再踩一遍。\n\n这是 Orchestrator 范式在任务层的特征：接任务 → 完成 → 结束。这很好——它非常适合单次、结构清晰、可明确分解的任务。生成报告、交付代码、分析数据，在这类场景里，Orchestrator 小队是完美的。\n\n但实践中，我们真正需要的往往不是一次性小队，而是一只能持续工作的数字员工团队：\n\n产品经理有自己的偏好和判断风格，能记住上次需求评审的决策\n\n工程师有技术选型的倾向和历史经验，知道这个项目用的是什么栈\n\n测试工程师知道这个项目之前踩过哪些坑，不会反复踩\n\n这些不是一个 Orchestrator 调用就能构建出来的——需要的是角色，是有 soul、有记忆、有 SOP 的数字员工。\n\nOrchestrator 范式是基础，不会被取代：当这些有角色的 Agent 需要协作时，仍然需要 Orchestrator 的调度机制。但调度的对象，从临时创建的执行节点，变成了持续运营的数字员工。\n\n同一个 Orchestrator 原理——用上角色，就变成了团队。\n\n本课总结\n\n我们识别了单 Agent 在复杂任务上的三堵墙——效果、性能、成本，以及为什么上下文工程无法根治它们。\n\n我们追踪了行业演进的路径：Pipeline 流程僵化、Swarm 难以收敛，最终收敛到Orchestrator 范式——以任务驱动子 Agent，而非预先编排多 Agent。\n\n我们掌握了 Orchestrator 的三个关键设计：Task 对象精准传参、子 Crew 完全隔离、结果传路径不传内容——主 Agent 只有三个工具，没有写权限。\n\n我们理解了三个核心价值：上下文分割解决效果瓶颈、并发执行解决性能瓶颈、独立验收解决质量问题，三把钥匙各解一堵墙。\n\n我们亲手跑通了员工假期管理系统的完整四阶段流程，体会了串行 / 并发的设计决策，以及 SOP as Skill 的工程模式。\n\n下节课预告： 既然 Orchestrator 范式已经跑通，那我们还能做什么？下一节课，我们将构建第一个数字员工——它不只是完成一次任务，而是有角色、有记忆、有判断风格的持续协作者。我们下节课见！\n\n本课代码\n\n实战代码：code/crewai_mas_demo/m4l23~28/m4l23/\n\nm4l23_orchestrator.py：主 Agent + spawn 工具 + TOOL_REGISTRY\n\ntest_orchestrator.py：8 个单元测试（全部通过）\n\nworkspace/requirements.md：员工假期管理系统需求文档\n\nskills/software-dev-sop/SKILL.md：软件开发 SOP（主 Agent backstory 注入）\n\n运行方式：\n\n\tcd code/crewai_mas_demo/m4l23~28/m4l23\n\n\tpython3 m4l23_orchestrator.py\n\n\t \n\n\t---\n课末学习活动\n\n费曼检验：在你脑中，用一句话把\"Orchestrator 范式\"解释给一个没学过的同事听——不许用\"主 Agent\"“子 Agent”\"多智能体\"这几个术语。\n\n思考题：\n\n本课说\"主 Agent 规划失误，全链放大错误\"。那如果你要设计一个机制来减少规划失误，你会怎么做？（提示：不只是\"换更强的模型\"）\n\n不看代码，你能说出本课实战中，哪些步骤是串行的、哪些是并发的，以及串行 / 并发选择的依据是什么吗？",
+  "extractedAt": "2026-06-02T02:21:25.160Z"
+}

@@ -1,0 +1,452 @@
+{
+  "title": "09｜开发环境搭建：大模型应用项目初始化",
+  "blocks": [
+    {
+      "type": "paragraph",
+      "text": "你好，我是袁从德。"
+    },
+    {
+      "type": "paragraph",
+      "text": "前八讲，我们完成了从宏观认知到核心技术的系统性构建。从大模型应用的整体开发路径，到情感聊天场景的价值选择；从 Transformer 底层原理，到 Prompt 工程、上下文管理、Agent 架构与 RAG 技术的层层递进——我们已经绘制出了一幅完整的“大模型应用开发全景图”。"
+    },
+    {
+      "type": "paragraph",
+      "text": "然而，所有的理论认知与方法论，最终都必须落地于一行行可运行的代码、一个个可交互的功能模块。**知道做什么是智慧，知道怎么做是能力，而真正做到才是价值的起点。**"
+    },
+    {
+      "type": "paragraph",
+      "text": "因此，从今天开始，我们正式进入课程的**实战篇（一）：情感聊天应用基础搭建**。这不仅是技术旅程的转折点，更是思维方式的跃迁——从理解 AI 走向创造 AI。通过这一讲的学习，你将获得一个**可复用、可扩展、生产就绪的大模型应用项目模板**，为后续实现记忆管理、安全过滤、Agent 行为编排、RAG 知识接入等功能打下坚实基础。"
+    },
+    {
+      "type": "paragraph",
+      "text": "更重要的是，你将建立起“工程化思维”——不再把大模型当作一个孤立的 API 调用，而是将其视为一个复杂智能系统的有机组成部分。这种思维，正是从“调用者”迈向“系统架构师”的分水岭。"
+    },
+    {
+      "type": "paragraph",
+      "text": "现在，让我们正式启程，从零开始，搭建属于你的第一个大模型应用项目。"
+    },
+    {
+      "type": "paragraph",
+      "text": "今天我们的核心任务是：**完成开发环境的搭建与项目初始化**。看似平凡，实则至关重要。一个清晰、规范、可扩展的项目结构，就像一座高楼的地基，决定了后续开发的效率、协作的顺畅与系统的稳定性。"
+    },
+    {
+      "type": "paragraph",
+      "text": "我们将以“心语”心理健康陪伴机器人为具体项目案例，手把手带你完成以下关键步骤："
+    },
+    {
+      "type": "list",
+      "items": [
+        "本地开发环境的准备与配置",
+        "项目目录结构的设计与初始化",
+        "核心依赖库的选型与安装",
+        "大模型 API 的接入与测试",
+        "配置管理与安全实践",
+        "第一个可运行的“Hello, AI”对话原型"
+      ]
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "一、开发环境准备：打造高效稳定的 AI 开发工作台"
+    },
+    {
+      "type": "paragraph",
+      "text": "在开始编码之前，我们需要先为项目准备好一个稳定、隔离且高效的开发环境。这不仅能避免依赖冲突，还能提升团队协作效率，是专业开发的第一课。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "1.1 技术栈选型：为什么是 Python + FastAPI？"
+    },
+    {
+      "type": "paragraph",
+      "text": "在大模型应用开发中，Python 凭借其丰富的 AI 生态（如 LangChain、LlamaIndex、Hugging Face 等）和简洁的语法，已成为事实上的标准语言。我们选择 **Python 3.10+** 作为主语言，确保兼容最新库版本。"
+    },
+    {
+      "type": "paragraph",
+      "text": "后端框架我们选用 **FastAPI**，原因如下："
+    },
+    {
+      "type": "list",
+      "items": [
+        "**高性能**：基于 ASGI（异步服务器网关接口），支持异步请求处理，适合大模型的高延迟 IO 场景；",
+        "**自动文档生成**：集成 Swagger UI，便于接口调试与团队协作；",
+        "**类型提示友好**：与 Pydantic 深度集成，提升代码可读性与健壮性；",
+        "**轻量灵活**：无过多约定，适合快速迭代的 AI 应用开发。"
+      ]
+    },
+    {
+      "type": "blockquote",
+      "text": "替代方案：如果你更熟悉 Flask 或 Django，也可使用，但建议优先尝试 FastAPI 以体验异步优势。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "1.2 环境管理：使用 venv 或 conda 创建虚拟环境"
+    },
+    {
+      "type": "paragraph",
+      "text": "为了避免不同项目间的依赖冲突，我们必须使用虚拟环境。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**使用 venv（推荐新手）：**"
+    },
+    {
+      "type": "code",
+      "text": "# 创建虚拟环境\npython -m venv venv\n# 激活虚拟环境（Linux/Mac）\nsource venv/bin/activate\n# 激活虚拟环境（Windows）\nvenv\\Scripts\\activate"
+    },
+    {
+      "type": "paragraph",
+      "text": "**使用 conda（适合数据科学背景）：**"
+    },
+    {
+      "type": "code",
+      "text": "# 创建环境\nconda create -n emotion-chat python=3.10\n# 激活环境\nconda activate emotion-chat"
+    },
+    {
+      "type": "paragraph",
+      "text": "激活后，终端前缀应显示环境名，如 venv 或 emotion-chat，表示环境已生效。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "1.3 包管理：pip 与 requirements.txt"
+    },
+    {
+      "type": "paragraph",
+      "text": "我们使用 pip 安装依赖，并通过 requirements.txt 锁定版本，确保环境一致性。"
+    },
+    {
+      "type": "paragraph",
+      "text": "初始化项目后，创建空文件："
+    },
+    {
+      "type": "code",
+      "text": "touch requirements.txt"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "二、项目初始化：构建清晰可扩展的目录结构"
+    },
+    {
+      "type": "paragraph",
+      "text": "良好的项目架构是可维护性的基石。我们为“心语”机器人设计，整体架构如图 9-1 所示。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/13/c6/139a5daf78bc4d55a4924ddc48ee70c6.jpg?wh=2526x2596",
+      "alt": ""
+    },
+    {
+      "type": "blockquote",
+      "text": "说明：此结构遵循“分层架构”思想，分离关注点，便于后期扩展 Agent、RAG、向量数据库等模块。代码：[https://github.com/congde/emotional_chat]()"
+    },
+    {
+      "type": "paragraph",
+      "text": "接下来，我们详细介绍分层服务架构。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "2.1 路由层 (Router Layer)"
+    },
+    {
+      "type": "paragraph",
+      "text": "路由层负责 API 接口定义和请求分发。"
+    },
+    {
+      "type": "code",
+      "text": "backend/routers/\n├── chat.py          - 聊天接口\n├── memory.py        - 记忆管理接口\n├── feedback.py      - 用户反馈接口\n├── evaluation.py    - 评估系统接口\n└── agent_router.py  - Agent智能接口"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "2.2 服务层 (Service Layer)"
+    },
+    {
+      "type": "paragraph",
+      "text": "服务层用于业务逻辑封装和编排。"
+    },
+    {
+      "type": "code",
+      "text": "backend/services/\n├── chat_service.py      - 聊天服务\n├── memory_service.py    - 记忆服务\n├── context_service.py   - 上下文服务\n└── agent_service.py     - Agent服务（可选）"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "2.3 核心层 (Core/Module Layer)"
+    },
+    {
+      "type": "paragraph",
+      "text": "核心功能模块如下所示。"
+    },
+    {
+      "type": "code",
+      "text": "backend/modules/\n├── agent/          - Agent智能核心\n│   ├── core/       - Agent Core, Planner, Tool Caller等\n│   ├── services/   - Agent服务实现\n│   └── routers/    - Agent路由\n├── rag/            - RAG知识库系统\n│   ├── core/       - 知识库管理、检索\n│   ├── services/   - RAG服务\n│   └── routers/    - RAG路由\n└── llm/            - LLM模型封装\n    └── qwen_client.py - 通义千问客户端"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "2.4 数据层 (Data Layer)"
+    },
+    {
+      "type": "paragraph",
+      "text": "数据层用于数据存储和管理，涉及到的技术框架包括后面这些。"
+    },
+    {
+      "type": "list",
+      "items": [
+        "MySQL: 用户数据、对话历史、情感记录",
+        "ChromaDB: 向量存储、语义检索",
+        "Redis: 缓存、会话状态（生产环境）"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "我们来看看 MySQL 数据库表结构。"
+    },
+    {
+      "type": "paragraph",
+      "text": "users - 用户表"
+    },
+    {
+      "type": "code",
+      "text": "CREATE TABLE users (\n    id INT PRIMARY KEY AUTO_INCREMENT,\n    user_id VARCHAR(100) UNIQUE NOT NULL,\n    username VARCHAR(100),\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n    is_active BOOLEAN DEFAULT TRUE\n);"
+    },
+    {
+      "type": "paragraph",
+      "text": "chat_sessions - 会话表"
+    },
+    {
+      "type": "code",
+      "text": "CREATE TABLE chat_sessions (\n    id INT PRIMARY KEY AUTO_INCREMENT,\n    session_id VARCHAR(100) UNIQUE NOT NULL,\n    user_id VARCHAR(100) NOT NULL,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n    is_active BOOLEAN DEFAULT TRUE\n);"
+    },
+    {
+      "type": "paragraph",
+      "text": "chat_messages - 消息表"
+    },
+    {
+      "type": "code",
+      "text": "CREATE TABLE chat_messages (\n    id INT PRIMARY KEY AUTO_INCREMENT,\n    session_id VARCHAR(100) NOT NULL,\n    user_id VARCHAR(100) NOT NULL,\n    role VARCHAR(20) NOT NULL,  -- user, assistant\n    content TEXT NOT NULL,\n    emotion VARCHAR(50),\n    emotion_intensity FLOAT,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);"
+    },
+    {
+      "type": "paragraph",
+      "text": "emotion_analysis - 情感分析表"
+    },
+    {
+      "type": "code",
+      "text": "CREATE TABLE emotion_analysis (\n    id INT PRIMARY KEY AUTO_INCREMENT,\n    session_id VARCHAR(100) NOT NULL,\n    user_id VARCHAR(100) NOT NULL,\n    message_id INT NOT NULL,\n    emotion VARCHAR(50) NOT NULL,\n    intensity FLOAT NOT NULL,\n    keywords TEXT,\n    suggestions TEXT,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);"
+    },
+    {
+      "type": "paragraph",
+      "text": "knowledge - 知识库表"
+    },
+    {
+      "type": "code",
+      "text": "CREATE TABLE knowledge (\n    id INT PRIMARY KEY AUTO_INCREMENT,\n    title VARCHAR(200) NOT NULL,\n    content TEXT NOT NULL,\n    category VARCHAR(100),\n    tags TEXT,\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n    is_active BOOLEAN DEFAULT TRUE\n);"
+    },
+    {
+      "type": "paragraph",
+      "text": "system_logs - 系统日志表"
+    },
+    {
+      "type": "code",
+      "text": "CREATE TABLE system_logs (\n    id INT PRIMARY KEY AUTO_INCREMENT,\n    level VARCHAR(20) NOT NULL,\n    message TEXT NOT NULL,\n    session_id VARCHAR(100),\n    user_id VARCHAR(100),\n    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "2.5 技术栈"
+    },
+    {
+      "type": "paragraph",
+      "text": "接下来是技术栈的选择，你可以参考后面的表格 9-1。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/c6/d5/c6c91a12e2132ff9a2fe4ab0099817d5.jpg?wh=5889x5444",
+      "alt": ""
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "三、配置管理：安全、灵活的项目“控制台”"
+    },
+    {
+      "type": "paragraph",
+      "text": "硬编码 API 密钥是重大安全隐患。我们使用配置文件 + 环境变量的方式管理敏感信息。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "3.1 创建 config.env 文件（本地）"
+    },
+    {
+      "type": "paragraph",
+      "text": "先来创建 config.env 文件，代码如下所示。"
+    },
+    {
+      "type": "code",
+      "text": "# config.env\n# API配置 - 使用阿里云通义千问(Qwen)\nDASHSCOPE_API_KEY={填写API Key}\nAPI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1\n# LangChain配置\nLANGCHAIN_TRACING_V2=true\nLANGCHAIN_API_KEY=your_langchain_key_here\n# 数据库配置\nDATABASE_URL=mysql+pymysql://root:emotional_chat_2025@localhost:3306/emotional_chat\n# MySQL数据库配置\nMYSQL_HOST=localhost\nMYSQL_PORT=3306\nMYSQL_USER=root\nMYSQL_PASSWORD=emotional_chat_2025\nMYSQL_DATABASE=emotional_chat\n# 向量数据库配置\nCHROMA_PERSIST_DIRECTORY=./chroma_db\n# 模型配置 - 使用通义千问\nDEFAULT_MODEL=qwen-plus\nTEMPERATURE=0.7\nMAX_TOKENS=1000\n# 服务器配置\nHOST=0.0.0.0\nPORT=8000\nDEBUG=true"
+    },
+    {
+      "type": "blockquote",
+      "text": "⚠️ 注意：config.env 文件不应提交到 Git，需在 .gitignore 中添加："
+    },
+    {
+      "type": "code",
+      "text": "# .gitignore\n# Node modules\nfrontend/node_modules/\nnode_modules/\n# Python\n__pycache__/\n*.py[cod]\n*$py.class\n*.so\n.Python\nenv/\nvenv/\nENV/\nbuild/\ndevelop-eggs/\ndist/\ndownloads/\neggs/\n.eggs/\nlib/\nlib64/\nparts/\nsdist/\nvar/\nwheels/\n*.egg-info/\n.installed.cfg\n*.egg\n# IDE\n.vscode/\n.idea/\n*.swp\n*.swo\n*~\n# Environment variables\n.env\n*.env.local\nconfig.env\n# Logs\n*.log\nlog/\n!log/.gitkeep\n# Database\n*.db\n*.sqlite3\nchroma_db/"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "3.2 配置加载：config.py"
+    },
+    {
+      "type": "paragraph",
+      "text": "之后来完成配置加载。"
+    },
+    {
+      "type": "code",
+      "text": "import os\nfrom pathlib import Path\nfrom dotenv import load_dotenv\n# 加载.env配置文件\nenv_path = Path(__file__).parent / 'config.env'\nload_dotenv(env_path)\n# 获取项目根目录\nPROJECT_ROOT = os.getenv('PROJECT_ROOT', str(Path(__file__).parent))\nclass Config:\n    # OpenAI配置\n    OPENAI_API_KEY = os.getenv(\"OPENAI_API_KEY\")\n    \n    # LangChain配置\n    LANGCHAIN_TRACING_V2 = os.getenv(\"LANGCHAIN_TRACING_V2\", \"false\").lower() == \"true\"\n    LANGCHAIN_API_KEY = os.getenv(\"LANGCHAIN_API_KEY\")\n    \n    # 数据库配置\n    DATABASE_URL = os.getenv(\"DATABASE_URL\")\n    MYSQL_HOST = os.getenv(\"MYSQL_HOST\", \"localhost\")\n    MYSQL_PORT = int(os.getenv(\"MYSQL_PORT\", \"3306\"))\n    MYSQL_USER = os.getenv(\"MYSQL_USER\", \"root\")\n    MYSQL_PASSWORD = os.getenv(\"MYSQL_PASSWORD\")\n    MYSQL_DATABASE = os.getenv(\"MYSQL_DATABASE\", \"emotional_chat\")\n    \n    # 向量数据库配置（使用项目根目录的绝对路径）\n    CHROMA_PERSIST_DIRECTORY = os.getenv(\"CHROMA_PERSIST_DIRECTORY\", \n                                        os.path.join(PROJECT_ROOT, \"chroma_db\"))\n    \n    # 模型配置\n    DEFAULT_MODEL = os.getenv(\"DEFAULT_MODEL\", \"gpt-4\")\n    TEMPERATURE = float(os.getenv(\"TEMPERATURE\", \"0.7\"))\n    MAX_TOKENS = int(os.getenv(\"MAX_TOKENS\", \"1000\"))\n    \n    # 服务器配置\n    HOST = os.getenv(\"HOST\", \"0.0.0.0\")\n    PORT = int(os.getenv(\"PORT\", \"8000\"))\n    DEBUG = os.getenv(\"DEBUG\", \"false\").lower() == \"true\""
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "四、启动与测试：见证 AI 的第一次回应"
+    },
+    {
+      "type": "paragraph",
+      "text": "下面我们完成启动和测试工作。"
+    },
+    {
+      "type": "code",
+      "text": "# 获取最新代码\ngit clone https://github.com/congde/emotional_chat.git\n# 完成相关依赖安装部署任务，后启动前后端\nsh +x restart_services.sh"
+    },
+    {
+      "type": "paragraph",
+      "text": "打开浏览器访问后面的地址：[http://localhost:3000/]()"
+    },
+    {
+      "type": "paragraph",
+      "text": "你将看到自动生成的 API 文档界面，如图 9-2 所示。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/58/97/587e4b1a2c3f6d5663736746ae882d97.png?wh=1896x932",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "如果出现了这个界面，那么恭喜你！你已成功构建并运行了第一个大模型应用！"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "五、结语：从“0”到“1”，开启智能应用的创造之旅"
+    },
+    {
+      "type": "paragraph",
+      "text": "当我们成功运行第一个 AI 对话时，我们完成的不仅是技术上的“破冰”，更是一次认知上的跃迁。"
+    },
+    {
+      "type": "paragraph",
+      "text": "你亲手搭建的，不再只是一个空项目模板，而是一个**具备完整 MVP 能力的情感聊天机器人雏形**。它已经能够："
+    },
+    {
+      "type": "list",
+      "items": [
+        "安全地管理配置与密钥",
+        "通过标准化 API 接收用户输入",
+        "调用大模型生成自然语言回复",
+        "返回结构化结果与使用统计"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "更重要的是，你建立了一套**工程化开发范式**："
+    },
+    {
+      "type": "list",
+      "items": [
+        "分层架构 → 提升可维护性",
+        "配置分离 → 保障安全性",
+        "异步设计 → 支持高并发",
+        "日志监控 → 便于调试优化"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "这正是大模型应用开发的“基础设施”。有了它，我们后面才能从容地为 AI 注入记忆（向量数据库），赋予人格（Prompt 工程），建立安全护栏（内容过滤），最终走向自主行动（Agent）。"
+    },
+    {
+      "type": "paragraph",
+      "text": "记住，每一个伟大的 AI 产品，都始于这样一个简单的 main.py 文件。你今天写下的每一行代码，都是在为未来那个能真正理解人类、陪伴人类的“数字生命”添砖加瓦。"
+    },
+    {
+      "type": "paragraph",
+      "text": "现在，我们的地基已经打好。接下来，让我们为“心语”注入记忆与情感，让它从对话机器真正成长为陪伴伙伴。"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "思考题"
+    },
+    {
+      "type": "blockquote",
+      "text": "“一个好的项目结构不仅仅是代码的组织方式，更是对系统演进路径的设计。”在这一讲中，我们为“心语”心理健康陪伴机器人搭建了一个结构清晰、可扩展的项目框架，并强调了工程化思维在大模型应用开发中的重要性。请结合课程内容，回答以下问题。"
+    },
+    {
+      "type": "blockquote",
+      "text": "请从分层架构设计、配置安全管理和技术栈选型三个角度，分析本这一讲所构建的项目模板如何为后续实现“记忆管理”（RAG）、“Agent 行为编排”和“生产环境部署”等高级功能提供支持与扩展性保障。"
+    },
+    {
+      "type": "paragraph",
+      "text": "提示思考方向："
+    },
+    {
+      "type": "list",
+      "items": [
+        "分层架构中，RAG 和 Agent 的独立模块设计带来了哪些解耦优势？",
+        "配置分离与环境变量管理如何提升应用在不同环境（开发 / 测试 / 生产）下的安全性和灵活性？"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "希望通过今天的学习，让你对情感机器人的开发全程有个大致认识。如果有任何疑问，期待你在留言区和我交流。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/74/70/74e7944eae347de091b2727432fae570.png",
+      "alt": ""
+    }
+  ],
+  "images": [
+    {
+      "src": "https://static001.geekbang.org/resource/image/13/c6/139a5daf78bc4d55a4924ddc48ee70c6.jpg?wh=2526x2596",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/c6/d5/c6c91a12e2132ff9a2fe4ab0099817d5.jpg?wh=5889x5444",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/58/97/587e4b1a2c3f6d5663736746ae882d97.png?wh=1896x932",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/74/70/74e7944eae347de091b2727432fae570.png",
+      "alt": ""
+    }
+  ],
+  "totalBlocks": 346,
+  "textLength": 8538,
+  "imageFiles": {
+    "https://static001.geekbang.org/resource/image/13/c6/139a5daf78bc4d55a4924ddc48ee70c6.jpg?wh=2526x2596": "assets/20260518-928235-01-头图.jpg",
+    "https://static001.geekbang.org/resource/image/c6/d5/c6c91a12e2132ff9a2fe4ab0099817d5.jpg?wh=5889x5444": "assets/20260518-928235-02-图片1.jpg",
+    "https://static001.geekbang.org/resource/image/58/97/587e4b1a2c3f6d5663736746ae882d97.png?wh=1896x932": "assets/20260518-928235-03-图片2.png",
+    "https://static001.geekbang.org/resource/image/74/70/74e7944eae347de091b2727432fae570.png": "assets/20260518-928235-04-图片3.png"
+  }
+}

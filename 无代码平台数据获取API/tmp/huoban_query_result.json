@@ -1,0 +1,254 @@
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "items": [
+      {
+        "item_id": "2300019805962895",
+        "title": "五香牛肉干200g/袋",
+        "fields": {
+          "2200000604357516": "CP250405013",
+          "2200000604356148": "CP_000010",
+          "2200000604356149": "五香牛肉干",
+          "2200000604356150": "200g/袋",
+          "2200000604356151": [
+            {
+              "id": "11",
+              "name": "副食"
+            }
+          ],
+          "2200000604356152": [
+            {
+              "id": "7",
+              "name": "袋"
+            }
+          ],
+          "2200000604356153": [
+            {
+              "file_id": "762582405",
+              "name": "千库网_雪域牦牛肉干摄影图_摄影图编号122653.jpg",
+              "link": {
+                "source": "https://hb-v4-attachment-oss.huoban.com/attachment/762582405/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778485736%3B1778658596%26q-key-time%3D1778485736%3B1778658596%26q-header-list%3Dhost%26q-url-param-list%3Dresponse-content-disposition%26q-signature%3D63a012f03b3b27d5b17a52846d3f576aa7142659&response-content-disposition=inline%3B%20filename%3D%22%25E5%258D%2583%25E5%25BA%2593%25E7%25BD%2591_%25E9%259B%25AA%25E5%259F%259F%25E7%2589%25A6%25E7%2589%259B%25E8%2582%2589%25E5%25B9%25B2%25E6%2591%2584%25E5%25BD%25B1%25E5%259B%25BE_%25E6%2591%2584%25E5%25BD%25B1%25E5%259B%25BE%25E7%25BC%2596%25E5%258F%25B7122653.jpg%22%3B%20filename%2A%3Dutf-8%27%27%25E5%258D%2583%25E5%25BA%2593%25E7%25BD%2591_%25E9%259B%25AA%25E5%259F%259F%25E7%2589%25A6%25E7%2589%259B%25E8%2582%2589%25E5%25B9%25B2%25E6%2591%2584%25E5%25BD%25B1%25E5%259B%25BE_%25E6%2591%2584%25E5%25BD%25B1%25E5%259B%25BE%25E7%25BC%2596%25E5%258F%25B7122653.jpg",
+                "square": "https://hb-v4-attachment-oss.huoban.com/attachment/762582405/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778485736%3B1778658596%26q-key-time%3D1778485736%3B1778658596%26q-header-list%3Dhost%26q-url-param-list%3Dimagemogr2%252fthumbnail%252f%2521320x320r%257cimagemogr2%252fcrop%252f320x320%252fgravity%252fcenter%3Bresponse-content-disposition%26q-signature%3D010e885b9a4aa19f1314de6bcad2508421354f80&response-content-disposition=inline%3B%20filename%3D%22%25E5%258D%2583%25E5%25BA%2593%25E7%25BD%2591_%25E9%259B%25AA%25E5%259F%259F%25E7%2589%25A6%25E7%2589%259B%25E8%2582%2589%25E5%25B9%25B2%25E6%2591%2584%25E5%25BD%25B1%25E5%259B%25BE_%25E6%2591%2584%25E5%25BD%25B1%25E5%259B%25BE%25E7%25BC%2596%25E5%258F%25B7122653.jpg%22%3B%20filename%2A%3Dutf-8%27%27%25E5%258D%2583%25E5%25BA%2593%25E7%25BD%2591_%25E9%259B%25AA%25E5%259F%259F%25E7%2589%25A6%25E7%2589%259B%25E8%2582%2589%25E5%25B9%25B2%25E6%2591%2584%25E5%25BD%25B1%25E5%259B%25BE_%25E6%2591%2584%25E5%25BD%25B1%25E5%259B%25BE%25E7%25BC%2596%25E5%258F%25B7122653.jpg&imageMogr2%2Fthumbnail%2F%21320x320r%7CimageMogr2%2Fcrop%2F320x320%2Fgravity%2Fcenter"
+              },
+              "size": 17285711
+            }
+          ],
+          "2200000604356157": [
+            {
+              "item_id": "2300019805958457",
+              "title": "一号仓库"
+            }
+          ],
+          "2200000604357496": null,
+          "2200000604357464": 0,
+          "2200000604357465": 0,
+          "2200000604356154": 10,
+          "2200000604356155": 20,
+          "2200000604355434": 95,
+          "2200000604356009": 0,
+          "2200000604355428": 95,
+          "2200000604355613": null,
+          "2200000604355681": "2026-04-01",
+          "2200000604355996": null,
+          "1192001102000000": [
+            {
+              "id": "1",
+              "name": "启用"
+            }
+          ],
+          "1192001103000000": "CK_001",
+          "1192001104000000": "金隅嘉华大厦",
+          "1192001107000000": [
+            {
+              "user_id": "1706107",
+              "name": "曦扬",
+              "avatar": "https://hb-feature-oss.huoban.com/user_avatar/262522112/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778428740%3B1778605200%26q-key-time%3D1778428740%3B1778605200%26q-header-list%3Dhost%26q-url-param-list%3Dimagemogr2%252fthumbnail%252f128x128%253e%3Bresponse-content-disposition%26q-signature%3Da087820300d3e8a17c453f346fd27bc81167f806&response-content-disposition=inline%3B%20filename%3D%221706107%22%3B%20filename%2A%3Dutf-8%27%271706107&imageMogr2%2Fthumbnail%2F128x128%3E"
+            }
+          ]
+        },
+        "created_by": {
+          "user_id": "12176495",
+          "name": "石昊",
+          "avatar": "https://hb-feature-oss.huoban.com/user_avatar/947446313/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778428740%3B1778605200%26q-key-time%3D1778428740%3B1778605200%26q-header-list%3Dhost%26q-url-param-list%3Dimagemogr2%252fthumbnail%252f128x128%253e%3Bresponse-content-disposition%26q-signature%3D14d6ac23a0cdf27d04de49894a9f621d52a056b8&response-content-disposition=inline%3B%20filename%3D%2212176495%22%3B%20filename%2A%3Dutf-8%27%2712176495&imageMogr2%2Fthumbnail%2F128x128%3E"
+        },
+        "created_on": "2026-05-11 14:52:48",
+        "updated_by": {
+          "user_id": "12176495",
+          "name": "石昊",
+          "avatar": "https://hb-feature-oss.huoban.com/user_avatar/947446313/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778428740%3B1778605200%26q-key-time%3D1778428740%3B1778605200%26q-header-list%3Dhost%26q-url-param-list%3Dimagemogr2%252fthumbnail%252f128x128%253e%3Bresponse-content-disposition%26q-signature%3D14d6ac23a0cdf27d04de49894a9f621d52a056b8&response-content-disposition=inline%3B%20filename%3D%2212176495%22%3B%20filename%2A%3Dutf-8%27%2712176495&imageMogr2%2Fthumbnail%2F128x128%3E"
+        },
+        "updated_on": "2026-05-11 14:52:48"
+      },
+      {
+        "item_id": "2300019805962896",
+        "title": "苏打饼干400g/盒",
+        "fields": {
+          "2200000604357516": "CP250405014",
+          "2200000604356148": "CP_000001",
+          "2200000604356149": "苏打饼干",
+          "2200000604356150": "400g/盒",
+          "2200000604356151": [
+            {
+              "id": "11",
+              "name": "副食"
+            }
+          ],
+          "2200000604356152": [
+            {
+              "id": "2",
+              "name": "盒"
+            }
+          ],
+          "2200000604356153": [
+            {
+              "file_id": "762582322",
+              "name": "千库网_长方形苏打饼干_元素编号12480171.png",
+              "link": {
+                "source": "https://hb-v4-attachment-oss.huoban.com/attachment/762582322/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778485736%3B1778658596%26q-key-time%3D1778485736%3B1778658596%26q-header-list%3Dhost%26q-url-param-list%3Dresponse-content-disposition%26q-signature%3Dacff5b0e1af24ef90f02118547b7d3d053155cf1&response-content-disposition=inline%3B%20filename%3D%22%25E5%258D%2583%25E5%25BA%2593%25E7%25BD%2591_%25E9%2595%25BF%25E6%2596%25B9%25E5%25BD%25A2%25E8%258B%258F%25E6%2589%2593%25E9%25A5%25BC%25E5%25B9%25B2_%25E5%2585%2583%25E7%25B4%25A0%25E7%25BC%2596%25E5%258F%25B712480171.png%22%3B%20filename%2A%3Dutf-8%27%27%25E5%258D%2583%25E5%25BA%2593%25E7%25BD%2591_%25E9%2595%25BF%25E6%2596%25B9%25E5%25BD%25A2%25E8%258B%258F%25E6%2589%2593%25E9%25A5%25BC%25E5%25B9%25B2_%25E5%2585%2583%25E7%25B4%25A0%25E7%25BC%2596%25E5%258F%25B712480171.png",
+                "square": "https://hb-v4-attachment-oss.huoban.com/attachment/762582322/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778485736%3B1778658596%26q-key-time%3D1778485736%3B1778658596%26q-header-list%3Dhost%26q-url-param-list%3Dimagemogr2%252fthumbnail%252f%2521320x320r%257cimagemogr2%252fcrop%252f320x320%252fgravity%252fcenter%3Bresponse-content-disposition%26q-signature%3Dc3ef981878fbe5bec68f306c377bf7d4f73e290f&response-content-disposition=inline%3B%20filename%3D%22%25E5%258D%2583%25E5%25BA%2593%25E7%25BD%2591_%25E9%2595%25BF%25E6%2596%25B9%25E5%25BD%25A2%25E8%258B%258F%25E6%2589%2593%25E9%25A5%25BC%25E5%25B9%25B2_%25E5%2585%2583%25E7%25B4%25A0%25E7%25BC%2596%25E5%258F%25B712480171.png%22%3B%20filename%2A%3Dutf-8%27%27%25E5%258D%2583%25E5%25BA%2593%25E7%25BD%2591_%25E9%2595%25BF%25E6%2596%25B9%25E5%25BD%25A2%25E8%258B%258F%25E6%2589%2593%25E9%25A5%25BC%25E5%25B9%25B2_%25E5%2585%2583%25E7%25B4%25A0%25E7%25BC%2596%25E5%258F%25B712480171.png&imageMogr2%2Fthumbnail%2F%21320x320r%7CimageMogr2%2Fcrop%2F320x320%2Fgravity%2Fcenter"
+              },
+              "size": 4731699
+            }
+          ],
+          "2200000604356157": [
+            {
+              "item_id": "2300019805958457",
+              "title": "一号仓库"
+            }
+          ],
+          "2200000604357496": null,
+          "2200000604357464": 0,
+          "2200000604357465": 0,
+          "2200000604356154": 10,
+          "2200000604356155": 20,
+          "2200000604355434": 131,
+          "2200000604356009": 0,
+          "2200000604355428": 130,
+          "2200000604355613": null,
+          "2200000604355681": "2026-04-01",
+          "2200000604355996": null,
+          "1192001102000000": [
+            {
+              "id": "1",
+              "name": "启用"
+            }
+          ],
+          "1192001103000000": "CK_001",
+          "1192001104000000": "金隅嘉华大厦",
+          "1192001107000000": [
+            {
+              "user_id": "1706107",
+              "name": "曦扬",
+              "avatar": "https://hb-feature-oss.huoban.com/user_avatar/262522112/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778428740%3B1778605200%26q-key-time%3D1778428740%3B1778605200%26q-header-list%3Dhost%26q-url-param-list%3Dimagemogr2%252fthumbnail%252f128x128%253e%3Bresponse-content-disposition%26q-signature%3Da087820300d3e8a17c453f346fd27bc81167f806&response-content-disposition=inline%3B%20filename%3D%221706107%22%3B%20filename%2A%3Dutf-8%27%271706107&imageMogr2%2Fthumbnail%2F128x128%3E"
+            }
+          ]
+        },
+        "created_by": {
+          "user_id": "12176495",
+          "name": "石昊",
+          "avatar": "https://hb-feature-oss.huoban.com/user_avatar/947446313/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778428740%3B1778605200%26q-key-time%3D1778428740%3B1778605200%26q-header-list%3Dhost%26q-url-param-list%3Dimagemogr2%252fthumbnail%252f128x128%253e%3Bresponse-content-disposition%26q-signature%3D14d6ac23a0cdf27d04de49894a9f621d52a056b8&response-content-disposition=inline%3B%20filename%3D%2212176495%22%3B%20filename%2A%3Dutf-8%27%2712176495&imageMogr2%2Fthumbnail%2F128x128%3E"
+        },
+        "created_on": "2026-05-11 14:52:48",
+        "updated_by": {
+          "user_id": "12176495",
+          "name": "石昊",
+          "avatar": "https://hb-feature-oss.huoban.com/user_avatar/947446313/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778428740%3B1778605200%26q-key-time%3D1778428740%3B1778605200%26q-header-list%3Dhost%26q-url-param-list%3Dimagemogr2%252fthumbnail%252f128x128%253e%3Bresponse-content-disposition%26q-signature%3D14d6ac23a0cdf27d04de49894a9f621d52a056b8&response-content-disposition=inline%3B%20filename%3D%2212176495%22%3B%20filename%2A%3Dutf-8%27%2712176495&imageMogr2%2Fthumbnail%2F128x128%3E"
+        },
+        "updated_on": "2026-05-11 14:52:48"
+      },
+      {
+        "item_id": "2300019805962898",
+        "title": "红烧牛肉面桶装/12桶装",
+        "fields": {
+          "2200000604357516": "CP250405016",
+          "2200000604356148": "CP_000003",
+          "2200000604356149": "红烧牛肉面",
+          "2200000604356150": "桶装/12桶装",
+          "2200000604356151": [
+            {
+              "id": "11",
+              "name": "副食"
+            }
+          ],
+          "2200000604356152": [
+            {
+              "id": "1",
+              "name": "箱"
+            }
+          ],
+          "2200000604356153": [
+            {
+              "file_id": "762582156",
+              "name": "千库网_红烧牛肉面面条_元素编号13150792.png",
+              "link": {
+                "source": "https://hb-v4-attachment-oss.huoban.com/attachment/762582156/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778485736%3B1778658596%26q-key-time%3D1778485736%3B1778658596%26q-header-list%3Dhost%26q-url-param-list%3Dresponse-content-disposition%26q-signature%3D1ec834bf31a99a6b0ed060d0bcc10946e0c082f8&response-content-disposition=inline%3B%20filename%3D%22%25E5%258D%2583%25E5%25BA%2593%25E7%25BD%2591_%25E7%25BA%25A2%25E7%2583%25A7%25E7%2589%259B%25E8%2582%2589%25E9%259D%25A2%25E9%259D%25A2%25E6%259D%25A1_%25E5%2585%2583%25E7%25B4%25A0%25E7%25BC%2596%25E5%258F%25B713150792.png%22%3B%20filename%2A%3Dutf-8%27%27%25E5%258D%2583%25E5%25BA%2593%25E7%25BD%2591_%25E7%25BA%25A2%25E7%2583%25A7%25E7%2589%259B%25E8%2582%2589%25E9%259D%25A2%25E9%259D%25A2%25E6%259D%25A1_%25E5%2585%2583%25E7%25B4%25A0%25E7%25BC%2596%25E5%258F%25B713150792.png",
+                "square": "https://hb-v4-attachment-oss.huoban.com/attachment/762582156/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778485736%3B1778658596%26q-key-time%3D1778485736%3B1778658596%26q-header-list%3Dhost%26q-url-param-list%3Dimagemogr2%252fthumbnail%252f%2521320x320r%257cimagemogr2%252fcrop%252f320x320%252fgravity%252fcenter%3Bresponse-content-disposition%26q-signature%3D904ee6e006baddee2f3ac23552bf26288577fd92&response-content-disposition=inline%3B%20filename%3D%22%25E5%258D%2583%25E5%25BA%2593%25E7%25BD%2591_%25E7%25BA%25A2%25E7%2583%25A7%25E7%2589%259B%25E8%2582%2589%25E9%259D%25A2%25E9%259D%25A2%25E6%259D%25A1_%25E5%2585%2583%25E7%25B4%25A0%25E7%25BC%2596%25E5%258F%25B713150792.png%22%3B%20filename%2A%3Dutf-8%27%27%25E5%258D%2583%25E5%25BA%2593%25E7%25BD%2591_%25E7%25BA%25A2%25E7%2583%25A7%25E7%2589%259B%25E8%2582%2589%25E9%259D%25A2%25E9%259D%25A2%25E6%259D%25A1_%25E5%2585%2583%25E7%25B4%25A0%25E7%25BC%2596%25E5%258F%25B713150792.png&imageMogr2%2Fthumbnail%2F%21320x320r%7CimageMogr2%2Fcrop%2F320x320%2Fgravity%2Fcenter"
+              },
+              "size": 11814970
+            },
+            {
+              "file_id": "767863839",
+              "name": "87d217667259ff7ee528ca08e31e1a43.jpeg",
+              "link": {
+                "source": "https://hb-v4-attachment-oss.huoban.com/attachment/767863839/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778485736%3B1778658596%26q-key-time%3D1778485736%3B1778658596%26q-header-list%3Dhost%26q-url-param-list%3Dresponse-content-disposition%26q-signature%3D7a0fe9f2568aeac60d5364c93d04142bfc3e9f59&response-content-disposition=inline%3B%20filename%3D%2287d217667259ff7ee528ca08e31e1a43.jpeg%22%3B%20filename%2A%3Dutf-8%27%2787d217667259ff7ee528ca08e31e1a43.jpeg",
+                "square": "https://hb-v4-attachment-oss.huoban.com/attachment/767863839/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778485736%3B1778658596%26q-key-time%3D1778485736%3B1778658596%26q-header-list%3Dhost%26q-url-param-list%3Dimagemogr2%252fthumbnail%252f%2521320x320r%257cimagemogr2%252fcrop%252f320x320%252fgravity%252fcenter%3Bresponse-content-disposition%26q-signature%3D00be3a671cc8cd79091e41c5a541aa152e74b032&response-content-disposition=inline%3B%20filename%3D%2287d217667259ff7ee528ca08e31e1a43.jpeg%22%3B%20filename%2A%3Dutf-8%27%2787d217667259ff7ee528ca08e31e1a43.jpeg&imageMogr2%2Fthumbnail%2F%21320x320r%7CimageMogr2%2Fcrop%2F320x320%2Fgravity%2Fcenter"
+              },
+              "size": 86452
+            }
+          ],
+          "2200000604356157": [
+            {
+              "item_id": "2300019805958457",
+              "title": "一号仓库"
+            }
+          ],
+          "2200000604357496": "<h3>经典风味，传承美味</h3><p><a href=\"https://hb-v4-attachment-oss.huoban.com/attachment/767862624/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1744002442%3B1744175302%26q-key-time%3D1744002442%3B1744175302%26q-header-list%3Dhost%26q-url-param-list%3Dresponse-content-disposition%26q-signature%3D1b86932ae7d1bdff77ce438cf62718249bba3ea6&amp;response-content-disposition=inline%3B%20filename%3D%22image.png%22%3B%20filename%2A%3Dutf-8%27%27image.png\" target=\"_blank\">[img]767862624,,[/img]</a><br /></p><p>红烧牛肉面，作为中华传统面食的经典之作，承载着浓厚的饮食文化底蕴，是无数人心中家的味道与温暖的记忆。它将牛肉的醇厚、面条的筋道与浓郁的汤汁完美融合，历经岁月沉淀，始终深受大众喜爱。</p><h3>精选食材，品质之选</h3><ul><li>牛肉：精选优质牛腩或牛腱肉，肉质紧实，富含胶原蛋白。经过长时间的炖煮，牛肉变得肉质酥烂，入口即化，每一块都饱含着浓郁的肉香，为您带来扎实的满足感。</li><li>面条：采用高筋小麦粉制作的面条，手工拉面或刀削面的工艺让面条筋道有弹性。能够充分吸附汤汁，每一口都能感受到面条的爽滑与汤汁的浓郁，完美搭配，相得益彰。</li><li>蔬菜：搭配新鲜的青菜、胡萝卜、葱段等蔬菜，不仅为整道面增添了丰富的色彩，还提供了多种维生素和矿物质，营养丰富，健康美味。</li></ul><h3>精心烹制，浓郁鲜香</h3><ul><li>红烧汤汁：以八角、桂皮、香叶、姜蒜等多种香辛料为基底，加入豆瓣酱等调料精心炒制，再与炖煮好的牛肉汤融合，慢火熬制出红亮浓郁、鲜香四溢的红烧汤汁。汤汁浓郁而不腻，醇厚的味道让人回味无穷。</li><li>烹饪工艺：牛肉先经过焯水去腥，再放入卤料中炖煮至熟烂，然后切块进行红烧，让牛肉充分吸收汤汁的味道2。面条则是在沸水中煮熟，捞出放入碗中，浇上滚烫的红烧汤汁和牛肉块，撒上葱花、青菜等配料，一碗热气腾腾、香气扑鼻的红烧牛肉面就呈现在您面前。</li></ul><h3>方便快捷，随时随地享受美味</h3><p>无论是忙碌的工作日午餐，还是深夜的饥饿时刻，只需简单几步，就能快速享受到这道美味的红烧牛肉面。无论是在家中、办公室还是旅行途中，它都能为您带来温暖与满足。</p>",
+          "2200000604357464": 200,
+          "2200000604357465": 0.829875518672,
+          "2200000604356154": 10,
+          "2200000604356155": 50,
+          "2200000604355434": 241,
+          "2200000604356009": 0,
+          "2200000604355428": 220,
+          "2200000604355613": 300,
+          "2200000604355681": "2026-04-01",
+          "2200000604355996": null,
+          "1192001102000000": [
+            {
+              "id": "1",
+              "name": "启用"
+            }
+          ],
+          "1192001103000000": "CK_001",
+          "1192001104000000": "金隅嘉华大厦",
+          "1192001107000000": [
+            {
+              "user_id": "1706107",
+              "name": "曦扬",
+              "avatar": "https://hb-feature-oss.huoban.com/user_avatar/262522112/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778428740%3B1778605200%26q-key-time%3D1778428740%3B1778605200%26q-header-list%3Dhost%26q-url-param-list%3Dimagemogr2%252fthumbnail%252f128x128%253e%3Bresponse-content-disposition%26q-signature%3Da087820300d3e8a17c453f346fd27bc81167f806&response-content-disposition=inline%3B%20filename%3D%221706107%22%3B%20filename%2A%3Dutf-8%27%271706107&imageMogr2%2Fthumbnail%2F128x128%3E"
+            }
+          ]
+        },
+        "created_by": {
+          "user_id": "12176495",
+          "name": "石昊",
+          "avatar": "https://hb-feature-oss.huoban.com/user_avatar/947446313/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778428740%3B1778605200%26q-key-time%3D1778428740%3B1778605200%26q-header-list%3Dhost%26q-url-param-list%3Dimagemogr2%252fthumbnail%252f128x128%253e%3Bresponse-content-disposition%26q-signature%3D14d6ac23a0cdf27d04de49894a9f621d52a056b8&response-content-disposition=inline%3B%20filename%3D%2212176495%22%3B%20filename%2A%3Dutf-8%27%2712176495&imageMogr2%2Fthumbnail%2F128x128%3E"
+        },
+        "created_on": "2026-05-11 14:52:48",
+        "updated_by": {
+          "user_id": "12176495",
+          "name": "石昊",
+          "avatar": "https://hb-feature-oss.huoban.com/user_avatar/947446313/0?sign=q-sign-algorithm%3Dsha1%26q-ak%3DAKIDwpKza4Yu8FVfieRyqt8iP8tsrqnrvvpc%26q-sign-time%3D1778428740%3B1778605200%26q-key-time%3D1778428740%3B1778605200%26q-header-list%3Dhost%26q-url-param-list%3Dimagemogr2%252fthumbnail%252f128x128%253e%3Bresponse-content-disposition%26q-signature%3D14d6ac23a0cdf27d04de49894a9f621d52a056b8&response-content-disposition=inline%3B%20filename%3D%2212176495%22%3B%20filename%2A%3Dutf-8%27%2712176495&imageMogr2%2Fthumbnail%2F128x128%3E"
+        },
+        "updated_on": "2026-05-11 14:52:48"
+      }
+    ],
+    "total": 16,
+    "filtered": 3,
+    "has_more": false
+  },
+  "meta": {
+    "trace_id": "7090260da3d7f05a33af00587bb357e9"
+  }
+}

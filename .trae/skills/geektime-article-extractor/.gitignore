@@ -1,0 +1,25 @@
+# 防止课程抓取输出污染 skill 自身目录
+# 抓取时若错误把 <saveBaseDir> 指向 skill 内部，会创建这些目录
+# 对应 SKILL.md 规则5：输出与代码严格隔离
+
+# 拒绝任何数字开头的课程子目录（如 00-开篇词、01-xxx 等）
+/scripts/[0-9][0-9]-*/
+/scripts/[0-9][0-9]-*/*
+
+# 防御性：拒绝所有不在 scripts 已知文件清单里的非代码内容
+# 真实代码只有这些（如果新增请同步更新）
+# 注意：node_modules 由全局 .gitignore 排除，这里不要再加白名单
+!/scripts/extract-full.js
+!/scripts/validate.js
+!/scripts/validate-lib.js
+!/scripts/batch-validate.js
+!/scripts/diagnose.js
+!/scripts/cdp.cjs
+!/scripts/package.json
+!/scripts/package-lock.json
+
+# 抓取运行时可能产生的临时文件
+/scripts/*.tmp
+/scripts/*.log
+/scripts/_debug_*
+/scripts/_test_*

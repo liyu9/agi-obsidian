@@ -1,0 +1,674 @@
+{
+  "title": "10 |  向量数据库入门：为情感聊天机器人注入长期记忆",
+  "blocks": [
+    {
+      "type": "paragraph",
+      "text": "你好，我是袁从德。"
+    },
+    {
+      "type": "paragraph",
+      "text": "上一讲，我们完成了大模型应用开发的“地基工程”——项目初始化。从环境配置、依赖管理到 API 调用封装，我们搭建了一个结构清晰、可扩展性强的工程框架。现在，这个“空壳”已经具备了与大模型对话的能力，但它仍是一个健忘的对话机器：它无法记住用户昨天说了什么，也不记得上周的情绪波动，更谈不上建立持续的情感连接。"
+    },
+    {
+      "type": "paragraph",
+      "text": "而情感，恰恰是建立在“被记住”之上的体验。当一个人倾诉烦恼时，最打动他的不是一句“我理解你”，而是“我记得你上次说工作压力很大，今天感觉好些了吗？”   这种细腻的共情，源于记忆。"
+    },
+    {
+      "type": "paragraph",
+      "text": "在传统软件中，记忆通常由关系型数据库（如 MySQL）实现，通过结构化字段存储用户信息。但在大模型驱动的智能应用中，我们需要的不是简单的“数据存储”，而是对**语义**的记忆——记住用户说过的话背后的含义、情绪、意图和上下文脉络。这正是向量数据库（Vector Database）的价值所在。"
+    },
+    {
+      "type": "paragraph",
+      "text": "今天我们将深入向量数据库的核心原理与工程实践，手把手带你为“心语”情感聊天机器人注入**长期记忆能力**，让它从“即时响应的 AI”进化为“真正懂你、记得你”的数字伙伴。"
+    },
+    {
+      "type": "paragraph",
+      "text": "我们将围绕以下四个核心问题展开："
+    },
+    {
+      "type": "paragraph",
+      "text": "**为什么大模型应用需要向量数据库？**——理解记忆的语义本质与技术必要性。**向量数据库是如何工作的？**——揭秘嵌入（Embedding）、向量空间与相似性检索。**如何选择合适的向量数据库？**——主流工具对比与选型建议。**如何在项目中集成向量数据库？**——实战构建用户记忆系统，支持个性化对话。"
+    },
+    {
+      "type": "paragraph",
+      "text": "这不仅是一次技术升级，更是一场关于“如何让 AI 拥有情感记忆”的认知重构。准备好了吗？让我们开始为“心语”注入记忆，开启真正的陪伴之旅。"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "**一、为什么大模型需要“记忆”？从短期对话到长期陪伴的跃迁**"
+    },
+    {
+      "type": "paragraph",
+      "text": "在没有记忆的系统中，每一次对话都是从零开始。用户必须重复自己的背景、情绪状态甚至偏好，AI 也无法形成连贯的人格化回应。"
+    },
+    {
+      "type": "paragraph",
+      "text": "这导致两个严重问题。"
+    },
+    {
+      "type": "list",
+      "items": [
+        "**用户体验割裂**：用户感觉在与一个“失忆”的机器人聊天，缺乏信任与亲密感；",
+        "**AI 智能受限**：模型无法基于历史行为进行个性化推荐或情绪趋势分析，智能停留在“即时反应”层面。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "要实现真正的陪伴，我们必须突破这一瓶颈。而大模型本身并不具备持久记忆能力。它的“记忆”仅限于当前对话的上下文窗口（如 GPT-4 的 32k tokens），一旦会话结束，上下文即被清空。"
+    },
+    {
+      "type": "paragraph",
+      "text": "因此，**外部记忆系统**成为大模型应用的刚需。而传统的数据库无法满足语义记忆的需求，原因如表 10-1 所示。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/60/a0/60eyy4bd602f7e2123e5b13dfac2yya0.jpg?wh=4868x1829",
+      "alt": ""
+    },
+    {
+      "type": "blockquote",
+      "text": "例如：用户曾说：“最近工作压力好大，每天都加班。”几天后他说：“项目快上线了，天天熬夜。”如果仅靠关键词匹配，系统很难意识到这两句话在语义上高度相关。但人类一眼就能看出：这是同一个人在持续承受工作压力。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**向量数据库的出现，正是为了解决“语义记忆”问题**。它将文本转化为高维向量（即“嵌入”），通过计算向量之间的距离，实现“意思相近”的自动匹配。这使得 AI 能够记住用户过去的情绪状态、生活事件和表达风格，并在后续对话中自然调用。"
+    },
+    {
+      "type": "paragraph",
+      "text": "表 10-2 是 MySQL 和向量数据库对比，一句话总结，MySQL 擅长找“相同的”，向量库擅长找“相似的”。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/dd/97/dd0fe4yy54d9d4ceb14aeac6de459297.jpg?wh=4773x1902",
+      "alt": ""
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "**二、向量数据库核心技术解析：从文本到向量的旅程**"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "**2.1 什么是向量？什么是嵌入（Embedding）？**"
+    },
+    {
+      "type": "paragraph",
+      "text": "向量是数学中的基本概念：一个有序的数字数组，如 `[0.8, -0.3, 0.1, ..., 0.6]`。在自然语言处理中，每个词、句子甚至段落都可以被映射为一个高维向量，这个过程称为**嵌入（Embedding）**。"
+    },
+    {
+      "type": "paragraph",
+      "text": "嵌入的核心思想是：**语义相近的文本，在向量空间中的距离也相近**。"
+    },
+    {
+      "type": "blockquote",
+      "text": "例如：“开心”和“快乐”的向量距离很近；“压力大”和“焦虑”在向量空间中也彼此靠近；而“开心”与“悲伤”则相距甚远。"
+    },
+    {
+      "type": "paragraph",
+      "text": "这种映射通常由预训练模型完成，如："
+    },
+    {
+      "type": "list",
+      "items": [
+        "**Sentence-BERT (SBERT)**：专为句子级语义相似度设计。",
+        "**OpenAI’s text-embedding-ada-002**：通用性强，适合多场景。",
+        "**BAAI/bge 系列**：中文语义理解优秀，适合中文应用。"
+      ]
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "**2.2 向量数据库的工作流程**"
+    },
+    {
+      "type": "paragraph",
+      "text": "一个典型的向量数据库操作包含三个步骤。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**向量化（Embedding）**：将用户输入的文本（如聊天记录）通过嵌入模型转化为向量。**存储（Store）**：将向量与其原始文本、元数据（如时间戳、用户 ID、情绪标签）一起存入向量数据库。**检索（Retrieve）**：当新对话发生时，系统将当前输入向量化，并在数据库中搜索“最相似”的历史记录，作为上下文注入大模型。"
+    },
+    {
+      "type": "code",
+      "text": "# 示例：使用OpenAI Embedding API生成向量\nimport openai\ndef get_embedding(text):\n    response = openai.Embedding.create(\n        input=text,\n        model=\"text-embedding-ada-002\"\n    )\n    return response['data'][0]['embedding']  # 返回向量数组"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "**2.3 相似性检索算法：如何找到“最像”的记忆？**"
+    },
+    {
+      "type": "paragraph",
+      "text": "向量库里每一条数据长这样。"
+    },
+    {
+      "type": "code",
+      "text": "{\n  \"id\": \"chunk-001\",\n  \"vector\": [0.123, -0.058, 0.876, ...],\n  \"text\": \"天空之所以是蓝色，是因为短波长光被大气分散得更强...\",\n  \"metadata\": { \"source\": \"wiki\", \"timestamp\": \"2024-01-01\" }\n}"
+    },
+    {
+      "type": "paragraph",
+      "text": "每条记录其实是："
+    },
+    {
+      "type": "list",
+      "items": [
+        "一个**文本片段的语义向量**。",
+        "原始文本。",
+        "一些描述来源的元信息。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "所以向量库不是存“词”或“字”，而是存切好的文本片段（chunk）的向量。向量库要解决的核心问题是如何在海量高维向量数据中，快速、高效地找出与给定向量“最相似”的若干个向量。"
+    },
+    {
+      "type": "paragraph",
+      "text": "向量数据库通过计算向量间的**距离**或**相似度**来判断语义相关性，常用方法包括这三种。"
+    },
+    {
+      "type": "list",
+      "items": [
+        "**余弦相似度（Cosine Similarity）**：衡量两个向量方向的夹角，值越接近 1 表示越相似。",
+        "**欧几里得距离（Euclidean Distance）**：衡量向量间的直线距离，越小越相似。",
+        "**内积（Inner Product）**：常用于近似最近邻搜索（ANN）。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "由于向量维度通常高达 768 或 1536 维，直接遍历所有数据效率极低。因此，现代向量数据库采用**近似最近邻（Approximate Nearest Neighbor, ANN）**算法，比如后面这些。"
+    },
+    {
+      "type": "list",
+      "items": [
+        "**HNSW（Hierarchical Navigable Small World）**：速度快，精度高。",
+        "**IVF（Inverted File Index）**：适合大规模数据。",
+        "**LSH（Locality-Sensitive Hashing）**：哈希映射加速检索。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "这些算法在速度与精度之间取得平衡，使得百万级向量的检索可在毫秒级完成。"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "**三、主流向量数据库对比与选型建议**"
+    },
+    {
+      "type": "paragraph",
+      "text": "目前市面上已有多种成熟的向量数据库，以下是开发者常用的几款工具对比，如表 10-3 所示。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/6f/58/6f55ee4c01d8f7ae6465997a2719bc58.jpg?wh=4790x2024",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "**选型建议如下。**"
+    },
+    {
+      "type": "list",
+      "items": [
+        "**初学者 / 快速验证**：推荐 **Chroma** 或 **Pinecone**，API 简单，5 分钟即可上手；",
+        "**生产级项目**：推荐 **Milvus** 或 **Weaviate**，功能全面，支持高可用与集群部署；",
+        "**资源有限或边缘部署**：选择 **Qdrant**，性能与资源占用平衡优秀；",
+        "**已有 Redis 架构**：可直接扩展 Redis 支持向量检索。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "在我们演示项目中，为什么选择 Chroma？"
+    },
+    {
+      "type": "paragraph",
+      "text": "相比 Pinecone 等云端向量数据库，Chroma 具有以下优势。"
+    },
+    {
+      "type": "list",
+      "items": [
+        "**本地部署**：无需依赖外部服务，数据完全在本地控制",
+        "**零配置**：无需注册账号、获取 API Key，开箱即用",
+        "**免费开源**：完全免费，无使用限制",
+        "**轻量高效**：适合中小规模应用和快速开发",
+        "**持久化存储**：支持本地文件系统持久化",
+        "**Python 原生**：深度集成 LangChain 生态"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "接下来我们将使用 **Chroma** 作为向量数据库，为\"心语\"情感聊天机器人构建用户记忆系统。"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "四、实战：为\"心语\"机器人集成向量数据库"
+    },
+    {
+      "type": "paragraph",
+      "text": "我们将为\"心语\"情感聊天机器人构建一个用户记忆系统，实现以下功能："
+    },
+    {
+      "type": "paragraph",
+      "text": "存储用户的历史聊天记录（含时间戳、情绪标签）在新对话中自动检索相关记忆将记忆作为上下文注入大模型，生成更个性化的回应"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "4.1 安装依赖与初始化 Chroma"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "1 安装依赖"
+    },
+    {
+      "type": "paragraph",
+      "text": "首先需要安装依赖。"
+    },
+    {
+      "type": "code",
+      "text": "# 安装核心依赖\npip install chromadb==0.4.18\npip install openai==1.3.7\npip install langchain==0.0.350\npip install langchain-openai"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "2 初始化 Chroma"
+    },
+    {
+      "type": "paragraph",
+      "text": "然后完成初始化工作。"
+    },
+    {
+      "type": "code",
+      "text": "import chromadb\nfrom chromadb.config import Settings\nimport os\nfrom datetime import datetime\n# 配置 Chroma 客户端\nclass ChromaMemoryManager:\n    \"\"\"Chroma 记忆管理器\"\"\"\n    def __init__(self, persist_directory=\"./chroma_db/user_memory\"):\n        \"\"\"\n        初始化 Chroma 客户端\n        Args:\n            persist_directory: 数据持久化目录\n        \"\"\"\n        self.persist_directory = persist_directory\n        # 创建持久化客户端\n        self.client = chromadb.Client(Settings(\n            chroma_db_impl=\"duckdb+parquet\",\n            persist_directory=persist_directory\n        ))\n        # 获取或创建集合（Collection）\n        # 相当于 Pinecone 中的 Index\n        self.collection = self.client.get_or_create_collection(\n            name=\"emotion_chat_memory\",\n            metadata={\"description\": \"心语机器人用户记忆系统\"}\n        )\n        print(f\"✓ Chroma 初始化成功\")\n        print(f\"  存储路径: {persist_directory}\")\n        print(f\"  集合名称: emotion_chat_memory\")"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "4.2 构建记忆存储与检索模块"
+    },
+    {
+      "type": "paragraph",
+      "text": "之后我们来构建记忆存储与检索模块，核心代码我贴在了文稿里，你可以对照代码注释来理解。"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "1 获取文本嵌入（Embedding）"
+    },
+    {
+      "type": "code",
+      "text": "from openai import OpenAI\nclass EmbeddingService:\n    \"\"\"文本嵌入服务\"\"\"\n    def __init__(self):\n        self.client = OpenAI(api_key=os.getenv(\"OPENAI_API_KEY\"))\n        self.model = \"text-embedding-ada-002\"\n    def get_embedding(self, text: str) -> list:\n        \"\"\"\n        获取文本的向量嵌入\n        Args:\n            text: 输入文本\n        Returns:\n            向量列表（维度: 1536）\n        \"\"\"\n        response = self.client.embeddings.create(\n            input=text,\n            model=self.model\n        )\n        return response.data[0].embedding"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "2 记忆存储函数"
+    },
+    {
+      "type": "code",
+      "text": "import time\nimport uuid\nclass ChromaMemoryManager:\n    def __init__(self, persist_directory=\"./chroma_db/user_memory\"):\n        # ... (前面的初始化代码)\n        self.embedding_service = EmbeddingService()\n    def save_memory(self, user_id: str, text: str, metadata: dict = None):\n        \"\"\"\n        保存用户记忆\n        Args:\n            user_id: 用户ID\n            text: 记忆内容\n            metadata: 元数据（情绪、时间戳等）\n        \"\"\"\n        # 生成向量\n        vector = self.embedding_service.get_embedding(text)\n        # 构建元数据\n        if metadata is None:\n            metadata = {}\n        metadata.update({\n            \"user_id\": user_id,\n            \"text\": text,\n            \"timestamp\": time.time(),\n            \"datetime\": datetime.now().isoformat()\n        })\n        # 生成唯一ID\n        memory_id = f\"{user_id}_{uuid.uuid4().hex[:8]}\"\n        # 存储到 Chroma\n        self.collection.add(\n            ids=[memory_id],\n            embeddings=[vector],\n            metadatas=[metadata],\n            documents=[text]  # Chroma 支持同时存储原始文本\n        )\n        print(f\"✓ 记忆已保存: {memory_id}\")\n        return memory_id"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "3 记忆检索函数"
+    },
+    {
+      "type": "code",
+      "text": "def retrieve_memories(self, user_id: str, query: str, top_k: int = 3):\n    \"\"\"\n    检索相关记忆\n    Args:\n        user_id: 用户ID\n        query: 查询文本\n        top_k: 返回结果数量\n    Returns:\n        相关记忆列表\n    \"\"\"\n    # 生成查询向量\n    query_vector = self.embedding_service.get_embedding(query)\n    # 在 Chroma 中检索\n    # Chroma 支持 where 过滤器，类似 Pinecone 的 filter\n    results = self.collection.query(\n        query_embeddings=[query_vector],\n        n_results=top_k,\n        where={\"user_id\": user_id}  # 过滤特定用户的记忆\n    )\n    # 提取记忆内容\n    memories = []\n    if results['documents']:\n        for i, doc in enumerate(results['documents'][0]):\n            memory = {\n                'id': results['ids'][0][i],\n                'text': doc,\n                'metadata': results['metadatas'][0][i],\n                'distance': results['distances'][0][i] if 'distances' in results else None\n            }\n            memories.append(memory)\n    print(f\"✓ 检索到 {len(memories)} 条相关记忆\")\n    return memories"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "4.3 在对话流程中集成记忆"
+    },
+    {
+      "type": "paragraph",
+      "text": "接下来要在对话流程里集成记忆。"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "1 完整的聊天函数"
+    },
+    {
+      "type": "code",
+      "text": "from openai import OpenAI\ndef chat_with_memory(user_id: str, user_input: str, memory_manager: ChromaMemoryManager):\n    \"\"\"\n    带记忆的聊天函数\n    Args:\n        user_id: 用户ID\n        user_input: 用户输入\n        memory_manager: 记忆管理器\n    \"\"\"\n    # 1. 检索相关记忆\n    print(\"\\n🔍 检索用户记忆...\")\n    relevant_memories = memory_manager.retrieve_memories(\n        user_id=user_id,\n        query=user_input,\n        top_k=3\n    )\n    # 2. 构建记忆上下文\n    context = \"\"\n    if relevant_memories:\n        context = \"以下是用户过去提到的相关内容：\\n\"\n        for i, mem in enumerate(relevant_memories, 1):\n            emotion = mem['metadata'].get('emotion', '未知')\n            datetime_str = mem['metadata'].get('datetime', '未知时间')\n            context += f\"{i}. [{datetime_str}] [{emotion}] {mem['text']}\\n\"\n    # 3. 构建 prompt\n    prompt = f\"\"\"你是一位温暖的心理陪伴者\"心语\"。请结合用户当前输入和历史记忆进行回应。\n历史记忆：\n{context if context else \"（这是用户第一次对话，暂无历史记忆）\"}\n当前输入：\n{user_input}\n请以共情、支持的语气回应，避免机械重复。如果历史记忆中有相关内容，请自然地关联起来，展现你对用户情况的了解和关心。\n\"\"\"\n    # 4. 调用大模型\n    print(\"\\n🤖 生成回复...\")\n    client = OpenAI(api_key=os.getenv(\"OPENAI_API_KEY\"))\n    response = client.chat.completions.create(\n        model=\"gpt-4\",\n        messages=[{\"role\": \"user\", \"content\": prompt}],\n        temperature=0.7\n    )\n    answer = response.choices[0].message.content\n    # 5. 保存当前对话到记忆\n    print(\"\\n💾 保存对话记忆...\")\n    # 保存用户输入（可选：先进行情感分析）\n    emotion = predict_emotion(user_input)  # 需要实现情感分析\n    memory_manager.save_memory(\n        user_id=user_id,\n        text=user_input,\n        metadata={\n            \"role\": \"user\",\n            \"emotion\": emotion,\n            \"type\": \"user_message\"\n        }\n    )\n    # 保存AI回复\n    memory_manager.save_memory(\n        user_id=user_id,\n        text=answer,\n        metadata={\n            \"role\": \"assistant\",\n            \"type\": \"ai_response\"\n        }\n    )\n    return answer, relevant_memories\ndef predict_emotion(text: str) -> str:\n    \"\"\"\n    简单的情感预测（实际项目中应使用更复杂的模型）\n    \"\"\"\n    # 这里可以集成情感分析模型\n    # 为演示，使用简单的关键词匹配\n    keywords = {\n        \"焦虑\": [\"焦虑\", \"担心\", \"紧张\", \"害怕\"],\n        \"压力大\": [\"压力\", \"累\", \"疲惫\", \"撑不住\"],\n        \"悲伤\": [\"难过\", \"伤心\", \"悲伤\", \"痛苦\"],\n        \"愤怒\": [\"生气\", \"愤怒\", \"气愤\", \"恼火\"],\n        \"快乐\": [\"开心\", \"高兴\", \"快乐\", \"愉快\"]\n    }\n    for emotion, kws in keywords.items():\n        if any(kw in text for kw in kws):\n            return emotion\n    return \"平静\""
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "2 使用 LangChain 简化集成（推荐）"
+    },
+    {
+      "type": "code",
+      "text": "from langchain.vectorstores import Chroma\nfrom langchain.embeddings import OpenAIEmbeddings\nfrom langchain.chat_models import ChatOpenAI\nfrom langchain.prompts import PromptTemplate\nfrom langchain.chains import LLMChain\nclass LangChainMemoryManager:\n    \"\"\"使用 LangChain 的记忆管理器\"\"\"\n    def __init__(self, persist_directory=\"./chroma_db/user_memory\"):\n        self.embeddings = OpenAIEmbeddings(model=\"text-embedding-ada-002\")\n        # 创建或加载 Chroma 向量存储\n        self.vectorstore = Chroma(\n            collection_name=\"emotion_chat_memory\",\n            embedding_function=self.embeddings,\n            persist_directory=persist_directory\n        )\n        # 初始化 LLM\n        self.llm = ChatOpenAI(model=\"gpt-4\", temperature=0.7)\n    def save_memory(self, user_id: str, text: str, metadata: dict = None):\n        \"\"\"保存记忆\"\"\"\n        if metadata is None:\n            metadata = {}\n        metadata.update({\n            \"user_id\": user_id,\n            \"timestamp\": time.time(),\n            \"datetime\": datetime.now().isoformat()\n        })\n        # 使用 LangChain 的方式添加文档\n        self.vectorstore.add_texts(\n            texts=[text],\n            metadatas=[metadata]\n        )\n        # 持久化\n        self.vectorstore.persist()\n    def retrieve_memories(self, user_id: str, query: str, k: int = 3):\n        \"\"\"检索记忆\"\"\"\n        # 使用 LangChain 的相似度搜索\n        # 注意：LangChain 的 Chroma 集成不直接支持元数据过滤\n        # 需要手动过滤或使用底层 Chroma 客户端\n        docs = self.vectorstore.similarity_search(\n            query=query,\n            k=k * 3  # 多检索一些，然后手动过滤\n        )\n        # 过滤属于该用户的记忆\n        user_docs = [\n            doc for doc in docs \n            if doc.metadata.get('user_id') == user_id\n        ][:k]\n        return user_docs\n    def chat(self, user_id: str, user_input: str):\n        \"\"\"带记忆的聊天\"\"\"\n        # 检索记忆\n        memories = self.retrieve_memories(user_id, user_input)\n        # 构建记忆上下文\n        memory_context = \"\\n\".join([\n            f\"- [{m.metadata.get('datetime', '未知')}] {m.page_content}\"\n            for m in memories\n        ])\n        # 创建 prompt 模板\n        prompt = PromptTemplate(\n            template=\"\"\"你是一位温暖的心理陪伴者\"心语\"。请结合用户的历史记忆进行回应。\n历史记忆：\n{memory_context}\n当前输入：\n{user_input}\n请以共情、支持的语气回应。\n\"\"\",\n            input_variables=[\"memory_context\", \"user_input\"]\n        )\n        # 创建链\n        chain = LLMChain(llm=self.llm, prompt=prompt)\n        # 生成回复\n        response = chain.run(\n            memory_context=memory_context if memory_context else \"（暂无历史记忆）\",\n            user_input=user_input\n        )\n        # 保存记忆\n        self.save_memory(user_id, user_input, {\"role\": \"user\"})\n        self.save_memory(user_id, response, {\"role\": \"assistant\"})\n        return response"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "4.4 测试记忆效果"
+    },
+    {
+      "type": "paragraph",
+      "text": "搞定前面的步骤，我们还需要测试记忆效果。"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "1 创建测试脚本"
+    },
+    {
+      "type": "code",
+      "text": "# test_memory_system.py\nimport os\nfrom dotenv import load_dotenv\n# 加载环境变量\nload_dotenv()\ndef test_memory_system():\n    \"\"\"测试记忆系统\"\"\"\n    print(\"=\" * 70)\n    print(\" 心语机器人 - Chroma 记忆系统测试\")\n    print(\"=\" * 70)\n    # 初始化记忆管理器\n    memory_manager = ChromaMemoryManager(persist_directory=\"./chroma_db/test_memory\")\n    user_id = \"test_user_001\"\n    # 第一轮对话\n    print(\"\\n【第1轮对话】\")\n    print(\"-\" * 70)\n    user_input_1 = \"最近工作压力好大，每天都加班到很晚。\"\n    print(f\"用户: {user_input_1}\")\n    response_1, memories_1 = chat_with_memory(user_id, user_input_1, memory_manager)\n    print(f\"\\n心语: {response_1}\")\n    # 第二轮对话\n    print(\"\\n\\n【第2轮对话】\")\n    print(\"-\" * 70)\n    user_input_2 = \"我觉得自己快撑不住了，感觉身体也吃不消了。\"\n    print(f\"用户: {user_input_2}\")\n    response_2, memories_2 = chat_with_memory(user_id, user_input_2, memory_manager)\n    print(f\"\\n心语: {response_2}\")\n    # 第三轮对话（测试记忆检索）\n    print(\"\\n\\n【第3轮对话 - 测试记忆检索】\")\n    print(\"-\" * 70)\n    user_input_3 = \"项目快上线了，这周又要天天熬夜了。\"\n    print(f\"用户: {user_input_3}\")\n    response_3, memories_3 = chat_with_memory(user_id, user_input_3, memory_manager)\n    print(f\"\\n心语: {response_3}\")\n    # 显示检索到的记忆\n    print(\"\\n\\n【检索到的历史记忆】\")\n    print(\"-\" * 70)\n    for i, mem in enumerate(memories_3, 1):\n        print(f\"{i}. {mem['text']}\")\n        print(f\"   时间: {mem['metadata']['datetime']}\")\n        print(f\"   情绪: {mem['metadata'].get('emotion', '未知')}\")\n        print()\n    print(\"=\" * 70)\n    print(\"测试完成！\")\n    print(\"=\" * 70)\nif __name__ == \"__main__\":\n    test_memory_system()"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "2 测试输出示例"
+    },
+    {
+      "type": "code",
+      "text": "======================================================================\n 心语机器人 - Chroma 记忆系统测试\n======================================================================\n【第1轮对话】\n----------------------------------------------------------------------\n用户: 最近工作压力好大，每天都加班到很晚。\n🔍 检索用户记忆...\n✓ 检索到 0 条相关记忆\n🤖 生成回复...\n💾 保存对话记忆...\n✓ 记忆已保存: test_user_001_a1b2c3d4\n✓ 记忆已保存: test_user_001_e5f6g7h8\n心语: 听到你现在的压力状况，我很心疼。长时间的加班确实会让人身心俱疲。\n你能和我聊聊，这本身就是一种勇敢和自我关照。工作很重要，但你的健康\n和感受同样重要。在这段高强度的时期，试着给自己一些小小的喘息空间，\n哪怕只是喝杯水、深呼吸几次，都能帮助缓解一些紧绷的情绪。\n【第2轮对话】\n----------------------------------------------------------------------\n用户: 我觉得自己快撑不住了，感觉身体也吃不消了。\n🔍 检索用户记忆...\n✓ 检索到 1 条相关记忆\n🤖 生成回复...\n💾 保存对话记忆...\n✓ 记忆已保存: test_user_001_i9j0k1l2\n✓ 记忆已保存: test_user_001_m3n4o5p6\n心语: 我记得你之前提到工作压力很大、经常加班，现在又到了快撑不住的地步，\n这让我很担心你。当身体开始发出信号时，说明已经超负荷运转了。这不是\n你不够坚强，而是人的承受能力本来就有限度。\n身体和心理是相互影响的，长期的压力会消耗你的能量，导致疲惫、免疫力\n下降，甚至可能引发更严重的健康问题。\n我想问问你：\n1. 现在身体具体有哪些不舒服的感觉？\n2. 你能在工作之外给自己留一些休息时间吗？\n3. 有没有可以求助的同事或领导，分担一些工作？\n无论如何，请记住：你的健康永远比工作重要。我会一直在这里陪着你。\n【第3轮对话 - 测试记忆检索】\n----------------------------------------------------------------------\n用户: 项目快上线了，这周又要天天熬夜了。\n🔍 检索用户记忆...\n✓ 检索到 3 条相关记忆\n🤖 生成回复...\n💾 保存对话记忆...\n✓ 记忆已保存: test_user_001_q7r8s9t0\n✓ 记忆已保存: test_user_001_u1v2w3x4\n心语: 听到你又要面对连续熬夜，我真的很担心。我还记得你之前说过工作压力\n很大，每天加班到很晚，最近更是感到快撑不住了、身体也吃不消。现在\n项目上线在即，又要天天熬夜，这对本来就已经透支的身体来说，真的是\n雪上加霜。\n我完全理解项目上线的重要性和紧迫感，但我想提醒你：\n1. 你已经处于疲惫的状态，持续熬夜可能会让效率更低\n2. 身体垮了，什么项目都完成不了\n请一定在熬夜期间注意：\n• 每工作1小时起来活动5分钟\n• 保证基本的饮食营养，不要只靠咖啡撑着\n• 深夜工作时，每隔一段时间做做眼保健操\n• 如果可能，白天抽时间补觉\n项目会上线，但你的健康更重要。我会一直陪着你度过这段艰难的时期。\n【检索到的历史记忆】\n----------------------------------------------------------------------\n1. 最近工作压力好大，每天都加班到很晚。\n   时间: 2025-10-16T15:30:25.123456\n   情绪: 压力大\n2. 我觉得自己快撑不住了，感觉身体也吃不消了。\n   时间: 2025-10-16T15:31:10.234567\n   情绪: 压力大\n3. 听到你现在的压力状况，我很心疼...\n   时间: 2025-10-16T15:30:28.345678\n   情绪: 未知\n======================================================================\n测试完成！\n======================================================================"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "3 效果分析"
+    },
+    {
+      "type": "paragraph",
+      "text": "我们从三个维度来进行效果评估。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**记忆检索准确性**"
+    },
+    {
+      "type": "list",
+      "items": [
+        "成功检索到用户之前提到的\"工作压力大\"、“加班”、\"撑不住\"等相关记忆。",
+        "Chroma 的语义搜索能够理解\"熬夜\"与\"加班\"、\"项目上线\"的关联性。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "**上下文连贯性**"
+    },
+    {
+      "type": "list",
+      "items": [
+        "AI 能够自然地关联历史记忆，如“我记得你之前提到过……”",
+        "回复体现了对用户情况的持续了解和关心。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "**共情增强**"
+    },
+    {
+      "type": "list",
+      "items": [
+        "基于历史记忆，AI 能表达更深层的担心，比如它的回复里提到“又要面对连续熬夜”。",
+        "回复不再是通用的安慰，而是针对用户具体情况的个性化建议。"
+      ]
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "4.5 记忆管理功能"
+    },
+    {
+      "type": "paragraph",
+      "text": "下面我们来看记忆管理功能如何实现。"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "1 查看用户所有记忆"
+    },
+    {
+      "type": "code",
+      "text": "def get_user_all_memories(self, user_id: str):\n    \"\"\"获取用户的所有记忆\"\"\"\n    # Chroma 的 get() 方法可以通过 where 过滤\n    results = self.collection.get(\n        where={\"user_id\": user_id}\n    )\n    memories = []\n    for i, doc in enumerate(results['documents']):\n        memory = {\n            'id': results['ids'][i],\n            'text': doc,\n            'metadata': results['metadatas'][i]\n        }\n        memories.append(memory)\n    return memories"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "2 删除特定记忆"
+    },
+    {
+      "type": "code",
+      "text": "def delete_memory(self, memory_id: str):\n    \"\"\"删除指定记忆\"\"\"\n    self.collection.delete(ids=[memory_id])\n    print(f\"✓ 记忆已删除: {memory_id}\")"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "3 清空用户记忆"
+    },
+    {
+      "type": "code",
+      "text": "def clear_user_memories(self, user_id: str):\n    \"\"\"清空用户的所有记忆\"\"\"\n    # 先获取该用户的所有记忆ID\n    results = self.collection.get(\n        where={\"user_id\": user_id}\n    )\n    if results['ids']:\n        self.collection.delete(ids=results['ids'])\n        print(f\"✓ 已清空用户 {user_id} 的 {len(results['ids'])} 条记忆\")\n    else:\n        print(f\"用户 {user_id} 没有记忆\")"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "4 记忆统计"
+    },
+    {
+      "type": "code",
+      "text": "def get_memory_stats(self):\n    \"\"\"获取记忆统计信息\"\"\"\n    # 获取所有记忆\n    all_data = self.collection.get()\n    total_count = len(all_data['ids'])\n    # 按用户统计\n    user_counts = {}\n    for metadata in all_data['metadatas']:\n        user_id = metadata.get('user_id', 'unknown')\n        user_counts[user_id] = user_counts.get(user_id, 0) + 1\n    return {\n        \"total_memories\": total_count,\n        \"user_count\": len(user_counts),\n        \"memories_by_user\": user_counts\n    }"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "4.6 最佳实践建议"
+    },
+    {
+      "type": "paragraph",
+      "text": "这里我为你分享几个最佳实践建议。"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "1. 记忆存储策略"
+    },
+    {
+      "type": "paragraph",
+      "text": "存储记忆也是有成本的，因此需要设计合理的存储策略。可以有选择地保存重要内容。"
+    },
+    {
+      "type": "code",
+      "text": "# ✓ 好的做法：有选择地存储重要对话\ndef should_save_memory(message: str, emotion: str) -> bool:\n    \"\"\"判断是否应该保存为长期记忆\"\"\"\n    # 重要情绪\n    important_emotions = [\"焦虑\", \"抑郁\", \"压力大\", \"痛苦\"]\n    # 重要话题\n    important_keywords = [\"工作\", \"家庭\", \"健康\", \"梦想\", \"目标\"]\n    return (\n        emotion in important_emotions or\n        any(keyword in message for keyword in important_keywords)\n    )\n# ✗ 避免：保存所有对话（会导致存储膨胀和检索噪音）"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "2. 记忆时效性"
+    },
+    {
+      "type": "paragraph",
+      "text": "后面是记忆实效性的设计例子，供你参考。"
+    },
+    {
+      "type": "code",
+      "text": "def retrieve_memories_with_time_decay(self, user_id: str, query: str, k: int = 3):\n    \"\"\"检索记忆时考虑时间衰减\"\"\"\n    # 检索更多结果\n    results = self.collection.query(\n        query_embeddings=[self.get_embedding(query)],\n        n_results=k * 2,\n        where={\"user_id\": user_id}\n    )\n    # 计算时间加权分数\n    import time\n    current_time = time.time()\n    scored_memories = []\n    for i, doc in enumerate(results['documents'][0]):\n        distance = results['distances'][0][i]\n        timestamp = results['metadatas'][0][i].get('timestamp', current_time)\n        # 时间衰减：30天内权重为1，之后每天衰减1%\n        days_old = (current_time - timestamp) / 86400\n        time_weight = max(0.5, 1 - (max(0, days_old - 30) * 0.01))\n        # 综合分数（距离越小越好，权重越大越好）\n        score = (1 - distance) * time_weight\n        scored_memories.append({\n            'doc': doc,\n            'metadata': results['metadatas'][0][i],\n            'score': score\n        })\n    # 按分数排序，返回top-k\n    scored_memories.sort(key=lambda x: x['score'], reverse=True)\n    return scored_memories[:k]"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "3. 数据持久化"
+    },
+    {
+      "type": "paragraph",
+      "text": "另外还要考虑持久化的处理。"
+    },
+    {
+      "type": "code",
+      "text": "# Chroma 需要手动持久化（与 Pinecone 自动持久化不同）\n# ✓ 在适当时机持久化\nself.vectorstore.persist()  # 使用 LangChain 时\n# 或\nself.client.persist()  # 使用原生 Chroma 时\n# 建议持久化时机：\n# 1. 添加/删除记忆后\n# 2. 应用关闭前\n# 3. 定期批量持久化（如每10条记忆）"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "4. 错误处理"
+    },
+    {
+      "type": "paragraph",
+      "text": "最后别忘了错误处理。"
+    },
+    {
+      "type": "code",
+      "text": "def safe_save_memory(self, user_id: str, text: str, metadata: dict = None):\n    \"\"\"安全保存记忆（带错误处理）\"\"\"\n    try:\n        return self.save_memory(user_id, text, metadata)\n    except Exception as e:\n        print(f\"✗ 保存记忆失败: {e}\")\n        # 记录日志或回退策略\n        return None"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "**五、进阶技巧：提升记忆系统的智能性**"
+    },
+    {
+      "type": "heading",
+      "level": "H4",
+      "text": "**1. 记忆摘要（Memory Summarization）**"
+    },
+    {
+      "type": "paragraph",
+      "text": "为避免每次检索过多原始记录，可定期生成**记忆摘要**，比如每周生成“用户情绪趋势报告”；对长期行为进行归纳，比如“用户近期常表达工作焦虑，偏好倾听式回应”。"
+    },
+    {
+      "type": "heading",
+      "level": "H4",
+      "text": "**2. 分层记忆结构**"
+    },
+    {
+      "type": "list",
+      "items": [
+        "**短期记忆**：最近 3 轮对话，直接传入上下文。",
+        "**长期记忆**：通过向量数据库检索。",
+        "**核心记忆**：用户自定义的“重要事件”，如“生日”“分手纪念日”，固定存储。"
+      ]
+    },
+    {
+      "type": "heading",
+      "level": "H4",
+      "text": "**3. 记忆衰减机制**"
+    },
+    {
+      "type": "paragraph",
+      "text": "引入时间衰减因子，让旧记忆的检索权重随时间降低，避免 AI 反复提及陈年往事。"
+    },
+    {
+      "type": "code",
+      "text": "# 在检索时加入时间权重\ndef retrieve_with_decay(user_id, query, hours_decay=72):\n    now = time.time()\n    results = index.query(...)\n    weighted_matches = []\n    for match in results['matches']:\n        timestamp = match['metadata']['timestamp']\n        age_hours = (now - timestamp) / 3600\n        weight = max(0, 1 - age_hours / hours_decay)  # 超过72小时权重为0\n        weighted_matches.append((match, weight))\n    return sorted(weighted_matches, key=lambda x: x[1], reverse=True)"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "**六、安全与伦理考量：谁该记住什么？**"
+    },
+    {
+      "type": "paragraph",
+      "text": "记忆能力越强，责任越大。我们必须谨慎处理以下问题。"
+    },
+    {
+      "type": "list",
+      "items": [
+        "**隐私保护**：用户聊天记录属于敏感数据，必须加密存储，明确告知数据用途；",
+        "**记忆遗忘**：提供“清除记忆”功能，尊重用户的数据主权；",
+        "**偏见放大**：避免 AI 基于负面记忆形成“刻板印象”，如认为某用户“总是悲观”；",
+        "**过度依赖**：防止用户将 AI 误认为“真人朋友”，需明确其辅助角色。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "建议在产品中加入“记忆管理”界面，让用户自主控制哪些内容被记住或遗忘。"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "**结语：从“记住对话”到“理解人心”**"
+    },
+    {
+      "type": "paragraph",
+      "text": "当我们为“心语”注入向量数据库，我们所做的，不只是添加一个技术模块，而是在构建一种**数字共情能力**。"
+    },
+    {
+      "type": "paragraph",
+      "text": "记忆，是情感连接的基石。它让 AI 从“即时响应的工具”，进化为“持续陪伴的伙伴”。你今天学会的，不仅是如何存储和检索向量，更是如何设计一种可持续的情感交互范式。"
+    },
+    {
+      "type": "paragraph",
+      "text": "从对话历史到用户画像，从语义检索到记忆衰减，每一种技术都在回答同一个问题：   **我们如何让机器真正“记得”一个人？**  而答案，不仅藏在代码里，更藏在对人类情感的深刻理解中。“心语”的每一次回应，都建立在对过去的记忆之上。而这，正是我们迈向真正智能生命的第一步。"
+    },
+    {
+      "type": "paragraph",
+      "text": "但记忆本身并非终点。下一将，我们将探讨如何让 AI 不仅“记得你说过什么”，还能“查证你说的是什么”——通过 **RAG（检索增强生成）**技术，让大模型的每一句话都“言之有据”，从根本上解决知识幻觉问题。当记忆遇见知识，AI 的“理解”才真正完整。"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "思考题"
+    },
+    {
+      "type": "paragraph",
+      "text": "这一讲我们为“心语”情感聊天机器人引入了基于向量数据库的长期记忆系统，让它能够通过语义相似性检索回忆用户过往的情绪表达和生活状态，从而生成更有共情力的个性化回应。"
+    },
+    {
+      "type": "paragraph",
+      "text": "然而，随着记忆数据的积累，系统可能面临以下挑战。"
+    },
+    {
+      "type": "list",
+      "items": [
+        "信息过载：用户大量日常对话被存储，导致检索结果包含大量低价值、重复或无关的记忆片段，影响上下文质量和响应效率；",
+        "情感偏见固化：若用户曾在一段时间内持续表达负面情绪（如焦虑、抑郁），AI 可能因频繁检索到这些记忆而形成“该用户总是悲观”的隐性判断，进而在后续互动中过度强调负面关怀，反而加重用户心理负担；",
+        "时效性错位：旧记忆未被合理衰减，AI 在用户已走出困境后仍反复提及“你之前很累”，造成情感上的不合时宜。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "请结合今天所学的向量数据库技术与记忆管理机制，设计一套智能记忆筛选与加权策略，以解决上述问题。你的方案需回答以下三个核心问题。"
+    },
+    {
+      "type": "paragraph",
+      "text": "存储层面：如何判断一条对话是否值得作为“长期记忆”存入向量数据库？请提出一个可落地的记忆筛选规则（可结合内容、情绪、话题重要性等维度）。检索层面：在进行相似性检索时，如何综合考虑语义相关性、时间衰减和情感多样性，避免 AI 陷入“只记得痛苦”的共情陷阱？请描述你的加权评分模型。"
+    },
+    {
+      "type": "paragraph",
+      "text": "希望通过今天的学习，让你对情感机器人的开发全程有个大致认识。如果有任何疑问，期待你在留言区和我交流。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/f2/c1/f2e2249833a5ca04e57c8c65b58807c1.jpg",
+      "alt": ""
+    }
+  ],
+  "images": [
+    {
+      "src": "https://static001.geekbang.org/resource/image/60/a0/60eyy4bd602f7e2123e5b13dfac2yya0.jpg?wh=4868x1829",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/dd/97/dd0fe4yy54d9d4ceb14aeac6de459297.jpg?wh=4773x1902",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/6f/58/6f55ee4c01d8f7ae6465997a2719bc58.jpg?wh=4790x2024",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/f2/c1/f2e2249833a5ca04e57c8c65b58807c1.jpg",
+      "alt": ""
+    }
+  ],
+  "totalBlocks": 845,
+  "textLength": 21576,
+  "imageFiles": {
+    "https://static001.geekbang.org/resource/image/60/a0/60eyy4bd602f7e2123e5b13dfac2yya0.jpg?wh=4868x1829": "assets/20260518-928987-01-头图.jpg",
+    "https://static001.geekbang.org/resource/image/dd/97/dd0fe4yy54d9d4ceb14aeac6de459297.jpg?wh=4773x1902": "assets/20260518-928987-02-图片1.jpg",
+    "https://static001.geekbang.org/resource/image/6f/58/6f55ee4c01d8f7ae6465997a2719bc58.jpg?wh=4790x2024": "assets/20260518-928987-03-图片2.jpg",
+    "https://static001.geekbang.org/resource/image/f2/c1/f2e2249833a5ca04e57c8c65b58807c1.jpg": "assets/20260518-928987-04-图片3.jpg"
+  }
+}

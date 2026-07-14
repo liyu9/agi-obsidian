@@ -1,0 +1,75 @@
+{
+  "appId": "2fk8TTugKswQmPAiUijlW/UVp9a88QvhsrE5LYltzHpNqYp6JXopDF1Cz/VSZXym",
+  "appSecret": "0spOV2zo+LMkWT2r+iA9YfBLhFI/zsEOFWvoDZ/TLU5gmeqESXBeCq0xBQ/ZkOW5JdpCW9GTXcevv73V",
+  "folderToken": "k4d5LUEA7Lv5RBCHqCXjksnw+b0Xys5vEWr1DeA6yBz0o3RtWeBuTIjfPimcNZxVzMkFfAMoUA==",
+  "userId": "ViHflrxux4nUDBZtvpTO/6HDEdXqriTXVfwX0Hlpojd+fSSM",
+  "uploadHistory": [
+    {
+      "title": "无代码提供 API 方案（现实）撰写中",
+      "url": "https://ycne1aa4q4gi.feishu.cn/docx/GXU0dlVUZoi7XZxD59Pc4EFGnNb",
+      "uploadTime": "2026-03-19 21:00",
+      "docToken": "GXU0dlVUZoi7XZxD59Pc4EFGnNb",
+      "permissions": {
+        "isPublic": true,
+        "allowCopy": false,
+        "allowCreateCopy": false
+      }
+    },
+    {
+      "title": "飞书多维表格API",
+      "url": "https://ycne1aa4q4gi.feishu.cn/docx/NKdUdrQzOor549x6VX8c8F2Qnvh",
+      "uploadTime": "2026-03-18 17:17",
+      "docToken": "NKdUdrQzOor549x6VX8c8F2Qnvh",
+      "permissions": {
+        "isPublic": true,
+        "allowCopy": false,
+        "allowCreateCopy": false
+      }
+    },
+    {
+      "title": "AI产品经理视角：6 款 AI 产品的核心定位与关系全景",
+      "url": "https://ycne1aa4q4gi.feishu.cn/docx/LgkQd1EzOo6BXDxKJ73cI0H3nUg",
+      "uploadTime": "2026-03-18 16:40",
+      "docToken": "LgkQd1EzOo6BXDxKJ73cI0H3nUg"
+    },
+    {
+      "title": "飞书多维表格API",
+      "url": "https://ycne1aa4q4gi.feishu.cn/docx/Zifwdbu7IoaG4expnQvcRAmJnNh",
+      "uploadTime": "2026-03-18 16:39",
+      "docToken": "Zifwdbu7IoaG4expnQvcRAmJnNh",
+      "permissions": {
+        "isPublic": false,
+        "allowCopy": false,
+        "allowCreateCopy": false
+      }
+    },
+    {
+      "title": "trae + obsidian 知识管理思路",
+      "url": "https://ycne1aa4q4gi.feishu.cn/docx/XV9sd2KTnotEtExqTwUcaNNbnVd",
+      "uploadTime": "2026-02-27 18:56",
+      "docToken": "XV9sd2KTnotEtExqTwUcaNNbnVd",
+      "permissions": {
+        "isPublic": true,
+        "allowCopy": false,
+        "allowCreateCopy": false
+      }
+    },
+    {
+      "title": "OpenClaw 产品白皮书",
+      "url": "https://ycne1aa4q4gi.feishu.cn/docx/JBncdCJQFoGYTtxCrPnc8ql2nWc",
+      "uploadTime": "2026-02-27 16:24",
+      "docToken": "JBncdCJQFoGYTtxCrPnc8ql2nWc",
+      "permissions": {
+        "isPublic": false,
+        "allowCopy": false,
+        "allowCreateCopy": false
+      }
+    }
+  ],
+  "uploadCount": 6,
+  "agreedToTerms": true,
+  "apiCallCount": 26,
+  "lastResetDate": "2026-03",
+  "enableDoubleLinkMode": true,
+  "debugLoggingEnabled": false
+}

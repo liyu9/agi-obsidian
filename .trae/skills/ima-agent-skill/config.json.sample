@@ -1,0 +1,4 @@
+{
+  "knowledge_id": "REPLACE_WITH_YOUR_ID",
+  "note": "Get this ID by sniffing network requests to /cgi-bin/assistant/qa"
+}

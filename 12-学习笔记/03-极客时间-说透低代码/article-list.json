@@ -1,0 +1,261 @@
+[
+  {
+    "id": "494549",
+    "title": "开篇词｜抛开争论，先来看看真正的低代码",
+    "num": "开篇词",
+    "dirName": "开篇词",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\开篇词"
+  },
+  {
+    "id": "495328",
+    "title": "02｜低代码到底是银弹，还是行业毒瘤？",
+    "num": "02",
+    "dirName": "02-低代码银弹",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\02-低代码银弹"
+  },
+  {
+    "id": "496043",
+    "title": "03｜低代码的天花板：一个完备的低代码平台应该具备哪些条件？",
+    "num": "03",
+    "dirName": "03-低代码天花板",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\03-低代码天花板"
+  },
+  {
+    "id": "496839",
+    "title": "04｜演进策略：先发展通用能力还是先满足业务需求？",
+    "num": "04",
+    "dirName": "04-演进策略",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\04-演进策略"
+  },
+  {
+    "id": "497779",
+    "title": "05｜基础设施：启动低代码平台研发之前，你需要有什么家底？",
+    "num": "05",
+    "dirName": "05-基础设施",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\05-基础设施"
+  },
+  {
+    "id": "498769",
+    "title": "06｜踏出新手村便遭遇大Boss：如何架构低代码的引擎？",
+    "num": "06",
+    "dirName": "06-低代码引擎架构",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\06-低代码引擎架构"
+  },
+  {
+    "id": "499824",
+    "title": "07｜结构化代码生成法：代码如何生成代码？",
+    "num": "07",
+    "dirName": "07-代码生成",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\07-代码生成"
+  },
+  {
+    "id": "500747",
+    "title": "08｜布局编辑器：如何做到鱼和熊掌兼得？",
+    "num": "08",
+    "dirName": "08-布局编辑器",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\08-布局编辑器"
+  },
+  {
+    "id": "501746",
+    "title": "09｜属性编辑器：如何解除Web组件属性与编辑器的耦合？",
+    "num": "09",
+    "dirName": "09-属性编辑器",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\09-属性编辑器"
+  },
+  {
+    "id": "503190",
+    "title": "10｜可视化编程：如何有效降低App前后端逻辑开发的技能门槛？",
+    "num": "10",
+    "dirName": "10-可视化编程",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\10-可视化编程"
+  },
+  {
+    "id": "503649",
+    "title": "11｜亦敌亦友：Low Code与Pro Code混合使用怎样实现？",
+    "num": "11",
+    "dirName": "11-LowCode混合",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\11-LowCode混合"
+  },
+  {
+    "id": "504706",
+    "title": "12｜业务数据：再好的App，没有数据也是白搭",
+    "num": "12",
+    "dirName": "12-业务数据",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\12-业务数据"
+  },
+  {
+    "id": "505807",
+    "title": "13｜多人协同编辑：野百合的春天为啥来得这么晚？",
+    "num": "13",
+    "dirName": "13-多人协同",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\13-多人协同"
+  },
+  {
+    "id": "506846",
+    "title": "14｜编辑历史：是对Git做改造，还是另辟蹊径？",
+    "num": "14",
+    "dirName": "14-编辑历史",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\14-编辑历史"
+  },
+  {
+    "id": "507839",
+    "title": "15｜低代码平台应该优先覆盖应用研发生命周期中的哪些功能？",
+    "num": "15",
+    "dirName": "15-研发生命周期",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\15-研发生命周期"
+  },
+  {
+    "id": "508733",
+    "title": "16｜扩展与定制：如何实现插件系统并形成生态圈？",
+    "num": "16",
+    "dirName": "16-插件系统",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\16-插件系统"
+  },
+  {
+    "id": "510640",
+    "title": "总结与展望｜低代码之路，我们才刚刚开始",
+    "num": "总结",
+    "dirName": "总结与展望",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\总结与展望"
+  },
+  {
+    "id": "545968",
+    "title": "17｜兼容性问题：如何有效发现兼容性问题？",
+    "num": "17",
+    "dirName": "17-兼容性问题发现",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\17-兼容性问题发现"
+  },
+  {
+    "id": "564236",
+    "title": "18｜兼容性问题：如何有效解决兼容性问题？",
+    "num": "18",
+    "dirName": "18-兼容性问题解决",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\18-兼容性问题解决"
+  },
+  {
+    "id": "620582",
+    "title": "19｜如何使用平民技术实现UX设计稿转代码？",
+    "num": "19",
+    "dirName": "19-UX设计稿转代码",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\19-UX设计稿转代码"
+  },
+  {
+    "id": "646919",
+    "title": "20｜如何仅通过元素间的相对位置来生成有弹性可维护的UI代码？",
+    "num": "20",
+    "dirName": "20-UI代码生成",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\20-UI代码生成"
+  },
+  {
+    "id": "674283",
+    "title": "21｜低代码平台如何帮助应用做测试？被测功能的发现",
+    "num": "21",
+    "dirName": "21-测试-功能发现",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\21-测试-功能发现"
+  },
+  {
+    "id": "681876",
+    "title": "22｜低代码平台如何帮助应用做测试？副作用的检测",
+    "num": "22",
+    "dirName": "22-测试-副作用检测",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\22-测试-副作用检测"
+  },
+  {
+    "id": "681945",
+    "title": "23｜低代码平台如何帮助应用做测试？配置即测试",
+    "num": "23",
+    "dirName": "23-测试-配置测试",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\23-测试-配置测试"
+  },
+  {
+    "id": "787380",
+    "title": "24｜践行组装式架构设计，低代码平台的三个时态",
+    "num": "24",
+    "dirName": "24-组装式架构",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\24-组装式架构"
+  },
+  {
+    "id": "790967",
+    "title": "25｜遭遇程咬金，低代码技术会被AI大模型替代吗？",
+    "num": "25",
+    "dirName": "25-AI替代",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\25-AI替代"
+  },
+  {
+    "id": "819194",
+    "title": "26｜低代码平台如何与大模型技术结合？",
+    "num": "26",
+    "dirName": "26-大模型结合",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\26-大模型结合"
+  },
+  {
+    "id": "837603",
+    "title": "27｜低代码助手第一步，Chatbot的实现",
+    "num": "27",
+    "dirName": "27-Chatbot实现",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\27-Chatbot实现"
+  },
+  {
+    "id": "837990",
+    "title": "28｜文本分类和实体提取",
+    "num": "28",
+    "dirName": "28-文本分类实体提取",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\28-文本分类实体提取"
+  },
+  {
+    "id": "928304",
+    "title": "29｜当自然语言遇上可视化：打造新一代低代码开发体验",
+    "num": "29",
+    "dirName": "29-自然语言可视化",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\29-自然语言可视化"
+  },
+  {
+    "id": "928833",
+    "title": "30｜不止于一问一答：实现多轮对话与上下文管理",
+    "num": "30",
+    "dirName": "30-多轮对话",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\30-多轮对话"
+  },
+  {
+    "id": "934211",
+    "title": "31｜从Copilot升级到Agent：观察-规划-执行",
+    "num": "31",
+    "dirName": "31-Copilot升级Agent",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\31-Copilot升级Agent"
+  },
+  {
+    "id": "934257",
+    "title": "32｜智能体的规划：设计智能体的思考框架",
+    "num": "32",
+    "dirName": "32-Agent思考框架",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\32-Agent思考框架"
+  },
+  {
+    "id": "934815",
+    "title": "33｜智能体的规划：实现任务规划器",
+    "num": "33",
+    "dirName": "33-任务规划器",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\33-任务规划器"
+  },
+  {
+    "id": "934827",
+    "title": "34｜让计划动起来：构建Agent的执行引擎",
+    "num": "34",
+    "dirName": "34-Agent执行引擎",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\34-Agent执行引擎"
+  },
+  {
+    "id": "934833",
+    "title": "35｜学会反思：实现Agent的错误处理与自我修正",
+    "num": "35",
+    "dirName": "35-Agent错误处理",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\35-Agent错误处理"
+  },
+  {
+    "id": "494558",
+    "title": "01｜低代码平台到底是什么样的？",
+    "num": "01",
+    "dirName": "01-低代码平台是什么",
+    "dir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\03-极客时间-说透低代码\\01-低代码平台是什么"
+  }
+]

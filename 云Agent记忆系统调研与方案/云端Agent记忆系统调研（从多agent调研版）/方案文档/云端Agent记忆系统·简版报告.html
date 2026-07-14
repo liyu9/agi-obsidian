@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>云端Agent记忆系统·简版报告</title>
+
+<style>
+:root {
+  --fg: #1f2328; --fg-muted: #57606a; --bg: #ffffff; --bg-subtle: #f6f8fa;
+  --border: #d0d7de; --accent: #0969da; --code-bg: #f6f8fa; --code-fg: #1f2328;
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--fg); background: var(--bg); line-height: 1.7; margin: 0;
+  font-size: 15px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; }
+h1 { font-size: 1.9em; border-bottom: 2px solid var(--border); padding-bottom: 0.3em; margin-top: 0; }
+h2 { font-size: 1.45em; border-bottom: 1px solid var(--border); padding-bottom: 0.25em; margin-top: 2em; }
+h3 { font-size: 1.2em; margin-top: 1.6em; }
+h4 { font-size: 1.05em; margin-top: 1.4em; color: var(--fg); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+table {
+  border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 0.9em;
+  display: block; overflow-x: auto;
+}
+th, td { border: 1px solid var(--border); padding: 6px 13px; text-align: left; }
+th { background: var(--bg-subtle); font-weight: 600; }
+tr:nth-child(even) { background: var(--bg-subtle); }
+code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  background: var(--code-bg); padding: 0.2em 0.4em; border-radius: 4px;
+  font-size: 0.88em; color: var(--code-fg);
+}
+pre {
+  background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px;
+  padding: 14px; overflow-x: auto; line-height: 1.5; font-size: 0.82em;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+blockquote {
+  margin: 1em 0; padding: 0.5em 1em; border-left: 4px solid var(--accent);
+  background: var(--bg-subtle); color: var(--fg-muted);
+}
+blockquote p { margin: 0.5em 0; }
+hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
+ul, ol { padding-left: 1.8em; }
+li { margin: 0.25em 0; }
+.toc { background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; margin: 1em 0 2em; }
+.toc h3 { margin-top: 0; font-size: 1.05em; }
+.back-top { position: fixed; bottom: 24px; right: 24px; background: var(--accent); color: #fff;
+  padding: 8px 14px; border-radius: 20px; font-size: 0.85em; text-decoration: none; opacity: 0.85; }
+.back-top:hover { opacity: 1; text-decoration: none; }
+strong { font-weight: 600; }
+</style>
+
+</head>
+<body>
+<div class="container">
+<div class="toc"><div class="toc">
+<ul>
+<li><a href="#agent">云端 Agent 记忆系统 · 简版报告</a><ul>
+<li><a href="#0">0. 一页速览</a></li>
+<li><a href="#1">1. 业务背景与问题</a></li>
+<li><a href="#2">2. 选型结论</a></li>
+<li><a href="#3">3. 方案概览</a></li>
+<li><a href="#4">4. 产品蓝图与分期</a></li>
+<li><a href="#5">5. 业务架构：知识分层</a><ul>
+<li><a href="#51-l1-rag-l2">5.1 一期知识分层图（L1 基础 RAG + L2 记忆基础链路 · 默认配置）</a></li>
+<li><a href="#52-l1l2">5.2 二期知识分层图（L1/L2 产品化）</a></li>
+</ul>
+</li>
+<li><a href="#6">6. 系统架构</a><ul>
+<li><a href="#61-account">6.1 一期系统架构图（单实例 · account 级隔离）</a></li>
+<li><a href="#62-account">6.2 二期系统架构图（单实例 · 多 account · 完整治理态）</a></li>
+</ul>
+</li>
+<li><a href="#7">7. 接入与记忆模型（精简）</a></li>
+<li><a href="#8">8. 产品功能架构</a></li>
+<li><a href="#9">9. 关键风险与路线图</a></li>
+<li><a href="#_1">附录：文档索引</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<h1 id="agent">云端 Agent 记忆系统 · 简版报告<a class="headerlink" href="#agent" title="Permanent link">#</a></h1>
+<blockquote>
+<p>本报告基于 <a href="云端Agent记忆系统方案设计-v2.0.md">《方案设计-v2.0》</a> 与 <a href="云端Agent记忆系统调研报告-v2.0.md">《调研报告-v2.0》</a> 精简而成，保留核心结论、核心架构图与分期规划，便于快速通读。需查阅完整论证与字段级细节请回溯原文。</p>
+</blockquote>
+<hr />
+<h2 id="0">0. 一页速览<a class="headerlink" href="#0" title="Permanent link">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>结论</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>选型</strong></td>
+<td>OpenViking（4 款开源候选中唯一具备"会话压缩管线 + 三层信息结构 + 三类上下文统一 + 记忆与知识库一体化"的方案）</td>
+</tr>
+<tr>
+<td><strong>价值主张</strong></td>
+<td>以「知识库」为中心抽象，OpenViking 为底座，叠加 ② 层授权中心与 account 级隔离——让 Agent <strong>记得住用户、管得住知识、审得清访问</strong></td>
+</tr>
+<tr>
+<td><strong>架构</strong></td>
+<td>3 层（①应用层 / ②授权中心 / ③单实例）· 1 个 OV 实例（account 级隔离）· 3 接入通道（Hooks / MCP / SDK）· 4 数据流路径 · 6 类知识库 · 7 类记忆类型</td>
+</tr>
+<tr>
+<td><strong>一期边界</strong></td>
+<td>L1 基础 RAG + L2 记忆基础链路（capture/抽取/归档/recall·默认配置）+ ②层简化版 + account 级隔离，共 6 个场景跑通</td>
+</tr>
+<tr>
+<td><strong>二期补全</strong></td>
+<td>L1/L2 产品化（各环节/规则/时机可配置）+ 多 Agent 治理（授权矩阵/联邦/知识库独立化/零改造）+ 管理控制台完整版</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1">1. 业务背景与问题<a class="headerlink" href="#1" title="Permanent link">#</a></h2>
+<blockquote>
+<p>来源：<a href="云端Agent记忆系统调研报告-v2.0.md">调研报告 §1-3</a></p>
+</blockquote>
+<p><strong>公司场景</strong>：互联网公司 2000 人规模，云端统一部署 Claude Code / OpenClaw / Hermes 等多类 AI Agent，未来持续接入新 Agent。</p>
+<p><strong>四大痛点</strong>（根因：当前部署的 Agent 既无独立记忆系统，也无 RAG 知识库）：</p>
+<ol>
+<li><strong>原生记忆弱 → 执行质量差</strong>：跨会话即失忆，无偏好/SOP 持久承载，每次从零开始</li>
+<li><strong>无 RAG 知识库 → 知识无法沉淀复用</strong>：部门文档/SOP 无入库入口，Agent 只能靠手工粘贴</li>
+<li><strong>使用成本高</strong>：跨会话重复输入、跨 Agent 上下文不复用 → 重复 token + 重复人工校对</li>
+<li><strong>数据边界模糊</strong>：部门/个人间无统一治理入口，安全审计合规无处落地</li>
+</ol>
+<p><strong>两类核心问题</strong>：</p>
+<ul>
+<li><strong>问题一（使用侧）</strong>：Agent 原生记忆弱且无 RAG → 记忆怎么分层承载、怎么自动沉淀与按需召回、怎么把文档/SOP 入库做语义检索</li>
+<li><strong>问题二（治理侧）</strong>：2000 人多 Agent 共存 → 怎么做三级隔离、Agent×知识库授权、跨库联邦、审计与成本治理</li>
+</ul>
+<p><strong>五道业务题</strong>（方案须逐一回答）：Q1 跨 Agent 共享 · Q2 短期+长期闭环 · Q3 三级隔离 · Q4 企业级治理 · Q5 可观测</p>
+<p><strong>目标形态</strong>：为云端 Agent 挂载以「知识库」为中心的记忆系统——知识库按归属分类（个人偏好/技能、项目上下文、部门 SOP、公司政策、会话归档），Agent 不拥有知识库、只被授权访问。</p>
+<hr />
+<h2 id="2">2. 选型结论<a class="headerlink" href="#2" title="Permanent link">#</a></h2>
+<blockquote>
+<p>来源：<a href="云端Agent记忆系统调研报告-v2.0.md">调研报告 §5.6</a></p>
+</blockquote>
+<p><strong>候选池</strong>：4 款开源候选（OpenViking / Mem0 / Letta / Cognee）平等参与主选型；Coze、VikingDB、Dify 为商业闭源，仅作功能参考不入选。</p>
+<p><strong>选定：OpenViking</strong></p>
+<blockquote>
+<p>OpenViking 在能力、知识库、范式与体验、一体化四维度综合最优，是 4 款中唯一具备"会话压缩管线 + 三层信息结构 + 三类上下文统一 + 记忆与知识库一体化"的方案。落地约束（AGPL-3.0 / 自建向量库 / 生态早期）适用于公司内部自托管内网部署场景，选型成立。</p>
+</blockquote>
+<p><strong>落选理由（一句话）</strong>：</p>
+<ul>
+<li><strong>Mem0</strong>：无 transcript 压缩归档、文档型承载弱、条目式无路径可视化，与"部门 SOP / 项目上下文"侧重错位</li>
+<li><strong>Letta</strong>：显式 LLM 调用模式 2000 人高频场景成本高，archival ≤300 tokens 限制大文档</li>
+<li><strong>Cognee</strong>：以知识图谱为核心，无分层压缩归档，非"记忆+知识库"双范式，更适合关系推理增强层</li>
+</ul>
+<hr />
+<h2 id="3">3. 方案概览<a class="headerlink" href="#3" title="Permanent link">#</a></h2>
+<blockquote>
+<p>来源：<a href="云端Agent记忆系统方案设计-v2.0.md">方案设计 §1.0</a></p>
+</blockquote>
+<p><strong>方案价值主张</strong>：以「知识库」为中心抽象，OpenViking 为底座，叠加 ② 层知识库授权中心与 account 级隔离，实现跨 Agent 记忆复用、部门/个人/会话三级隔离与企业级合规治理。</p>
+<p><strong>关键数字速览</strong>：2 期演进（L1 基础 RAG + L2 记忆基础链路 → L1/L2 产品化 + 多 Agent 治理）· 3 层架构 · 1 个 OV 实例 · 3 接入通道 · 4 数据流路径 · 6 类知识库 · 7 类记忆类型 · 4 类企业侧扩展需求。</p>
+<p><strong>6 个核心概念</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>概念</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>官方原生</td>
+<td>OpenViking 开源产品自带能力（4 命名空间 / 7 Hook / 9 MCP / L0-L2 分层 / RAGFS / 多租户 account-user 模型），开箱即用</td>
+</tr>
+<tr>
+<td>企业侧扩展</td>
+<td>官方不提供、本方案自建补齐的能力（②层授权中心 / account 级隔离 / 跨库联邦 / 180 天冷存 / KMS 审计）</td>
+</tr>
+<tr>
+<td>② 层知识库授权中心</td>
+<td>核心扩展组件，做 Agent×知识库 授权矩阵 + 身份鉴权 + 路由 + 审计，Agent 不直连知识库</td>
+</tr>
+<tr>
+<td>account 级隔离</td>
+<td>部门/公司等高敏库用独立 OV account 部署，单实例内实现部门/公司/个人三级隔离</td>
+</tr>
+<tr>
+<td>跨知识库联邦查询</td>
+<td>② 层并行 fan-out 多 account 检索再合并排序，让一次请求触达多个库</td>
+</tr>
+<tr>
+<td>知识库（KB）</td>
+<td>独立于 Agent 存在的记忆载体，按归属/用途分类，Agent 被授权访问、不拥有</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4">4. 产品蓝图与分期<a class="headerlink" href="#4" title="Permanent link">#</a></h2>
+<blockquote>
+<p>来源：<a href="云端Agent记忆系统方案设计-v2.0.md">方案设计 §1.1</a></p>
+</blockquote>
+<p>本方案按两期演进，对齐痛点与五道业务题 Q1-Q5。下表按"基础能力 → 治理能力 → 多 Agent 协作"三类列出 9 个核心场景的分期满足度：</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>业务场景（对应业务题）</th>
+<th>一期</th>
+<th>二期</th>
+<th>分期价值说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>基础能力</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>S0</td>
+<td>L1 基础 RAG 双向闭环——Agent 写入/检索 L1（Q2）</td>
+<td>✅</td>
+<td>✅</td>
+<td>一期跑通 Agent↔L1 双向（写入+检索），RAG 可视化文件列表</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>单 Agent 跨会话记忆——同一用户明天再来不用重讲（Q2）</td>
+<td>✅</td>
+<td>✅</td>
+<td>一期跑通"1 Agent↔1 库"的记忆沉淀与召回；二期产品化（规则/时机可配置）</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>个人偏好/技能持久化——记住用户习惯、习得操作（Q2）</td>
+<td>✅</td>
+<td>✅</td>
+<td>一期 Hooks 自动 capture + Extraction 落地；二期产品化（可配置）</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>会话归档与冷存——长对话压缩归档、180 天迁 TOS（Q2）</td>
+<td>✅</td>
+<td>✅</td>
+<td>一期 commit→archive→TOS 链路完整；二期产品化（阈值/策略可配置）</td>
+</tr>
+<tr>
+<td><strong>治理能力</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>S4</td>
+<td>接入鉴权与审计——谁访问了什么（Q4 治理）</td>
+<td>⚠️ 部分</td>
+<td>✅</td>
+<td>一期②层简化版有鉴权+审计，<strong>无授权矩阵</strong>；二期补全 RBAC+ACL</td>
+</tr>
+<tr>
+<td>S5</td>
+<td>多 Agent 并存各自隔离——CC/OpenClaw 互不串数据（Q3）</td>
+<td>✅ 天然</td>
+<td>✅</td>
+<td>一期靠 account 级隔离<strong>硬分隔</strong>；二期升级为策略层隔离</td>
+</tr>
+<tr>
+<td><strong>多 Agent 协作（二期专属）</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>S6</td>
+<td>一 Agent 访问多库——一次任务同时调取个人库+部门库+公司库（Q1/Q2）</td>
+<td>✗</td>
+<td>✅</td>
+<td>一期 1 Agent 只绑 1 account；二期补跨 account 联邦 fan-out</td>
+</tr>
+<tr>
+<td>S7</td>
+<td>多 Agent 共用一库——公司政策库全公司共享、部门 SOP 库部门内共享（Q1）</td>
+<td>✗</td>
+<td>✅</td>
+<td>一期知识库与 Agent 1-to-1 account 绑定；二期补知识库独立化</td>
+</tr>
+<tr>
+<td>S8</td>
+<td>新增 Agent 零改造接入——Cursor/Trae/自建即插即用（Q4）</td>
+<td>✗</td>
+<td>✅</td>
+<td>一期每接一个 Agent 要独立部署实例；二期补授权矩阵配置即接入</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>一期边界</strong>：S0（L1 基础 RAG）+ S1-S3（L2 记忆基础链路·默认配置）+ S4 部分 + S5（天然）共 6 个场景跑通，验证 Agent↔L1+L2 双向闭环可行性。</p>
+<p><strong>二期补全</strong>：L1/L2 产品化（各环节/规则/时机可配置）+ S6-S8 多 Agent 协作 + S4 授权矩阵 + S5 策略层升级，面向 2000 人多 Agent 公司真实治理需求。</p>
+</blockquote>
+<hr />
+<h2 id="5">5. 业务架构：知识分层<a class="headerlink" href="#5" title="Permanent link">#</a></h2>
+<blockquote>
+<p>来源：<a href="云端Agent记忆系统方案设计-v2.0.md">方案设计 §1.2.1 + §1.2.3</a></p>
+</blockquote>
+<p>本方案将知识分为两层：<strong>L1 向量知识库</strong>（让 AI 懂企业资料）与 <strong>L2 记忆系统</strong>（让 AI 认得用户），共用同一 OpenViking 引擎，靠 <code>viking://</code> 命名空间区分。</p>
+<p><strong>L1 vs L2 对比</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>对比点</th>
+<th>L1 向量知识库</th>
+<th>L2 记忆系统</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>核心问题</td>
+<td>AI 懂不懂企业资料</td>
+<td>AI 认不认得用户</td>
+</tr>
+<tr>
+<td>数据来源</td>
+<td>企业传统知识库(A) + Agent 中(B1/B2/B3)</td>
+<td>Agent(B4)</td>
+</tr>
+<tr>
+<td>数据性质</td>
+<td>静态文档型</td>
+<td>动态事件/画像型</td>
+</tr>
+<tr>
+<td>抽取方式</td>
+<td>切片(按文档结构)</td>
+<td>LLM 5类分类 + WM v2 压缩</td>
+</tr>
+<tr>
+<td>命名空间</td>
+<td><code>viking://resources/</code></td>
+<td><code>viking://user/</code> + <code>session/</code></td>
+</tr>
+<tr>
+<td>召回方式</td>
+<td>仅 MCP 显式检索(路径4)</td>
+<td>自动召回(路径3) + MCP 显式检索(路径4)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>L2 与 L1 的关系</strong>：L2 不读 L1 的业务文档（防跨命名空间泄露），但复用 L1 的 RAG 检索基础设施（Embedding + flat_hybrid + rerank）。一句话：<strong>L2 不读 L1 内容，但复用 L1 的 RAG 能力</strong>。</p>
+</blockquote>
+<h3 id="51-l1-rag-l2">5.1 一期知识分层图（L1 基础 RAG + L2 记忆基础链路 · 默认配置）<a class="headerlink" href="#51-l1-rag-l2" title="Permanent link">#</a></h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│  数据源层（一期：企业传统知识库 + Agent 沉淀）                  │
+│  ┌─────────────────────────┬───────────────────────────────────┐│
+│  │ A · 企业传统知识库（已有）│ B · Agent 中（运行中沉淀）         ││
+│  │ wiki / 在线文档 /        │ B1 项目上下文与代码资源            ││
+│  │ 智能表格 /               │ B2 会话归档转存                    ││
+│  │ 静态文档(md/txt/pdf...) │ B3 Agent 生成的文档/SOP            ││
+│  │ （静态权威文档·支持选择  │ B4 偏好/事件/案例/技能             ││
+│  │   导入到 RAG）           │ （从 Agent 获取信息）              ││
+│  └───────────┬─────────────┴───────────────┬───────────────────┘│
+│              │ ① 批量导入 / API 同步        │ ② Hooks capture /   │
+│              │   （选择企业文档入库）        │    MCP store /归档  │
+│              ▼                              ▼                    │
+├─────────────────────────────────────────────────────────────────┤
+│  产品层（一期：L1 基础 RAG + L2 记忆基础链路 · 默认配置）       │
+│  ┌──────────────────────────────┬─────────────────────────────┐  │
+│  │ L1 · 向量知识库              │ L2 · 记忆系统（基础链路）    │  │
+│  │ （让 AI 懂企业资料）         │ （让 AI 认得用户）           │  │
+│  │ · 数据：A + B1/B3            │ · 数据：B4 偏好/事件/案例    │  │
+│  │ · 命名空间：viking://        │ · 命名空间：viking://user/   │  │
+│  │   resources/                 │   +session/                  │  │
+│  │ · 抽取：切片·默认配置        │ · capture：Hooks auto-capture│  │
+│  │ · 召回：MCP显式检索(路径4)   │ · 抽取：LLM 5类·默认         │  │
+│  │ · 可视化：文件列表(web-studio)│ · 归档：commit→archive→TOS  │  │
+│  │                              │ · 召回：自动(3)+MCP(4)       │  │
+│  └──────────────┬───────────────┴──────────────┬──────────────┘  │
+│     ↑ ③ L1检索召回（给Agent用）  ↑ ④ L2自动+MCP召回（给Agent用）│
+│     │  MCP search → 注入上下文    │  （路径3+路径4）             │
+│     ↓ 写入（从Agent获取信息）     ↓ 写入（从Agent获取信息）      │
+│     │  B1/B3 → L1                 │  B4 → L2 capture            │
+├──────┼───────────────────────────────┼───────────────────────────┤
+│  Agent 应用层（Claude Code / OpenClaw / Hermes ...）            │
+│  · 写入 L1：项目上下文/生成文档（从 Agent 获取信息）            │
+│  · 写入 L2：偏好/事件/案例/技能（从 Agent 获取信息）            │
+│  · 读取 L1：MCP search 检索召回 → 注入 Agent 上下文             │
+│  · 读取 L2：自动召回 + MCP 检索 → 注入 Agent 上下文             │
+└─────────────────────────────────────────────────────────────────┘
+               │ L1 即 RAG 的直接应用              │ L2 复用 RAG 检索能力
+               ▼                                   ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  底座层（OpenViking 统一引擎 · 基础 RAG · L1 与 L2 共用）      │
+│  ┌──────────┬───────────┬───────────────┬────────────────────┐ │
+│  │ 向量化   │ 向量索引   │ 混合检索       │ Rerank 重排        │ │
+│  │ Embedding│ VectorDB  │ 稠密+稀疏+元数据│ doubao-seed-rerank│ │
+│  └──────────┴───────────┴───────────────┴────────────────────┘ │
+│  L2 记忆系统：一期基础链路（默认配置），二期产品化（可配置）    │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<blockquote>
+<p><strong>一期要点</strong>：① L1 从 Agent 获取信息（B1/B3 写入 L1）② L1 给 Agent 用（检索召回）③ L2 从 Agent 获取信息（B4 经 Hooks capture + Extraction 写入 L2）④ L2 给 Agent 用（自动召回 + MCP 检索）⑤ 会话归档冷存（commit→archive→180 天迁 TOS）⑥ 可视化文件列表 ⑦ 选企业文档。Agent↔L1+L2 双向闭环，均用默认配置。</p>
+</blockquote>
+<h3 id="52-l1l2">5.2 二期知识分层图（L1/L2 产品化）<a class="headerlink" href="#52-l1l2" title="Permanent link">#</a></h3>
+<p>二期在一期基础上：L1 各环节支持用户配置（切片/Embedding/检索参数/Rerank），L2 记忆产品化（提取规则/时机/画像更新策略可配置），数据源全覆盖 A+B1-B4。L1 与 L2 共用同一 OpenViking 引擎，靠 <code>viking://</code> 命名空间区分（<code>resources/</code> vs <code>user/</code>+<code>session/</code>）。</p>
+<blockquote>
+<p>完整二期知识分层图见 <a href="云端Agent记忆系统方案设计-v2.0.md">方案设计 §1.2.1</a>。</p>
+</blockquote>
+<hr />
+<h2 id="6">6. 系统架构<a class="headerlink" href="#6" title="Permanent link">#</a></h2>
+<blockquote>
+<p>来源：<a href="云端Agent记忆系统方案设计-v2.0.md">方案设计 §1.3</a></p>
+</blockquote>
+<p><strong>设计理念：单实例 + account 级隔离</strong></p>
+<p>无论一期、二期，均为<strong>单 OpenViking 实例</strong>——通过 account 级隔离实现部门/公司/个人三级知识库隔离，不采用多实例物理隔离。②层网关入口一期即埋好，二期补全授权矩阵与联邦，Agent 侧接入契约不变、二期零改造。</p>
+<p><strong>分期规划</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>一期（公司云 Agent 平台现状）</th>
+<th>二期（目标态）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>实例</td>
+<td>单 OpenViking 实例（多 Agent 共用）</td>
+<td>单 OpenViking 实例（不迁移，仅扩展 account）</td>
+</tr>
+<tr>
+<td>授权矩阵</td>
+<td>无（单 account 天然隔离）</td>
+<td>完整 Agent×库 矩阵（RBAC+ACL）</td>
+</tr>
+<tr>
+<td>account</td>
+<td>单 account（部门级）</td>
+<td>多 account（部门/公司/个人）+ 路由 + 跨 account 联邦 fan-out</td>
+</tr>
+<tr>
+<td>②层</td>
+<td>简化：协议适配 + 身份鉴权 + 路由 + 审计 + 观测</td>
+<td>完整：协议适配 + 矩阵 + 鉴权 + 路由 + 联邦 + 审计 + 观测</td>
+</tr>
+</tbody>
+</table>
+<h3 id="61-account">6.1 一期系统架构图（单实例 · account 级隔离）<a class="headerlink" href="#61-account" title="Permanent link">#</a></h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│  ① Agent 应用层（多 Agent 并存 · account 级隔离）                │
+│     Claude Code │ OpenClaw │ Hermes ...  多 Agent 共用单实例  │
+│     Agent 是被授权的访问者，不拥有知识库                        │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │ 入站消息携带 Agent 身份（mTLS/JWT）
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  ② 知识库授权中心（简化版 · 网关入口已埋）                       │
+│  作用：Agent 不直连知识库，所有请求经此层归一+鉴权后转发         │
+│  ┌─────────────┬──────────────┬─────────────┬──────────────┐    │
+│  │ 协议适配    │ Agent 身份   │ 路由         │ 观测埋点     │    │
+│  │ 多 Agent    │ 鉴权         │ 1-to-1 直连  │ OTel + Prom  │    │
+│  │ 消息归一    │ mTLS / JWT   │ 本 Agent 绑  │ +token 成本  │    │
+│  │ → OV HTTP   │              │ 定的实例     │              │    │
+│  └─────────────┴──────────────┴─────────────┴──────────────┘    │
+│  + 审计日志                                                      │
+│  ✗ 授权矩阵（account 级天然隔离，无需求）                       │
+│  ✗ 联邦查询 / account 级路由（单 account 无此需求）             │
+└─────────────────────────────┬───────────────────────────────────┘
+                              │ 路由到本 Agent 绑定的 account
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  ③ 单 OpenViking 实例（account 级隔离 · L1 基础 RAG + L2 记忆）  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ viking://user/{uid}/memories/ + skills/                 │   │
+│  │ viking://session/{sid}/archive/（会话归档）               │   │
+│  │ viking://resources/（L1 向量知识库）                      │   │
+│  ├──────────────────────────────────────────────────────────┤   │
+│  │ 实例内部：openviking-server + web-studio + ov CLI        │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  横切支撑层（非数据流下游 · 不参与层级编号）                     │
+│   观测：Prometheus + Grafana    密钥：KMS                       │
+│   存储：TOS（冷存）             审计：audit log                  │
+│   模型：LLM + Embedding + VLM + rerank                          │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<h3 id="62-account">6.2 二期系统架构图（单实例 · 多 account · 完整治理态）<a class="headerlink" href="#62-account" title="Permanent link">#</a></h3>
+<p>二期②层补全：知识库授权矩阵（RBAC+ACL）+ account 级路由 + 跨 account 联邦 fan-out；③层扩展为多 account（个人/部门/公司/只读政策库）。Agent 侧接入契约不变，零改造演进。</p>
+<blockquote>
+<p>完整二期系统架构图（含授权矩阵示例、多 account 命名空间、实例内部六层架构）见 <a href="云端Agent记忆系统方案设计-v2.0.md">方案设计 §1.3.1</a>。</p>
+</blockquote>
+<p><strong>三层职责</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>层</th>
+<th>承担职责</th>
+<th>归属</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① Agent 应用层</td>
+<td>消费记忆能力，产生对话/任务/事实；Agent 无库归属，被授权访问</td>
+<td>官方接入对象</td>
+</tr>
+<tr>
+<td>② 知识库授权中心</td>
+<td>协议适配 + 身份鉴权 + 知识库授权矩阵 + 按授权路由 + 跨 account 联邦 + 审计 + 观测</td>
+<td>企业侧扩展</td>
+</tr>
+<tr>
+<td>③ 单 OpenViking 实例</td>
+<td>个人/部门/公司多 account 隔离 + openviking-server + web-studio + ov CLI</td>
+<td>官方</td>
+</tr>
+<tr>
+<td>横切支撑层</td>
+<td>观测/密钥/存储/审计/模型（旁路依赖，非数据流下游）</td>
+<td>官方 + 企业侧</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7">7. 接入与记忆模型（精简）<a class="headerlink" href="#7" title="Permanent link">#</a></h2>
+<blockquote>
+<p>来源：<a href="云端Agent记忆系统方案设计-v2.0.md">方案设计 §2</a></p>
+</blockquote>
+<p><strong>4 条关键数据流路径</strong>（接入通道 × 方向）：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>写入</th>
+<th>召回</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Hooks（自动触发）</strong></td>
+<td>路径 1 · Stop Hook 自动 Capture</td>
+<td>路径 3 · UserPromptSubmit Hook 自动 Recall</td>
+</tr>
+<tr>
+<td><strong>MCP（模型按需）</strong></td>
+<td>路径 2 · MCP store 显式写入</td>
+<td>路径 4 · MCP search 跨 account 联邦检索</td>
+</tr>
+</tbody>
+</table>
+<p><strong>3 接入通道</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>通道</th>
+<th>驱动方式</th>
+<th>适用 Agent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hooks</td>
+<td>生命周期自动触发</td>
+<td>Claude Code（支持 Hooks 的框架）</td>
+</tr>
+<tr>
+<td>MCP</td>
+<td>模型按需调用</td>
+<td>OpenClaw / Hermes / Cursor / Trae（MCP 兼容）</td>
+</tr>
+<tr>
+<td>SDK/HTTP</td>
+<td>通用编程接入</td>
+<td>LangChain / 二期自建 Agent（无 MCP/Hook 能力时）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>记忆模型一句话概括</strong>：</p>
+<ul>
+<li><strong>记忆类型</strong>：7 类（preferences 偏好 / events 事件 / cases 案例 / memories 事实 / skills 技能 / archive 归档 / resources 资源），由 LLM 按 5 类分类规则抽取</li>
+<li><strong>记入</strong>：Hooks auto-capture（Stop Hook）+ Memory Extraction（LLM 5 类分类）+ Embedding 向量化 → 写入对应命名空间；会话经 commit（≥阈值）→ archive → 180 天迁 TOS</li>
+<li><strong>召回</strong>：自动召回（路径 3，Hooks 触发，只查个人 account）+ MCP 显式检索（路径 4，可跨 account 联邦）；两阶段检索 flat_hybrid（dense+sparse+元数据）+ rerank</li>
+</ul>
+<blockquote>
+<p>记入/存储/召回模型的字段级细节见 <a href="云端Agent记忆系统方案设计-v2.0.md">方案设计 §2.2-2.5</a>。</p>
+</blockquote>
+<hr />
+<h2 id="8">8. 产品功能架构<a class="headerlink" href="#8" title="Permanent link">#</a></h2>
+<blockquote>
+<p>来源：<a href="云端Agent记忆系统方案设计-v2.0.md">方案设计 §3.1 + §3.2</a></p>
+</blockquote>
+<p><strong>一期功能架构（7 模块）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>功能模块</th>
+<th>核心功能</th>
+<th>归属</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① 接入网关（②层简化版）</td>
+<td>协议适配 + mTLS/JWT 鉴权 + 1-to-1 路由 + 审计 + 观测</td>
+<td>企业侧</td>
+</tr>
+<tr>
+<td>② L1 基础 RAG</td>
+<td>文档批量导入 + Agent 写入 L1 + 切片(默认) + Embedding + 两阶段检索</td>
+<td>官方+企业侧</td>
+</tr>
+<tr>
+<td>③ RAG 可视化</td>
+<td>文件列表浏览 + 检索调试面板（web-studio）</td>
+<td>官方</td>
+</tr>
+<tr>
+<td>④ account 级隔离</td>
+<td>OV account/user 模型（部门=独立 account）</td>
+<td>官方</td>
+</tr>
+<tr>
+<td>⑤ L2 记忆基础链路</td>
+<td>Hooks auto-capture + Memory Extraction(默认) + commit/archive + 180天冷存 + WM v2 + 自动/MCP召回 + TTL</td>
+<td>官方+企业侧</td>
+</tr>
+<tr>
+<td>⑥ 管理控制台</td>
+<td>Agent 注册与接入配置 + 知识库基础管理</td>
+<td>企业侧</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>一期需开发页面 4 个（其中文件列表与检索调试复用 web-studio，仅 Agent 管理页与知识库基础管理页需自研）。</p>
+</blockquote>
+<p><strong>二期功能架构（6 模块）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>功能模块</th>
+<th>核心功能</th>
+<th>归属</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① 数据源接入</td>
+<td>A + B1-B4 全覆盖（B2/B4 基础一期已做，二期补阈值/规则可配置）</td>
+<td>官方+企业侧</td>
+</tr>
+<tr>
+<td>② L1 产品化</td>
+<td>切片/Embedding/检索/Rerank 各环节可配置 + 标签/标量/结构化过滤</td>
+<td>官方+企业侧</td>
+</tr>
+<tr>
+<td>③ L2 记忆产品化</td>
+<td>事件/画像规则模板 + 时机可配置 + 画像更新时机/方式 + 检索结果反馈（基础一期已做）</td>
+<td>官方+企业侧</td>
+</tr>
+<tr>
+<td>④ ②层授权中心（完整版）</td>
+<td>RBAC+ACL 授权矩阵 + 跨 account 联邦 + account 级路由 + 审计成本归因 + 零改造接入</td>
+<td>企业侧</td>
+</tr>
+<tr>
+<td>⑤ 知识库独立化</td>
+<td>独立创建/归属/授权登记 + 同一库被多 Agent 授权访问</td>
+<td>企业侧</td>
+</tr>
+<tr>
+<td>⑥ 管理控制台（完整版）</td>
+<td>授权矩阵配置页 + L1/L2 配置页 + 切片/用户/画像/事件查看页 + 审计/可观测/生命周期/account/成本大盘（12 页）</td>
+<td>企业侧</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="9">9. 关键风险与路线图<a class="headerlink" href="#9" title="Permanent link">#</a></h2>
+<blockquote>
+<p>来源：<a href="云端Agent记忆系统方案设计-v2.0.md">方案设计 §1.4 + §5</a></p>
+</blockquote>
+<p><strong>方案级风险（4 条）</strong>：</p>
+<ol>
+<li><strong>单产品绑定</strong> — 若 OpenViking 项目停滞或不满足新需求，迁移成本高。<strong>缓解</strong>：PoC 阶段充分验证核心能力 + 5 道业务题覆盖度；不预留 Adapter 抽象层（避免过度设计）</li>
+<li><strong>企业合规责任由部署侧承担</strong> — OV 不提供第三方 SaaS 合规证书；自托管部署数据不出企业，合规由公司内部审计/等保/数据驻留策略保证（私有化部署常规做法，非产品缺陷）</li>
+<li><strong>被动抽取质量需持续调优</strong> — 官方抽取管线依赖 LLM 与 prompt。<strong>缓解</strong>：建立 golden set 基线定期回归；利用 web-studio 检索轨迹可视化定位偏差</li>
+<li><strong>多知识库联邦查询延迟</strong> — 跨库召回需 fan-out 多 account 并行检索再合并。<strong>缓解</strong>：并行 fan-out（最多 5 account）+ 8000ms 超时 + 高频库本地缓存 + 自动召回只查单 account</li>
+</ol>
+<p><strong>落地路线图</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>周期</th>
+<th>交付物</th>
+<th>验收</th>
+<th>依赖</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PoC</td>
+<td>2 周</td>
+<td>个人偏好命中率 + 部门 SOP 召回质量验证</td>
+<td>偏好 7 天命中、SOP 召回相关</td>
+<td>OV 实例 + CC Hooks</td>
+</tr>
+<tr>
+<td>一期</td>
+<td>L1基础RAG+L2记忆基础链路</td>
+<td>②层简化网关 + L1基础RAG + L2记忆基础链路 + 文件列表可视化 + 企业文档导入</td>
+<td>1.1.2 验收清单 8 项</td>
+<td>PoC 通过</td>
+</tr>
+<tr>
+<td>二期</td>
+<td>L1/L2产品化+多Agent治理</td>
+<td>授权矩阵 + account级联邦 + L1产品化 + L2记忆产品化 + 管理控制台</td>
+<td>1.1.3 验收清单 5 项</td>
+<td>一期上线 + 2000 人场景</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_1">附录：文档索引<a class="headerlink" href="#_1" title="Permanent link">#</a></h2>
+<table>
+<thead>
+<tr>
+<th>文档</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="云端Agent记忆系统方案设计-v2.0.md">方案设计-v2.0</a></td>
+<td>完整方案设计（业务架构/系统架构/接入记忆模型/功能架构/风险），本报告第 3-9 章来源</td>
+</tr>
+<tr>
+<td><a href="云端Agent记忆系统调研报告-v2.0.md">调研报告-v2.0</a></td>
+<td>业务背景/用户/问题/记忆系统能力框架/候选产品调研与选型，本报告第 1-2 章来源</td>
+</tr>
+<tr>
+<td><a href="附件3-智能体集成OpenViking实证.md">附件3-智能体集成OpenViking实证</a></td>
+<td>Claude Code × OpenViking 端到端接入实证（hooks/写入/召回/观测全链路）</td>
+</tr>
+<tr>
+<td><a href="附件2-引用来源与竞品参考.md">附件2-引用来源与竞品参考</a></td>
+<td>竞品功能参考详情（Coze/VikingDB/Dify）</td>
+</tr>
+</tbody>
+</table>
+</div>
+<a href="#" class="back-top">回到顶部</a>
+</body>
+</html>

@@ -1,0 +1,970 @@
+[
+  {
+    "file": "01｜拨开迷雾：AI 应用开发的四种架构范式.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1655.257687,
+      "bitrate": 281133,
+      "size": 58168491,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "02｜解构智能体：Agent的解剖学与ReAct范式.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2117.334807,
+      "bitrate": 605093,
+      "size": 160148258,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "03｜Multi-Agent系统：Agent、Task、Process的协作美学.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2310.366,
+      "bitrate": 517051,
+      "size": 149322413,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "04｜架构师的决断：AI 应用开发选型工具.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1689.251701,
+      "bitrate": 285265,
+      "size": 60235576,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "05｜工程全景图：构建企业级多智能体系统的“施工蓝图”.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1214.148209,
+      "bitrate": 289805,
+      "size": 43983380,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "06｜工欲善其器：课程学习的基础代码环境准备.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1789.422608,
+      "bitrate": 363563,
+      "size": 81321086,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "07｜定义Agent：从“提示词工程”到“人设工程”.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2317.305034,
+      "bitrate": 380295,
+      "size": 110157549,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "08｜定义Task——从“步骤控制”到“契约驱动”.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2034.416349,
+      "bitrate": 434545,
+      "size": 110505747,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "09｜定义 Process——任务调度与信息传递.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1970.189932,
+      "bitrate": 594457,
+      "size": 146399348,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "10｜多模态模型：让你的 Agent 拥有“眼睛”.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1828.664308,
+      "bitrate": 503204,
+      "size": 115023924,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "11｜项目实践（一）：小红书爆款笔记生成项目.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2570.681202,
+      "bitrate": 490107,
+      "size": 157488693,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "12｜工具设计哲学：从 API 到 Agent-Native 的范式跃迁.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2254.378957,
+      "bitrate": 368526,
+      "size": 103849834,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "13｜自定义工具封装：构建 Tools 的五步标准 SOP.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2047.698141,
+      "bitrate": 383179,
+      "size": 98079368,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "14｜MCP协议：标准化定义工具接口.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2114.269751,
+      "bitrate": 428633,
+      "size": 113280819,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "15｜王牌超能力：代码解释器与无头浏览器.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2200.531882,
+      "bitrate": 480765,
+      "size": 132242474,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "16｜Skills生态：让Agent接入大量工具.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 3986.517914,
+      "bitrate": 464047,
+      "size": 231241951,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "17｜项目实战2：能力篇——XiaoPaw飞书本地工作助手.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2409.209637,
+      "bitrate": 400888,
+      "size": 120727922,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "18｜从 Prompt 到 Harness：记忆与上下文的设计范式.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1333.893515,
+      "bitrate": 288340,
+      "size": 48076986,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "19｜上下文的生命周期：Bootstrap、剪枝与压缩.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2359.309932,
+      "bitrate": 370757,
+      "size": 109341431,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "20｜文件系统记忆：让Agent自己写记忆、自己学技能.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2292.250703,
+      "bitrate": 369528,
+      "size": 105881407,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "21｜搜索驱动的记忆系统：企业级海量记忆管理方案.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2977.750204,
+      "bitrate": 324339,
+      "size": 120725166,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "22｜项目实战3：XiaoPaw记忆篇：打造懂你的长记忆助手.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1737.270567,
+      "bitrate": 379291,
+      "size": 82366432,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "23｜Orchestrator范式：任务层的主 Agent + 子 Agent.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2165.144671,
+      "bitrate": 373786,
+      "size": 101162726,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "24｜认知升级：从任务列表到数字团队.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1080.981769,
+      "bitrate": 298616,
+      "size": 40349920,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "25｜团队角色体系：分工设计与行为规范.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2510.206,
+      "bitrate": 344801,
+      "size": 108190296,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "26｜任务链与信息传递：数字员工的协作协议.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1862.635102,
+      "bitrate": 347649,
+      "size": 80942918,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "27｜Human as 甲方：如何设计 Agent 团队的人类介入点.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1468.966,
+      "bitrate": 345759,
+      "size": 63488640,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "28｜数字员工的自我进化：让 Agent 团队越用越好.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2515.806,
+      "bitrate": 347925,
+      "size": 109414227,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "29｜项目实战4：Agent 小队完成真实项目需求.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1243.806,
+      "bitrate": 360955,
+      "size": 56119810,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "30｜可观测性：Hook 骨架 + Langfuse 全链路追踪.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1667.007007,
+      "bitrate": 320302,
+      "size": 66743228,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "31｜可靠性：重试、循环控制与成本围栏.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1476.206,
+      "bitrate": 330117,
+      "size": 60915130,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "32｜企业安全性：沙箱、权限网关与身份认证.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1719.530522,
+      "bitrate": 335418,
+      "size": 72095324,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "33｜项目实战 5：系统加固你的 XiaoPaw 本地工作助手.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1662.806,
+      "bitrate": 467579,
+      "size": 97186845,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "34｜需求边界：如何使用 AI 适用性评估表识别高 ROI 场景？.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2078.302041,
+      "bitrate": 297650,
+      "size": 77325945,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "35｜产品原型：从需求到第一个可验证的Demo.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1788.406,
+      "bitrate": 302714,
+      "size": 67671968,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "36｜评测体系：让AI质量可量化.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 2349.534354,
+      "bitrate": 292066,
+      "size": 85777439,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "37｜持续集成：让 AI 应用稳定演进.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1155.889342,
+      "bitrate": 287251,
+      "size": 41503884,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "38｜线上监控：知道你的 AI 到底跑得怎么样.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1874.291519,
+      "bitrate": 289214,
+      "size": 67759085,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "39｜数据飞轮：用线上数据持续迭代 AI Agent.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1561.406,
+      "bitrate": 294136,
+      "size": 57408384,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "40｜组织进化：从表演式转型到AI原生组织.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1655.745306,
+      "bitrate": 287601,
+      "size": 59524346,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "直播回放｜吃透 Claude Code 核心源码：架构设计与工程细节全解析.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 6472.608798,
+      "bitrate": 350463,
+      "size": 283551813,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "直播回放｜爆火全网的OpenClaw强在哪儿？.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 5920.04356,
+      "bitrate": 268017,
+      "size": 198334273,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "结课测试｜检验一下自己的学习成果吧.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 12.051156,
+      "bitrate": 245011,
+      "size": 369084,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 704,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  },
+  {
+    "file": "课程介绍｜告别“野路子”：转型企业级多智能体架构师.mp4",
+    "status": "PASS",
+    "info": {
+      "ok": true,
+      "duration": 1594.166009,
+      "bitrate": 315685,
+      "size": 62906883,
+      "nb_streams": 2,
+      "video": {
+        "codec": "h264",
+        "width": 1280,
+        "height": 720,
+        "fps": "25/1"
+      },
+      "audio": {
+        "codec": "aac",
+        "sample_rate": "44100",
+        "channels": 2
+      }
+    }
+  }
+]

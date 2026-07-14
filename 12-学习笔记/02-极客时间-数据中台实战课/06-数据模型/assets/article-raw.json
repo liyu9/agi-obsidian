@@ -1,0 +1,484 @@
+{
+  "title": "06 |  数据模型无法复用，归根结底还是设计问题",
+  "blocks": [
+    {
+      "type": "paragraph",
+      "text": "你好，我是郭忆。"
+    },
+    {
+      "type": "paragraph",
+      "text": "上一节课，我带你了解了数据中台如何管理指标，如果我们把指标比喻成一棵树上的果实，那模型就是这棵大树的躯干，想让果实结得好，必须让树干变得粗壮。"
+    },
+    {
+      "type": "paragraph",
+      "text": "先来看一幕真实的场景。"
+    },
+    {
+      "type": "paragraph",
+      "text": "大多数公司的分析师会结合业务做一些数据分析（需要用到大量的数据），通过报表的方式服务于业务部门的运营。但是在数据中台构建之前，分析师经常发现自己没有可以复用的数据，不得不使用原始数据进行清洗、加工、计算指标。"
+    },
+    {
+      "type": "paragraph",
+      "text": "由于他们大多是非技术专业出身，写的 SQL 质量比较差，我甚至见过 5 层以上的嵌套。这种 SQL 对资源消耗非常大，会造成队列阻塞，影响其他数仓任务，会引起数据开发的不满。数据开发会要求收回分析师的原始数据读取权限，分析师又会抱怨数仓数据不完善，要啥没啥，一个需求经常要等一周甚至半个月。分析师与数据开发的矛盾从此开始。"
+    },
+    {
+      "type": "paragraph",
+      "text": "这个矛盾的根源在于数据模型无法复用，数据开发是烟囱式的，每次遇到新的需求，都从原始数据重新计算，自然耗时。而要解决这个矛盾，就要搞清楚我们的数据模型应该设计成什么样子。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "什么才是一个好的数据模型设计？"
+    },
+    {
+      "type": "paragraph",
+      "text": "来看一组数据，这两个表格是基于元数据中心提供的血缘信息，分别对大数据平台上运行的任务和分析查询（Ad-hoc）进行的统计。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/19/2b/19c8925b0107dc7ad298d9bb62971d2b.jpg?wh=1142*550",
+      "alt": ""
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/37/d3/371cfb2754297d211d9cd5b2af48fdd3.jpg?wh=1142*732",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "下图是数仓分层架构图，方便你回忆数据模型分层的设计架构："
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/91/d5/9199d1545ecf90454882f01868f68ed5.jpg?wh=1142*726",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "我们首先来看表 1。表 1 中有 2547 张未识别分层的表，占总表 6049 的 40%，它们基本没办法复用。 重点是在已识别分层的读表任务中，ODS：DWD：DWS：ADS 的读取任务分别是 1072：545：187：433，直接读取 ODS 层任务占这四层任务总和的 47.9%，这说明有大量任务都是基于原始数据加工，中间模型复用性很差。"
+    },
+    {
+      "type": "paragraph",
+      "text": "我们再来看看表 2，在已识别的分层的查询中，ODS：DWD：DWS：ADS 的命中的查询分别是 892：1008：152：305，有 37.8% 的查询直接命中 ODS 层原始数据，说明 DWD、DWS、ADS 层数据建设缺失严重。尤其是 ADS 和 DWS，查询越底层的表，就会导致查询扫描的数据量会越大，查询时间会越长，查询的资源消耗也越大，使用数据的人满意度会低。"
+    },
+    {
+      "type": "paragraph",
+      "text": "最后，我们进一步对 ODS 层被读取的 704 张表进行分解，发现有 382 张表的下游产出是 DWS，ADS，尤其是 ADS 达到了 323 张表，占 ODS 层表的比例 45.8%，说明有大量 ODS 层表被进行物理深加工。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**通过上面的分析，我们似乎已经找到了一个理想的数仓模型设计应该具备的因素，那就是“数据模型可复用，完善且规范”。**"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/d6/b3/d6b10b27dfa4e4cff5a2ca496bd1fbb3.jpg?wh=1142*392",
+      "alt": ""
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "如何衡量完善度"
+    },
+    {
+      "type": "paragraph",
+      "text": "**DWD 层完善度：**衡量 DWD 层是否完善，最好看 ODS 层有多少表被 DWS/ADS/DM 层引用。因为 DWD 以上的层引用的越多，就说明越多的任务是基于原始数据进行深度聚合计算的，明细数据没有积累，无法被复用，数据清洗、格式化、集成存在重复开发。因此，我提出用跨层引用率指标衡量 DWD 的完善度。"
+    },
+    {
+      "type": "blockquote",
+      "text": "跨层引用率：ODS 层直接被 DWS/ADS/DM 层引用的表，占所有 ODS 层表（仅统计活跃表）比例。"
+    },
+    {
+      "type": "paragraph",
+      "text": "跨层引用率越低越好，在数据中台模型设计规范中，我们要求不允许出现跨层引用，ODS 层数据只能被 DWD 引用。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**DWS/ADS/DM 层完善度：**考核汇总数据的完善度，我认为主要看汇总数据能直接满足多少查询需求（也就是用汇总层数据的查询比例衡量）。如果汇总数据无法满足需求，使用数据的人就必须使用明细数据，甚至是原始数据。"
+    },
+    {
+      "type": "blockquote",
+      "text": "汇总数据查询比例：DWS/ADS/DM 层的查询占所有查询的比例。"
+    },
+    {
+      "type": "paragraph",
+      "text": "你要明确的是，这个跟跨层引用率不同，汇总查询比例不可能做到 100%，但值越高，说明上层的数据建设越完善，对于使用数据的人来说，查询速度和成本会减少，用起来会更爽。"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "如何衡量复用度"
+    },
+    {
+      "type": "paragraph",
+      "text": "数据中台模型设计的核心是追求模型的复用和共享，通过元数据中心的数据血缘图，我们可以看到，一个比较差的模型设计，自下而上是一条线。而一个理想的模型设计，它应该是交织的发散型结构。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/e4/97/e4038beaead8be1db13aa1c7299c2a97.jpg?wh=1142*417",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "我提出用模型引用系数作为指标，衡量数据中台模型设计的复用度。引用系数越高，说明数仓的复用性越好。"
+    },
+    {
+      "type": "blockquote",
+      "text": "模型引用系数：一个模型被读取，直接产出下游模型的平均数量。"
+    },
+    {
+      "type": "paragraph",
+      "text": "比如一张 DWD 层表被 5 张 DWS 层表引用，这张 DWD 层表的引用系数就是 5，如果把所有 DWD 层表（有下游表的）引用系数取平均值，则为 DWD 层表平均模型引用系数，一般低于 2 比较差，3 以上相对比较好（经验值）。"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "如何衡量规范度"
+    },
+    {
+      "type": "paragraph",
+      "text": "表 1 中，超过 40% 的表都没有分层信息，在模型设计层面，这显然是不规范的。除了看这个表有没有分层，还要看它有没有归属到主题域（例如交易域）如果没有归属主题域，就很难找到这张表，也无法复用。"
+    },
+    {
+      "type": "paragraph",
+      "text": "其次，你要看表的命名。拿 stock 这个命名为例，当你看到这个表时，知道它是哪个主题域、业务过程？是全量数据的表，还是每天的增量数据？总的来说，通过这个表名获取的信息太有限了。一个规范的表命名应该包括主题域、分层、表是全量快照，还是增量等信息。"
+    },
+    {
+      "type": "paragraph",
+      "text": "除此之外，如果在表 A 中用户 ID 的命名是 UserID，在表 B 中用户 ID 命名是 ID，就会对使用者造成困扰，这到底是不是一个东西。所以我们要求相同的字段在不同的模型中，它的命名必须是一致的。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**讲了这么多，你要如何吸收经验呢？在这里，我给你几点建议。**"
+    },
+    {
+      "type": "list",
+      "items": [
+        "你可以拿着这些指标去评估一下，自己的数仓现状如何。",
+        "然后制订一些针对性的改进计划，比如把这些不规范命名的表消灭掉，把主题域覆盖的表比例提高到 90% 以上。",
+        "在尝试完一段时间的模型重构和优化后，再拿着这些指标去测一测是不是真的变好了。我见过很多数据开发在向上级汇报工作时，喜欢用重构了多少模型说明工作成果，很多老大会想，这些重构到底对数据建设有多少帮助？有没有一些量化的指标可以衡量？**我想有上面的知识，你可以应对这个问题了。**"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "现在你知道什么是好的数仓设计了，可目前已经存在了大量烟囱式开发，具体怎么做才能让它变成一个数据中台呢？"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "如何从烟囱式的小数仓到共享的数据中台"
+    },
+    {
+      "type": "paragraph",
+      "text": "建设数据中台本质就是构建企业的公共数据层，把原先分散的、烟囱式的、杂乱的小数仓，合并成一个可共享、可复用的数据中台（我在[03 讲]()提到过，建议你回顾一下）。结合我在网易的实践经验，我给你几点建议。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**第一，接管 ODS 层，控制源头。**"
+    },
+    {
+      "type": "paragraph",
+      "text": "ODS 是业务数据进入数据中台的第一站，是所有数据加工的源头，控制住源头，才能从根本上防止一个重复的数据体系的出现。"
+    },
+    {
+      "type": "paragraph",
+      "text": "数据中台团队必须明确职责，全面接管 ODS 层数据，从业务系统的源数据库权限入手，确保数据从业务系统产生后进入数据仓库时，只能在数据中台保持一份。这个可以跟业务系统数据库管理者达成一致，只有中台团队的账号才能同步数据。"
+    },
+    {
+      "type": "paragraph",
+      "text": "ODS 层表的数据必须和数据源的表结构、表记录数一致，高度无损，对于 ODS 层表的命名采用 ODS_ 业务系统数据库名 _ 业务系统数据库表名方式，比如 ods_warehous_stock，warehous 是业务系统数据库名，stock 是该库下面的表名。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**第二，划分主题域，构建总线矩阵。**"
+    },
+    {
+      "type": "paragraph",
+      "text": "主题域是业务过程的抽象集合。可能这么讲，稍微有点儿抽象，但其实业务过程就是企业经营过程中一个个不可拆分的行为事件，比如仓储管理里面有入库、出库、发货、签收，都是业务过程，抽象出来的主题域就是仓储域。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/17/cc/1724055dd6eb3911cee9084d9a674ecc.jpg?wh=1142*718",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "主题域划分要尽量涵盖所有业务需求，保持相对稳定性，还具备一定的扩展性（新加入一个主题域，不影响已经划分的主题域的表）。"
+    },
+    {
+      "type": "paragraph",
+      "text": "主题域划分好以后，就要开始构建总线矩阵，明确每个主题域下的业务过程有哪些分析维度，举个例子："
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/34/ec/348e85b3a97e90345df4bce09cbf5aec.jpg?wh=1142*381",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "**第三，构建一致性维度。**"
+    },
+    {
+      "type": "paragraph",
+      "text": "售后团队的投诉工单数量有针对地区的分析维度，而配送团队的配送延迟也有针对地区的分析维度，你想分析因为配送延迟导致的投诉增加，但是两个地区的分析维度包含内容不一致，最终会导致一些地区没办法分析。所以我们构建全局一致性的维表，确保维表只存一份。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**维度统一的最大的难题在于维度属性（如果维度是商品，那么商品类别、商品品牌、商品尺寸等商品的属性，我们称为维度属性）的整合。**是不是所有维度属性都要整合到一个大的维表中，也不见得，我给你几个建议。"
+    },
+    {
+      "type": "list",
+      "items": [
+        "公共维度属性与特有维度属性拆成两个维表。在自营平台中，通常也会有一些第三方的商家入驻，但是数量很少。大部分商品其实都没有店铺的属性，这种情况，就不建议将店铺和商品的其他维度属性，比如商品类别、品牌设计成一个维表。",
+        "产出时间相差较大的维度属性拆分单独的维表，比如有些维度属性产出时间在凌晨 2 点，有些维度属性产出时间在凌晨 6 点，那 2 点和 6 点的就可以拆成两个维表，确保核心维表尽早产出。",
+        "出于维表稳定性产出的考虑，你可以将更新频繁的和变化缓慢的进行拆分，访问频繁的和访问较少的维表进行拆分。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "对于维表的规范化命名，建议你用“DIM_ 主题域 _ 描述 _ 分表规则”方式。**分表你可以这样理解：**一个表存储几千亿行记录实在是太大了，所以需要把一个表切割成很多小的分区，每天或者每周，随着任务被调度，会生成一个分区。我提供给你一个常见的分区规则（这个规则你在用的时候，查阅就可以了）。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/ff/b9/ff40520c4716d28ca0d220a997f819b9.jpg?wh=1142*419",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "**第四，事实表整合。**"
+    },
+    {
+      "type": "paragraph",
+      "text": "我觉得事实表整合遵循的最基本的一个原则是，统计粒度必须保持一致，不同统计粒度的数据不能出现在同一个事实表中。来看一个例子："
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/78/97/789d5b5f83405eba77e8cdbb6b1ce997.jpg?wh=1142*393",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "在数据中台构建前，供应链部门、仓储部门和市场部门都有一些重复的事实表，我们需要将这些重复的内容进行去除，按照交易域和仓储域，主题域的方式进行整合。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/cb/55/cb15353c0724c59ab0b24b64057cb055.jpg?wh=1142*772",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "对于仓储部门和供应链部门都有的库存明细表，因为仓储部门的统计粒度是商品加仓库，而供应链部门的只有商品，所以原则上两个表是不能合并，而是应该独立存在。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/fe/5b/fe81e5b9a4f290563b850d73022a865b.jpg?wh=1142*596",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "对于市场部门和供应链部门的两张下单明细表，因为统计粒度都是订单级别，都归属于交易域下的下单业务过程，所以可以合并为一张事实表。"
+    },
+    {
+      "type": "paragraph",
+      "text": "除此之外，还应该考虑将不全的数据补齐。对于 ODS 层直接被引用产出 DWS/ADS/DM 层的任务，通过血缘，找到任务清单，逐个进行拆解。没有 ODS 对应的 DWD 的，应该生成 DWD 表，对于已经存在的，应该迁移任务，使用 DWD 层表。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/c3/c5/c3f514d99386ad2731f4d50d8b3ed8c5.jpg?wh=1142*692",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "DWD/DWS/ADS/DM 的命名规则适合采用“[层次][主题][子主题][内容描述][分表规则]”的命名方式。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**第五，模型开发。**"
+    },
+    {
+      "type": "paragraph",
+      "text": "模型设计完成后，就进入模型开发阶段，我想提几个你需要注意的点："
+    },
+    {
+      "type": "paragraph",
+      "text": "所有任务都必须严格配置任务依赖，如果没有配置任务依赖，会导致前一个任务没有正常产出数据的情况下，后一个任务被调度起来，基于错误的数据空跑，浪费资源，同时增加了排查故障的复杂度；任务中创建的临时表，在任务结束前应该删除，如果不删除，会发现有大量的临时表存在，占用空间；任务名称最好跟表名一致，方便查找和关联；生命周期的管理，对于 ODS 和 DWD，一般尽可能保留所有历史数据，对于DWS/ADS/DM 需要设置生命周期，7～30 天不等；DWD 层表宜采用压缩的方式存储，可用 lzo 压缩。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**第六，应用迁移。**"
+    },
+    {
+      "type": "paragraph",
+      "text": "最后一步就是应用的迁移，这个过程的核心是要注意数据的比对，确保数据的完全一致，然后进行应用迁移，删除老的数据表。"
+    },
+    {
+      "type": "paragraph",
+      "text": "总的来说，建设数据中台不是一口气就能吃成一个胖子，它的建设往往是滚雪球的方式，随着一个个应用的迁移，中台的数据也越来越丰满，发挥的价值也越来越大。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "数仓建模工具 EasyDesign"
+    },
+    {
+      "type": "paragraph",
+      "text": "当然了，这些步骤的实现，离不开一个好用的工具作为支撑，为了规范化数据模型的设计，我们研发了 EasyDesign 的模型设计产品，让这些流程实现系统化管理。而我希望你了解如何去设计这个工具，或者在选用工具的时候应该考虑有哪些功能。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/74/b5/74c84414f5e004cbc1351c6e77d1e0b5.jpg?wh=1142*683",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "EasyDesign 构建于元数据中心之上，通过 API 调用元数据中心的数据血缘接口，结合数仓模型设计的指标，给出了模型设计度量。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/64/04/6493f76676d8d40beb8a84c2554d0a04.jpg?wh=1142*665",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "EasyDesign 按照主题域、业务过程、分层的方式管理所有的模型。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/50/bc/50849628d758e95666ee5d3cce9ed7bc.jpg?wh=1142*667",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "它还提供了维度、度量和字段基础字典的管理，同时具备模型设计审批流程的控制。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "课堂总结"
+    },
+    {
+      "type": "paragraph",
+      "text": "本节课，我结合自己的经验，带你了解了数据中台的模型设计。从确立设计目标，到通过一系列步骤，将一个个分散的、杂乱的、烟囱式的小数仓逐步规整到一个可复用、可共享的数据中台，最后通过产品化的方式实现系统化的管理。在最后，我想再强调几个点："
+    },
+    {
+      "type": "list",
+      "items": [
+        "完善度、复用度和规范度构成了衡量数据中台模型设计的度量体系，可以帮助你评估数仓设计的好坏。",
+        "维度设计是维度建模的灵魂，也是数据中台模型设计的基础，维度设计的核心是构建一致性维度。",
+        "事实表的统计粒度必须保持一致，不同统计粒度的数据不能出现在同一个事实表中。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "你要知道，数据中台的构建往往需要花费半年甚至一年以上的时间，但是数据中台建成后，对研发效率的提升效果非常明显，在网易电商业务中，中台构建后相比构建前，数据需求的平均交付时间从一周缩短到 3 天内，需求响应速度的提升，为企业运营效果提升提供了数据支撑。我相信通过数据中台的构建，你所在企业的数据研发效率也会得到大幅度的提升。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/05/4b/056037d1806f48243643a3689a89e14b.jpg?wh=1142*750",
+      "alt": ""
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "思考时间"
+    },
+    {
+      "type": "paragraph",
+      "text": "在数据中台实际实施落地的过程中，数据团队不但要建设公共数据层，形成数据中台，还要承担着巨大的新需求的压力。而且，往往需求的优先级都高于建设公共数据层的优先级，导致中台建设的进度难以保障。 对这个问题，你有什么解决方法呢？"
+    },
+    {
+      "type": "paragraph",
+      "text": "最好，感谢你的阅读，如果这节课让你有所收获，也欢迎你将它分享给更多的朋友。"
+    }
+  ],
+  "images": [
+    {
+      "src": "https://static001.geekbang.org/resource/image/19/2b/19c8925b0107dc7ad298d9bb62971d2b.jpg?wh=1142*550",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/37/d3/371cfb2754297d211d9cd5b2af48fdd3.jpg?wh=1142*732",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/91/d5/9199d1545ecf90454882f01868f68ed5.jpg?wh=1142*726",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/d6/b3/d6b10b27dfa4e4cff5a2ca496bd1fbb3.jpg?wh=1142*392",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/e4/97/e4038beaead8be1db13aa1c7299c2a97.jpg?wh=1142*417",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/17/cc/1724055dd6eb3911cee9084d9a674ecc.jpg?wh=1142*718",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/34/ec/348e85b3a97e90345df4bce09cbf5aec.jpg?wh=1142*381",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/ff/b9/ff40520c4716d28ca0d220a997f819b9.jpg?wh=1142*419",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/78/97/789d5b5f83405eba77e8cdbb6b1ce997.jpg?wh=1142*393",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/cb/55/cb15353c0724c59ab0b24b64057cb055.jpg?wh=1142*772",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/fe/5b/fe81e5b9a4f290563b850d73022a865b.jpg?wh=1142*596",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/c3/c5/c3f514d99386ad2731f4d50d8b3ed8c5.jpg?wh=1142*692",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/74/b5/74c84414f5e004cbc1351c6e77d1e0b5.jpg?wh=1142*683",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/64/04/6493f76676d8d40beb8a84c2554d0a04.jpg?wh=1142*665",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/50/bc/50849628d758e95666ee5d3cce9ed7bc.jpg?wh=1142*667",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/05/4b/056037d1806f48243643a3689a89e14b.jpg?wh=1142*750",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/a6/9a/a6c27a989b07c395d0496b28a18b969a.jpg",
+      "alt": ""
+    }
+  ],
+  "totalBlocks": 106,
+  "textLength": 6034,
+  "imageFiles": {
+    "https://static001.geekbang.org/resource/image/19/2b/19c8925b0107dc7ad298d9bb62971d2b.jpg?wh=1142*550": "assets/20260518-224516-01-头图.jpg",
+    "https://static001.geekbang.org/resource/image/37/d3/371cfb2754297d211d9cd5b2af48fdd3.jpg?wh=1142*732": "assets/20260518-224516-02-图片1.jpg",
+    "https://static001.geekbang.org/resource/image/91/d5/9199d1545ecf90454882f01868f68ed5.jpg?wh=1142*726": "assets/20260518-224516-03-图片2.jpg",
+    "https://static001.geekbang.org/resource/image/d6/b3/d6b10b27dfa4e4cff5a2ca496bd1fbb3.jpg?wh=1142*392": "assets/20260518-224516-04-图片3.jpg",
+    "https://static001.geekbang.org/resource/image/e4/97/e4038beaead8be1db13aa1c7299c2a97.jpg?wh=1142*417": "assets/20260518-224516-05-图片4.jpg",
+    "https://static001.geekbang.org/resource/image/17/cc/1724055dd6eb3911cee9084d9a674ecc.jpg?wh=1142*718": "assets/20260518-224516-06-图片5.jpg",
+    "https://static001.geekbang.org/resource/image/34/ec/348e85b3a97e90345df4bce09cbf5aec.jpg?wh=1142*381": "assets/20260518-224516-07-图片6.jpg",
+    "https://static001.geekbang.org/resource/image/ff/b9/ff40520c4716d28ca0d220a997f819b9.jpg?wh=1142*419": "assets/20260518-224516-08-图片7.jpg",
+    "https://static001.geekbang.org/resource/image/78/97/789d5b5f83405eba77e8cdbb6b1ce997.jpg?wh=1142*393": "assets/20260518-224516-09-图片8.jpg",
+    "https://static001.geekbang.org/resource/image/cb/55/cb15353c0724c59ab0b24b64057cb055.jpg?wh=1142*772": "assets/20260518-224516-10-图片9.jpg",
+    "https://static001.geekbang.org/resource/image/fe/5b/fe81e5b9a4f290563b850d73022a865b.jpg?wh=1142*596": "assets/20260518-224516-11-图片10.jpg",
+    "https://static001.geekbang.org/resource/image/c3/c5/c3f514d99386ad2731f4d50d8b3ed8c5.jpg?wh=1142*692": "assets/20260518-224516-12-图片11.jpg",
+    "https://static001.geekbang.org/resource/image/74/b5/74c84414f5e004cbc1351c6e77d1e0b5.jpg?wh=1142*683": "assets/20260518-224516-13-图片12.jpg",
+    "https://static001.geekbang.org/resource/image/64/04/6493f76676d8d40beb8a84c2554d0a04.jpg?wh=1142*665": "assets/20260518-224516-14-图片13.jpg",
+    "https://static001.geekbang.org/resource/image/50/bc/50849628d758e95666ee5d3cce9ed7bc.jpg?wh=1142*667": "assets/20260518-224516-15-图片14.jpg",
+    "https://static001.geekbang.org/resource/image/05/4b/056037d1806f48243643a3689a89e14b.jpg?wh=1142*750": "assets/20260518-224516-16-图片15.jpg",
+    "https://static001.geekbang.org/resource/image/a6/9a/a6c27a989b07c395d0496b28a18b969a.jpg": "assets/20260518-224516-17-图片16.jpg"
+  }
+}

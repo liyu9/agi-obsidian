@@ -1,0 +1,268 @@
+{
+  "saved": [
+    {
+      "title": "03｜Multi-Agent系统：Agent、Task、Process的协作美学",
+      "file": "L03-Multi-Agent系统：Agent、Task、Process的协作美学.md",
+      "imgs": 4,
+      "contentLen": 13732
+    },
+    {
+      "title": "01｜拨开迷雾：AI 应用开发的四种架构范式",
+      "file": "L01-拨开迷雾：AI 应用开发的四种架构范式.md",
+      "imgs": 8,
+      "contentLen": 3087
+    },
+    {
+      "title": "课程介绍｜告别“野路子”：转型企业级多智能体架构师",
+      "file": "L00-课程介绍｜告别“野路子”：转型企业级多智能体架构师.md",
+      "imgs": 6,
+      "contentLen": 3160
+    },
+    {
+      "title": "17｜项目实战2：能力篇——XiaoPaw飞书本地工作助手",
+      "file": "L17-项目实战2：能力篇——XiaoPaw飞书本地工作助手.md",
+      "imgs": 12,
+      "contentLen": 17520
+    },
+    {
+      "title": "10｜多模态模型：让你的 Agent 拥有“眼睛”",
+      "file": "L10-多模态模型：让你的 Agent 拥有“眼睛”.md",
+      "imgs": 2,
+      "contentLen": 8168
+    },
+    {
+      "title": "直播回放｜吃透 Claude Code 核心源码：架构设计与工程细节全解析",
+      "file": "L97-吃透 Claude Code 核心源码：架构设计与工程细节全解析.md",
+      "imgs": 22,
+      "contentLen": 27252
+    },
+    {
+      "title": "直播回放｜爆火全网的OpenClaw强在哪儿？",
+      "file": "L98-爆火全网的OpenClaw强在哪儿？.md",
+      "imgs": 13,
+      "contentLen": 18066
+    },
+    {
+      "title": "40｜组织进化：从表演式转型到AI原生组织",
+      "file": "L40-组织进化：从表演式转型到AI原生组织.md",
+      "imgs": 8,
+      "contentLen": 6709
+    },
+    {
+      "title": "39｜数据飞轮：用线上数据持续迭代 AI Agent",
+      "file": "L39-数据飞轮：用线上数据持续迭代 AI Agent.md",
+      "imgs": 9,
+      "contentLen": 11088
+    },
+    {
+      "title": "38｜线上监控：知道你的 AI 到底跑得怎么样",
+      "file": "L38-线上监控：知道你的 AI 到底跑得怎么样.md",
+      "imgs": 11,
+      "contentLen": 14402
+    },
+    {
+      "title": "37｜持续集成：让 AI 应用稳定演进",
+      "file": "L37-持续集成：让 AI 应用稳定演进.md",
+      "imgs": 14,
+      "contentLen": 15248
+    },
+    {
+      "title": "36｜评测体系：让AI质量可量化",
+      "file": "L36-评测体系：让AI质量可量化.md",
+      "imgs": 7,
+      "contentLen": 13825
+    },
+    {
+      "title": "35｜产品原型：从需求到第一个可验证的Demo",
+      "file": "L35-产品原型：从需求到第一个可验证的Demo.md",
+      "imgs": 10,
+      "contentLen": 11185
+    },
+    {
+      "title": "34｜需求边界：如何使用 AI 适用性评估表识别高 ROI 场景？",
+      "file": "L34-需求边界：如何使用 AI 适用性评估表识别高 ROI 场景？.md",
+      "imgs": 8,
+      "contentLen": 11920
+    },
+    {
+      "title": "33｜项目实战 5：系统加固你的 XiaoPaw 本地工作助手",
+      "file": "L33-项目实战 5：系统加固你的 XiaoPaw 本地工作助手.md",
+      "imgs": 10,
+      "contentLen": 15572
+    },
+    {
+      "title": "32｜企业安全性：沙箱、权限网关与身份认证",
+      "file": "L32-企业安全性：沙箱、权限网关与身份认证.md",
+      "imgs": 8,
+      "contentLen": 15361
+    },
+    {
+      "title": "31｜可靠性：重试、循环控制与成本围栏",
+      "file": "L31-可靠性：重试、循环控制与成本围栏.md",
+      "imgs": 5,
+      "contentLen": 13626
+    },
+    {
+      "title": "30｜可观测性：Hook 骨架 + Langfuse 全链路追踪",
+      "file": "L30-可观测性：Hook 骨架 + Langfuse 全链路追踪.md",
+      "imgs": 6,
+      "contentLen": 27579
+    },
+    {
+      "title": "29｜项目实战4：Agent 小队完成真实项目需求",
+      "file": "L29-项目实战4：Agent 小队完成真实项目需求.md",
+      "imgs": 3,
+      "contentLen": 32020
+    },
+    {
+      "title": "28｜数字员工的自我进化：让 Agent 团队越用越好",
+      "file": "L28-数字员工的自我进化：让 Agent 团队越用越好.md",
+      "imgs": 10,
+      "contentLen": 15536
+    },
+    {
+      "title": "27｜Human as 甲方：如何设计 Agent 团队的人类介入点",
+      "file": "L27-Human as 甲方：如何设计 Agent 团队的人类介入点.md",
+      "imgs": 6,
+      "contentLen": 10532
+    },
+    {
+      "title": "26｜任务链与信息传递：数字员工的协作协议",
+      "file": "L26-任务链与信息传递：数字员工的协作协议.md",
+      "imgs": 8,
+      "contentLen": 16656
+    },
+    {
+      "title": "25｜团队角色体系：分工设计与行为规范",
+      "file": "L25-团队角色体系：分工设计与行为规范.md",
+      "imgs": 7,
+      "contentLen": 11960
+    },
+    {
+      "title": "24｜认知升级：从任务列表到数字团队",
+      "file": "L24-认知升级：从任务列表到数字团队.md",
+      "imgs": 6,
+      "contentLen": 5358
+    },
+    {
+      "title": "23｜Orchestrator范式：任务层的主 Agent + 子 Agent",
+      "file": "L23-Orchestrator范式：任务层的主 Agent + 子 Agent.md",
+      "imgs": 5,
+      "contentLen": 12201
+    },
+    {
+      "title": "22｜项目实战3：XiaoPaw记忆篇：打造懂你的长记忆助手",
+      "file": "L22-项目实战3：XiaoPaw记忆篇：打造懂你的长记忆助手.md",
+      "imgs": 8,
+      "contentLen": 15323
+    },
+    {
+      "title": "21｜搜索驱动的记忆系统：企业级海量记忆管理方案",
+      "file": "L21-搜索驱动的记忆系统：企业级海量记忆管理方案.md",
+      "imgs": 7,
+      "contentLen": 10546
+    },
+    {
+      "title": "20｜文件系统记忆：让Agent自己写记忆、自己学技能",
+      "file": "L20-文件系统记忆：让Agent自己写记忆、自己学技能.md",
+      "imgs": 6,
+      "contentLen": 18017
+    },
+    {
+      "title": "19｜上下文的生命周期：Bootstrap、剪枝与压缩",
+      "file": "L19-上下文的生命周期：Bootstrap、剪枝与压缩.md",
+      "imgs": 5,
+      "contentLen": 21464
+    },
+    {
+      "title": "18｜从 Prompt 到 Harness：记忆与上下文的设计范式",
+      "file": "L18-从 Prompt 到 Harness：记忆与上下文的设计范式.md",
+      "imgs": 8,
+      "contentLen": 5371
+    },
+    {
+      "title": "16｜Skills生态：让Agent接入大量工具",
+      "file": "L16-Skills生态：让Agent接入大量工具.md",
+      "imgs": 7,
+      "contentLen": 24309
+    },
+    {
+      "title": "15｜王牌超能力：代码解释器与无头浏览器",
+      "file": "L15-王牌超能力：代码解释器与无头浏览器.md",
+      "imgs": 4,
+      "contentLen": 4410
+    },
+    {
+      "title": "14｜MCP协议：标准化定义工具接口",
+      "file": "L14-MCP协议：标准化定义工具接口.md",
+      "imgs": 5,
+      "contentLen": 5731
+    },
+    {
+      "title": "13｜自定义工具封装：构建 Tools 的五步标准 SOP",
+      "file": "L13-自定义工具封装：构建 Tools 的五步标准 SOP.md",
+      "imgs": 4,
+      "contentLen": 8491
+    },
+    {
+      "title": "12｜工具设计哲学：从 API 到 Agent-Native 的范式跃迁",
+      "file": "L12-工具设计哲学：从 API 到 Agent-Native 的范式跃迁.md",
+      "imgs": 4,
+      "contentLen": 5272
+    },
+    {
+      "title": "11｜项目实践（一）：小红书爆款笔记生成项目",
+      "file": "L11-项目实践（一）：小红书爆款笔记生成项目.md",
+      "imgs": 2,
+      "contentLen": 3989
+    },
+    {
+      "title": "09｜定义 Process——任务调度与信息传递",
+      "file": "L09-定义 Process——任务调度与信息传递.md",
+      "imgs": 4,
+      "contentLen": 5087
+    },
+    {
+      "title": "08｜定义Task——从“步骤控制”到“契约驱动”",
+      "file": "L08-定义Task——从“步骤控制”到“契约驱动”.md",
+      "imgs": 3,
+      "contentLen": 6200
+    },
+    {
+      "title": "07｜定义Agent：从“提示词工程”到“人设工程”",
+      "file": "L07-定义Agent：从“提示词工程”到“人设工程”.md",
+      "imgs": 5,
+      "contentLen": 4009
+    },
+    {
+      "title": "06｜工欲善其器：课程学习的基础代码环境准备",
+      "file": "L06-工欲善其器：课程学习的基础代码环境准备.md",
+      "imgs": 3,
+      "contentLen": 5175
+    },
+    {
+      "title": "04｜架构师的决断：AI 应用开发选型工具",
+      "file": "L04-架构师的决断：AI 应用开发选型工具.md",
+      "imgs": 6,
+      "contentLen": 2733
+    },
+    {
+      "title": "02｜解构智能体：Agent的解剖学与ReAct范式",
+      "file": "L02-解构智能体：Agent的解剖学与ReAct范式.md",
+      "imgs": 4,
+      "contentLen": 8617
+    },
+    {
+      "title": "05｜工程全景图：构建企业级多智能体系统的“施工蓝图”",
+      "file": "L05-工程全景图：构建企业级多智能体系统的“施工蓝图”.md",
+      "imgs": 5,
+      "contentLen": 4279
+    }
+  ],
+  "missing": [],
+  "uncovered": [],
+  "totalTabs": 46,
+  "uniqueLessons": 41,
+  "totalAssets": 289,
+  "notes": "L99 为独立测试页面，从 02-文本摘要 复制。L02、L05 通过点击视频列表导航后提取。所有 44 讲已覆盖。"
+}

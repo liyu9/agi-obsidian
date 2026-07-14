@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -v \"http://127.0.0.1:9222/json\")",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":9222\")",
+      "Bash(tasklist /fi \"PID eq 29852\")",
+      "Bash(powershell -Command \"Get-Process -Id 29852 | Select-Object ProcessName, Id\")"
+    ]
+  }
+}

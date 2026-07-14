@@ -1,0 +1,1092 @@
+{
+  "title": "24｜多平台部署指南：从本地运行到云服务器、Docker容器上线",
+  "blocks": [
+    {
+      "type": "paragraph",
+      "text": "你好，我是袁从德。"
+    },
+    {
+      "type": "paragraph",
+      "text": "当我们在命令行中第一次看到 AI 温柔地回复“我在这里陪着你”，那一刻，激动与成就感油然而生。但请记住，一个只能在开发者笔记本上运行的 AI 应用，就像一颗埋在地下的种子——潜力无限，却尚未破土。"
+    },
+    {
+      "type": "paragraph",
+      "text": "真正的产品价值，始于用户指尖的点击，成于千万次真实的交互。而连接“开发完成”与“用户可用”的桥梁，正是部署（Deployment）。"
+    },
+    {
+      "type": "paragraph",
+      "text": "通过前面的学习，我们已系统构建了一个完整的情感聊天机器人“心语”。它能理解情绪、拥有记忆、具备人格、支持多模态交互，并通过 RAG 和 Agent 实现知识调用与自主行动。然而，若不能稳定、安全、高效地部署到真实环境中，这一切智能都将停留在实验室阶段。"
+    },
+    {
+      "type": "paragraph",
+      "text": "今天我们就来完成大模型应用开发旅程中的关键一跃——从本地开发环境走向生产级部署。我们将系统讲解如何将“心语”机器人部署到多种主流平台，涵盖："
+    },
+    {
+      "type": "list",
+      "items": [
+        "如何将本地项目打包并部署到云服务器；",
+        "如何使用 Docker 容器化技术实现环境隔离与快速迁移；",
+        "如何配置 Nginx 反向代理与 HTTPS 加密通信；",
+        "如何实现前后端分离架构的协同部署；",
+        "如何选择合适的云服务商与部署策略。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "这不仅是一次技术操作的指导，更是一场工程思维的升级。你将学会如何以**系统架构师**的视角思考部署问题：性能、安全、可维护性、扩展性缺一不可。"
+    },
+    {
+      "type": "paragraph",
+      "text": "让我们带着已完成的“心语”项目，正式迈向真实世界。"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "一、部署前的准备：从开发环境到生产环境的思维转变"
+    },
+    {
+      "type": "paragraph",
+      "text": "在动手部署之前，我们必须先完成一次认知上的切换：从**开发思维**转向**运维思维**。部署前需要做的准备你可以参考后面的表 24-1。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/e7/cb/e73d616fa935cb080yyb079069bb69cb.jpg?wh=6851x3379",
+      "alt": ""
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "1.1 清理敏感信息：配置文件分离"
+    },
+    {
+      "type": "paragraph",
+      "text": "在开发过程中，我们可能直接在代码中写入 API 密钥、数据库密码等敏感信息。但在生产环境中，这是极大的安全隐患。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**最佳实践：使用环境变量配置**"
+    },
+    {
+      "type": "paragraph",
+      "text": "项目已内置支持使用 `config.env` 文件管理配置："
+    },
+    {
+      "type": "code",
+      "text": "# 复制配置模板\ncp config.env.example config.env\n# 编辑配置文件\nnano config.env"
+    },
+    {
+      "type": "paragraph",
+      "text": "**关键配置项**："
+    },
+    {
+      "type": "code",
+      "text": "# LLM API配置 - 使用阿里云通义千问(Qwen)\nLLM_API_KEY=your_qwen_api_key_here\nLLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1\n# 默认模型\nDEFAULT_MODEL=qwen-plus\n# MySQL数据库配置\nMYSQL_HOST=localhost\nMYSQL_PORT=3306\nMYSQL_USER=emotional_chat\nMYSQL_PASSWORD=your_secure_password\n# 向量数据库配置\nCHROMA_PERSIST_DIRECTORY=./chroma_db\n# 服务器配置\nHOST=0.0.0.0\nPORT=8000\nDEBUG=false  # 生产环境必须为false"
+    },
+    {
+      "type": "paragraph",
+      "text": "**安全提示：**"
+    },
+    {
+      "type": "list",
+      "items": [
+        "在 `.gitignore` 中添加 `config.env`；",
+        "不要将包含密钥的配置文件提交到版本控制系统；",
+        "为开发和生产环境使用不同的密钥。"
+      ]
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "1.2 优化依赖管理：锁定版本，确保一致性"
+    },
+    {
+      "type": "paragraph",
+      "text": "项目已提供精确的依赖列表。"
+    },
+    {
+      "type": "code",
+      "text": "# 查看当前依赖\ncat requirements.txt\n# 生产环境安装\npip install --no-cache-dir -r requirements.txt"
+    },
+    {
+      "type": "paragraph",
+      "text": "**依赖特点**："
+    },
+    {
+      "type": "list",
+      "items": [
+        "已锁定版本号，确保一致性；",
+        "包含所有必需的多模态功能依赖；",
+        "包含阿里云 SDK 集成。"
+      ]
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "1.3 启动脚本标准化"
+    },
+    {
+      "type": "paragraph",
+      "text": "项目已提供统一的启动脚本："
+    },
+    {
+      "type": "code",
+      "text": "# 推荐的启动方式\npython3 run_backend.py\n# 该脚本会自动：\n# - 检查依赖完整性\n# - 初始化RAG知识库（如果不存在）\n# - 配置日志系统\n# - 启动FastAPI服务"
+    },
+    {
+      "type": "paragraph",
+      "text": "**生产环境使用 Gunicorn**："
+    },
+    {
+      "type": "code",
+      "text": "# 安装 Gunicorn\npip install gunicorn\n# 启动服务\ngunicorn -w 4 -k uvicorn.workers.UvicornWorker backend.app:app \\\n    --bind 0.0.0.0:8000 \\\n    --timeout 120 \\\n    --access-logfile /var/log/xinyu/access.log \\\n    --error-logfile /var/log/xinyu/error.log"
+    },
+    {
+      "type": "blockquote",
+      "text": "提示：Gunicorn 是 Python 的高性能 WSGI HTTP Server，配合 Uvicorn Worker 可完美支持 FastAPI 的异步特性。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "1.4 数据库初始化"
+    },
+    {
+      "type": "paragraph",
+      "text": "在生产环境部署前，必须先初始化数据库。"
+    },
+    {
+      "type": "code",
+      "text": "# 使用 Makefile（推荐）\nmake db-init\nmake db-upgrade\n# 或直接使用 Alembic\nalembic upgrade head"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "1.5 RAG 知识库初始化"
+    },
+    {
+      "type": "paragraph",
+      "text": "之后需要初始化专业心理健康知识库。"
+    },
+    {
+      "type": "code",
+      "text": "# 使用 Makefile（推荐）\nmake rag-init\n# 或直接运行\npython init_rag_knowledge.py"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "二、方式一：Docker 容器化部署（现代化云原生的标准范式）"
+    },
+    {
+      "type": "paragraph",
+      "text": "随着微服务与 Kubernetes 的普及，Docker 已成为大模型应用部署的事实标准。它解决了“在我机器上能跑，但你的设备上却不行”这一经典难题。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "2.1 为什么选择 Docker？"
+    },
+    {
+      "type": "paragraph",
+      "text": "选择 Docker，是因为它具备后面这些优势。"
+    },
+    {
+      "type": "list",
+      "items": [
+        "**环境一致性**：开发、测试、生产环境完全一致；",
+        "**快速部署**：一键启动整个应用栈；",
+        "**资源隔离**：避免依赖冲突；",
+        "**易于扩展**：可无缝接入 K8s 集群；",
+        "**监控集成**：项目已内置 Prometheus、Grafana 等监控栈。"
+      ]
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "2.2 项目 Docker 架构"
+    },
+    {
+      "type": "paragraph",
+      "text": "项目提供了完整的 `docker-compose.yml` 配置，包含以下服务，如图 24-1 所示。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/58/98/5876612328f98033770c4a720ed96298.png?wh=1484x1544",
+      "alt": ""
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "2.3 使用 Docker Compose 部署"
+    },
+    {
+      "type": "paragraph",
+      "text": "**步骤 1：准备环境变量**"
+    },
+    {
+      "type": "code",
+      "text": "# 复制环境变量模板\ncp config.env.example config.env\n# 编辑配置文件\nnano config.env"
+    },
+    {
+      "type": "paragraph",
+      "text": "**步骤 2：启动所有服务**"
+    },
+    {
+      "type": "code",
+      "text": "# 构建并启动服务（在后台运行）\ndocker-compose up -d\n# 查看服务状态\ndocker-compose ps\n# 查看日志\ndocker-compose logs -f backend"
+    },
+    {
+      "type": "paragraph",
+      "text": "**步骤 3：初始化数据库和知识库**"
+    },
+    {
+      "type": "code",
+      "text": "# 进入后端容器\ndocker-compose exec backend bash\n# 初始化数据库\nmake db-upgrade\n# 初始化RAG知识库\nmake rag-init\n# 退出容器\nexit"
+    },
+    {
+      "type": "paragraph",
+      "text": "**步骤 4：验证部署**"
+    },
+    {
+      "type": "code",
+      "text": "# 健康检查\ncurl http://localhost:8000/health\n# 查看系统信息\ncurl http://localhost:8000/system/info\n# 测试聊天接口\ncurl -X POST http://localhost:8000/chat \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"message\": \"你好\", \"user_id\": \"test_user\"}'"
+    },
+    {
+      "type": "paragraph",
+      "text": "**步骤 5：访问服务（表 24-2）**"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/54/14/54d6a693494f01624358d1bcbaa7f314.jpg?wh=6661x3349",
+      "alt": ""
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "2.4 自定义 Docker 配置"
+    },
+    {
+      "type": "paragraph",
+      "text": "修改服务配置，编辑 `docker-compose.yml`："
+    },
+    {
+      "type": "code",
+      "text": "services:\n  backend:\n    # 修改端口映射\n    ports:\n      - \"8000:8000\"\n    # 修改资源限制\n    deploy:\n      resources:\n        limits:\n          cpus: '4'\n          memory: 8G\n        reservations:\n          cpus: '2'\n          memory: 4G\n    # 添加环境变量\n    environment:\n      - WORKERS=4  # Gunicorn工作进程数\n      - TIMEOUT=120  # 请求超时时间"
+    },
+    {
+      "type": "paragraph",
+      "text": "**重新构建和启动**："
+    },
+    {
+      "type": "code",
+      "text": "# 停止服务\ndocker-compose down\n# 重新构建\ndocker-compose build\n# 启动服务\ndocker-compose up -d"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "2.5 数据持久化"
+    },
+    {
+      "type": "paragraph",
+      "text": "项目已配置数据卷挂载，确保数据不丢失。"
+    },
+    {
+      "type": "code",
+      "text": "volumes:\n  mysql_data:           # MySQL数据\n  redis_data:           # Redis数据\n  chroma_db:            # 向量数据库\n  logs:                 # 日志文件\n  uploads:              # 上传文件\n  prometheus_data:      # 监控数据\n  grafana_data:         # 可视化数据"
+    },
+    {
+      "type": "paragraph",
+      "text": "备份数据的命令如下。"
+    },
+    {
+      "type": "code",
+      "text": "# 备份MySQL数据\ndocker-compose exec mysql mysqldump -u root -p emotional_chat > backup.sql\n# 恢复数据\ndocker-compose exec -T mysql mysql -u root -p emotional_chat < backup.sql"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "2.6 推送镜像到仓库（可选）"
+    },
+    {
+      "type": "paragraph",
+      "text": "下一个是可选项，将自定义镜像推送到 Docker Hub 或其他镜像仓库。"
+    },
+    {
+      "type": "code",
+      "text": "# 构建镜像\ndocker-compose build backend\n# 打标签\ndocker tag emotional_chat_backend your-username/xinyu-chatbot:v3.0.0\n# 推送镜像\ndocker push your-username/xinyu-chatbot:v3.0.0\n# 在其他服务器拉取运行\ndocker pull your-username/xinyu-chatbot:v3.0.0\ndocker run -d -p 8000:8000 your-username/xinyu-chatbot:v3.0.0"
+    },
+    {
+      "type": "paragraph",
+      "text": "此后可在任意服务器拉取镜像运行，极大简化部署流程。"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "三、方式二：直接部署到云服务器（以阿里云 ECS 为例）"
+    },
+    {
+      "type": "paragraph",
+      "text": "除了容器化部署，还有直接部署到云服务器的方案。这是最直观的部署方式，适合初学者快速上线 MVP 产品。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "3.1 购买与初始化云服务器"
+    },
+    {
+      "type": "paragraph",
+      "text": "**步骤 1：购买 ECS 实例**"
+    },
+    {
+      "type": "paragraph",
+      "text": "登录阿里云控制台，购买一台 **ECS 实例**（推荐配置：2 核 8G，图 24-2）。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/47/5f/477ff575f0ba27907325615dcba3e15f.png?wh=2930x1346",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "**步骤 2：配置安全组**"
+    },
+    {
+      "type": "paragraph",
+      "text": "获取公网 IP 地址，设置安全组规则（图 24-3）："
+    },
+    {
+      "type": "paragraph",
+      "text": "开放端口：`80`（HTTP）、`443`（HTTPS）、`22`（SSH）建议限制 SSH 访问来源 IP，提升安全性。3000 端口和 8000 端口分别为前后端的端口"
+    },
+    {
+      "type": "blockquote",
+      "text": "**注意**：在生产环境中，3000 端口（前端）和 8000 端口（后端）应通过 Nginx 反向代理访问，不建议直接在安全组中暴露这些端口，以提高安全性。图 24-3 安全组设置"
+    },
+    {
+      "type": "paragraph",
+      "text": "**步骤 3：远程连接**"
+    },
+    {
+      "type": "code",
+      "text": "# 使用SSH连接\nssh root@your-server-ip\n# 更新系统\nsudo apt update && sudo apt upgrade -y\n# 安装必要工具\nsudo apt install python3-pip python3-venv nginx git -y\n# 创建项目目录\nmkdir /var/www/xinyu && cd /var/www/xinyu"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "3.2 安装基础环境"
+    },
+    {
+      "type": "paragraph",
+      "text": "之后我们安装一下基础环境。"
+    },
+    {
+      "type": "code",
+      "text": "# 更新系统\nsudo apt update && sudo apt upgrade -y\n# 安装Python和pip\nsudo apt install python3.9 python3-pip python3-venv -y\n# 安装Git\nsudo apt install git -y\n# 安装MySQL\nsudo apt install mysql-server mysql-client -y\n# 安装Nginx\nsudo apt install nginx -y\n# 安装Docker和Docker Compose（可选）\nsudo apt install docker.io docker-compose -y"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "3.3 配置 MySQL 数据库"
+    },
+    {
+      "type": "paragraph",
+      "text": "然后我们来配置 MySQL 数据库。"
+    },
+    {
+      "type": "code",
+      "text": "# 启动MySQL服务\nsudo systemctl start mysql\nsudo systemctl enable mysql\n# 配置MySQL\nsudo mysql_secure_installation\n# 创建数据库和用户\nmysql -u root -p << EOF\nCREATE DATABASE emotional_chat CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\nCREATE USER 'emotional_chat'@'localhost' IDENTIFIED BY 'your_secure_password';\nGRANT ALL PRIVILEGES ON emotional_chat.* TO 'emotional_chat'@'localhost';\nFLUSH PRIVILEGES;\nEOF"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "3.4 上传代码并配置"
+    },
+    {
+      "type": "paragraph",
+      "text": "**方法一：Git 克隆（推荐）**"
+    },
+    {
+      "type": "code",
+      "text": "# 创建项目目录\nmkdir -p /var/www/xinyu\ncd /var/www/xinyu\n# 克隆代码\ngit clone https://github.com/yourname/emotional_chat.git .\n# 或从已有仓库拉取\ngit pull origin main"
+    },
+    {
+      "type": "paragraph",
+      "text": "**方法二：本地打包上传**"
+    },
+    {
+      "type": "code",
+      "text": "# 在本地执行\ncd /home/workSpace/emotional_chat\ntar -czf xinyu.tar.gz --exclude='.git' --exclude='__pycache__' --exclude='node_modules' .\n# 上传到服务器\nscp xinyu.tar.gz root@your-server-ip:/var/www/\n# 在服务器上解压\ncd /var/www\ntar -xzvf xinyu.tar.gz\nmv emotional_chat xinyu\ncd xinyu"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "3.5 配置虚拟环境"
+    },
+    {
+      "type": "code",
+      "text": "cd /var/www/xinyu\n# 创建虚拟环境\npython3 -m venv venv\n# 激活虚拟环境\nsource venv/bin/activate\n# 安装依赖\npip install -r requirements.txt\n# 配置环境变量\ncp config.env.example config.env\nnano config.env  # 编辑配置文件"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "3.6 初始化数据库和知识库"
+    },
+    {
+      "type": "code",
+      "text": "# 确保虚拟环境已激活\nsource venv/bin/activate\n# 初始化数据库\nmake db-upgrade\n# 初始化RAG知识库\nmake rag-init"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "3.7 配置 Gunicorn 和 Systemd"
+    },
+    {
+      "type": "paragraph",
+      "text": "**创建 Gunicorn 启动脚本**："
+    },
+    {
+      "type": "code",
+      "text": "# 创建启动脚本\nnano /var/www/xinyu/start.sh"
+    },
+    {
+      "type": "paragraph",
+      "text": "内容："
+    },
+    {
+      "type": "code",
+      "text": "#!/bin/bash\ncd /var/www/xinyu\nsource venv/bin/activate\nexport PROJECT_ROOT=/var/www/xinyu\n# 使用Gunicorn启动服务\nexec gunicorn -w 4 -k uvicorn.workers.UvicornWorker backend.app:app \\\n    --bind 0.0.0.0:8000 \\\n    --timeout 120 \\\n    --access-logfile /var/www/xinyu/log/access.log \\\n    --error-logfile /var/www/xinyu/log/error.log \\\n    --log-level info"
+    },
+    {
+      "type": "paragraph",
+      "text": "**创建 Systemd 服务**："
+    },
+    {
+      "type": "code",
+      "text": "sudo nano /etc/systemd/system/xinyu.service"
+    },
+    {
+      "type": "paragraph",
+      "text": "内容："
+    },
+    {
+      "type": "code",
+      "text": "[Unit]\nDescription=XinYu Chatbot Service\nAfter=network.target mysql.service\n[Service]\nType=notify\nUser=root\nGroup=www-data\nWorkingDirectory=/var/www/xinyu\nExecStart=/var/www/xinyu/start.sh\nRestart=always\nRestartSec=10\nEnvironmentFile=/var/www/xinyu/config.env\n# 资源限制\nMemoryMax=8G\nCPUQuota=400%\n[Install]\nWantedBy=multi-user.target"
+    },
+    {
+      "type": "paragraph",
+      "text": "**启用并启动服务**："
+    },
+    {
+      "type": "code",
+      "text": "# 赋予执行权限\nchmod +x /var/www/xinyu/start.sh\n# 创建日志目录\nmkdir -p /var/www/xinyu/log\n# 重新加载systemd\nsudo systemctl daemon-reload\n# 启用服务（开机自启）\nsudo systemctl enable xinyu\n# 启动服务\nsudo systemctl start xinyu\n# 查看状态\nsudo systemctl status xinyu\n# 查看日志\nsudo journalctl -u xinyu -f"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "3.8 配置 Nginx 反向代理"
+    },
+    {
+      "type": "paragraph",
+      "text": "创建 Nginx 配置文件："
+    },
+    {
+      "type": "code",
+      "text": "sudo nano /etc/nginx/sites-available/xinyu"
+    },
+    {
+      "type": "paragraph",
+      "text": "内容如下："
+    },
+    {
+      "type": "code",
+      "text": "server {\n    listen 80;\n    server_name your-domain.com;\n    # 上传文件大小限制\n    client_max_body_size 100M;\n    # 后端API代理\n    # 注意：location /api/ 会去掉 /api 前缀后转发到后端\n    # 例如：/api/chat -> http://127.0.0.1:8000/chat\n    location /api/ {\n        proxy_pass http://127.0.0.1:8000/;\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto $scheme;\n        # 超时设置\n        proxy_connect_timeout 60s;\n        proxy_send_timeout 60s;\n        proxy_read_timeout 60s;\n        # WebSocket支持（如果未来需要）\n        proxy_http_version 1.1;\n        proxy_set_header Upgrade $http_upgrade;\n        proxy_set_header Connection \"upgrade\";\n    }\n    # 静态文件\n    location /uploads/ {\n        alias /var/www/xinyu/uploads/;\n        expires 30d;\n    }\n    # 健康检查\n    location /health {\n        proxy_pass http://127.0.0.1:8000/health;\n        access_log off;\n    }\n    # API文档\n    location /docs {\n        proxy_pass http://127.0.0.1:8000/docs;\n    }\n}"
+    },
+    {
+      "type": "paragraph",
+      "text": "启用站点："
+    },
+    {
+      "type": "code",
+      "text": "# 创建符号链接\nsudo ln -s /etc/nginx/sites-available/xinyu /etc/nginx/sites-enabled/\n# 测试配置\nsudo nginx -t\n# 重新加载Nginx\nsudo systemctl reload nginx"
+    },
+    {
+      "type": "paragraph",
+      "text": "访问 [http://your-domain.com/docs]() 即可看到 API 文档。"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "**四、HTTPS 安全加固：让用户安心交谈**"
+    },
+    {
+      "type": "paragraph",
+      "text": "情感聊天涉及大量隐私对话，所以必须启用 HTTPS 加密传输。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "4.1 使用 Let’s Encrypt 免费证书"
+    },
+    {
+      "type": "paragraph",
+      "text": "**安装 Certbot**："
+    },
+    {
+      "type": "code",
+      "text": "# Ubuntu/Debian\nsudo apt update\nsudo apt install certbot python3-certbot-nginx -y\n# CentOS/RHEL\nsudo yum install certbot python3-certbot-nginx -y"
+    },
+    {
+      "type": "paragraph",
+      "text": "**申请证书**："
+    },
+    {
+      "type": "code",
+      "text": "# 自动配置Nginx\nsudo certbot --nginx -d your-domain.com\n# 或手动配置\nsudo certbot certonly --nginx -d your-domain.com"
+    },
+    {
+      "type": "paragraph",
+      "text": "**自动续期**："
+    },
+    {
+      "type": "paragraph",
+      "text": "Certbot 会自动配置 cron 任务，无需手动操作。可测试续期："
+    },
+    {
+      "type": "code",
+      "text": "sudo certbot renew --dry-run"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "4.2 配置 HTTPS Nginx"
+    },
+    {
+      "type": "paragraph",
+      "text": "Certbot 会自动修改 Nginx 配置，但也可手动配置："
+    },
+    {
+      "type": "code",
+      "text": "server {\n    listen 80;\n    server_name your-domain.com;\n    # 强制跳转HTTPS\n    return 301 https://<!--§§MATH_0§§-->request_uri;\n}\nserver {\n    listen 443 ssl http2;\n    server_name your-domain.com;\n    # SSL证书配置\n    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;\n    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;\n    # SSL优化配置\n    ssl_protocols TLSv1.2 TLSv1.3;\n    ssl_ciphers HIGH:!aNULL:!MD5;\n    ssl_prefer_server_ciphers on;\n    ssl_session_cache shared:SSL:10m;\n    ssl_session_timeout 10m;\n    # HSTS\n    add_header Strict-Transport-Security \"max-age=31536000; includeSubDomains\" always;\n    # 后端API代理\n    # 注意：location /api/ 会去掉 /api 前缀后转发到后端\n    # 例如：/api/chat -> http://127.0.0.1:8000/chat\n    location /api/ {\n        proxy_pass http://127.0.0.1:8000/;\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto $scheme;\n    }\n    # 其他配置...\n}"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "4.3 防火墙配置"
+    },
+    {
+      "type": "paragraph",
+      "text": "配置 UFW 防火墙："
+    },
+    {
+      "type": "code",
+      "text": "# 安装UFW\nsudo apt install ufw -y\n# 允许SSH\nsudo ufw allow 22/tcp\n# 允许HTTP和HTTPS\nsudo ufw allow 80/tcp\nsudo ufw allow 443/tcp\n# 启用防火墙\nsudo ufw enable\n# 查看状态\nsudo ufw status"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "五、部署策略对比与选型建议"
+    },
+    {
+      "type": "paragraph",
+      "text": "部署方式对比如表 24-3 所示。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/18/4b/183a19524f39973f2ca3a8509a49d34b.jpg?wh=7455x3339",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "推荐路径："
+    },
+    {
+      "type": "paragraph",
+      "text": "初期 MVP 产品阶段，采用云服务器 + Gunicorn 的方案；"
+    },
+    {
+      "type": "paragraph",
+      "text": "小规模发展的成长期，可以选择 Docker Compose 的方案；"
+    },
+    {
+      "type": "paragraph",
+      "text": "进入大规模应用的成熟期，可以选择 Kubernetes + CI/CD 的方案。"
+    },
+    {
+      "type": "code",
+      "text": "初期 (MVP) → 云服务器 + Gunicorn\n          ↓\n成长期 (小规模) → Docker Compose\n          ↓\n成熟期 (大规模) → Kubernetes + CI/CD"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "六、常见问题排查与解决方案"
+    },
+    {
+      "type": "paragraph",
+      "text": "多平台的部署可能会遇到一些问题，这里我梳理了最常见的六个问题，提供了对应排查方法与解决方案供你参考。"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "问题 1：前端无法连接后端 API"
+    },
+    {
+      "type": "paragraph",
+      "text": "**症状**：前端请求返回 404 或 CORS 错误"
+    },
+    {
+      "type": "paragraph",
+      "text": "**排查**："
+    },
+    {
+      "type": "code",
+      "text": "# 检查后端是否运行\ncurl http://localhost:8000/health\n# 检查Nginx配置\nsudo nginx -t\nsudo nginx -T | grep proxy_pass\n# 检查防火墙\nsudo ufw status"
+    },
+    {
+      "type": "paragraph",
+      "text": "**解决方案**："
+    },
+    {
+      "type": "paragraph",
+      "text": "确保后端服务正常运行检查 Nginx 代理配置正确配置正确的 CORS 域名（生产环境不要用`*`）"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "问题 2：向量数据库初始化失败"
+    },
+    {
+      "type": "paragraph",
+      "text": "**症状**：RAG 功能不可用，日志显示 ChromaDB 错误"
+    },
+    {
+      "type": "paragraph",
+      "text": "**排查**："
+    },
+    {
+      "type": "code",
+      "text": "# 检查ChromaDB目录权限\nls -la chroma_db/\n# 检查存储空间\ndf -h\n# 查看日志\ntail -f log/application.log"
+    },
+    {
+      "type": "paragraph",
+      "text": "**解决方案**："
+    },
+    {
+      "type": "code",
+      "text": "# 重新初始化\nmake rag-init\n# 或手动创建目录\nmkdir -p chroma_db\nchmod 755 chroma_db"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "问题 3：Gunicorn 超时或崩溃"
+    },
+    {
+      "type": "paragraph",
+      "text": "**症状**：API 请求超时或 500 错误"
+    },
+    {
+      "type": "paragraph",
+      "text": "**排查**："
+    },
+    {
+      "type": "code",
+      "text": "# 查看Gunicorn日志\ntail -f log/error.log\n# 查看系统资源\ntop\nfree -h"
+    },
+    {
+      "type": "paragraph",
+      "text": "**解决方案**："
+    },
+    {
+      "type": "paragraph",
+      "text": "增加超时时间："
+    },
+    {
+      "type": "code",
+      "text": "# 修改启动脚本\ngunicorn -w 4 -k uvicorn.workers.UvicornWorker backend.app:app \\\n    --bind 0.0.0.0:8000 \\\n    --timeout 120  # 增加到120秒"
+    },
+    {
+      "type": "paragraph",
+      "text": "增加工作进程数："
+    },
+    {
+      "type": "code",
+      "text": "# 根据CPU核心数调整\ngunicorn -w 8 -k uvicorn.workers.UvicornWorker ..."
+    },
+    {
+      "type": "paragraph",
+      "text": "添加健康检查："
+    },
+    {
+      "type": "code",
+      "text": "# 监控服务健康\ncurl http://localhost:8000/health"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "问题 4：MySQL 连接失败"
+    },
+    {
+      "type": "paragraph",
+      "text": "**症状**：数据库连接超时"
+    },
+    {
+      "type": "paragraph",
+      "text": "**排查**："
+    },
+    {
+      "type": "code",
+      "text": "# 测试MySQL连接\nmysql -u emotional_chat -p -h localhost\n# 检查MySQL服务\nsudo systemctl status mysql\n# 查看MySQL日志\nsudo tail -f /var/log/mysql/error.log"
+    },
+    {
+      "type": "paragraph",
+      "text": "**解决方案**："
+    },
+    {
+      "type": "paragraph",
+      "text": "确保 MySQL 服务运行：sudo systemctl start mysql检查防火墙规则验证用户权限："
+    },
+    {
+      "type": "code",
+      "text": "SHOW GRANTS FOR 'emotional_chat'@'localhost';"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "问题 5：Docker 容器无法启动"
+    },
+    {
+      "type": "paragraph",
+      "text": "**症状**：docker-compose up 失败"
+    },
+    {
+      "type": "paragraph",
+      "text": "**排查**："
+    },
+    {
+      "type": "code",
+      "text": "# 查看详细日志\ndocker-compose logs backend\n# 检查镜像\ndocker images\n# 检查网络\ndocker network ls"
+    },
+    {
+      "type": "paragraph",
+      "text": "**解决方案**："
+    },
+    {
+      "type": "code",
+      "text": "# 清理并重建\ndocker-compose down -v\ndocker-compose build --no-cache\ndocker-compose up -d"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "问题 6：API 响应缓慢"
+    },
+    {
+      "type": "paragraph",
+      "text": "**症状**：对话响应时间过长"
+    },
+    {
+      "type": "paragraph",
+      "text": "**排查**："
+    },
+    {
+      "type": "code",
+      "text": "# 查看监控指标\ncurl http://localhost:9090/api/v1/query?query=up\n# 查看慢查询日志\nmysql -u root -p -e \"SHOW PROCESSLIST;\""
+    },
+    {
+      "type": "paragraph",
+      "text": "**解决方案**："
+    },
+    {
+      "type": "paragraph",
+      "text": "启用缓存（Redis）优化向量检索（减少`top_k`）使用连接池添加 CDN 加速静态资源"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "七、监控和维护"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "7.1 系统监控"
+    },
+    {
+      "type": "paragraph",
+      "text": "项目已集成 Prometheus 和 Grafana 监控栈。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**Prometheus 指标**："
+    },
+    {
+      "type": "code",
+      "text": "# 查看所有指标\ncurl http://localhost:9090/api/v1/label/__name__/values\n# 查询指标\ncurl 'http://localhost:9090/api/v1/query?query=up'"
+    },
+    {
+      "type": "paragraph",
+      "text": "**Grafana 仪表板**：访问 [http://localhost:3001]() 登录 Grafana（默认账号：admin/admin），查看预配置的仪表板。**注意**：如果 Grafana 使用默认 3000 端口，需要修改 docker-compose.yml 中的端口映射为 3001:3000，以避免与前端服务端口冲突。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "7.2 日志管理"
+    },
+    {
+      "type": "paragraph",
+      "text": "**查看应用日志**："
+    },
+    {
+      "type": "code",
+      "text": "# 实时查看\ntail -f log/application.log\n# 查看错误日志\ntail -f log/error.log\n# 搜索特定日志\ngrep \"ERROR\" log/application.log"
+    },
+    {
+      "type": "paragraph",
+      "text": "**日志轮转**："
+    },
+    {
+      "type": "paragraph",
+      "text": "项目已配置自动日志轮转（10MB/5 个备份），无需手动管理。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**Docker 日志**："
+    },
+    {
+      "type": "code",
+      "text": "# 查看容器日志\ndocker-compose logs -f backend\n# 查看最近100行\ndocker-compose logs --tail=100 backend\n# 导出日志\ndocker-compose logs backend > backend.log"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "7.3 数据库维护"
+    },
+    {
+      "type": "paragraph",
+      "text": "**备份数据库**："
+    },
+    {
+      "type": "code",
+      "text": "# 手动备份\nmysqldump -u emotional_chat -p emotional_chat > backup_$(date +%Y%m%d).sql\n# 压缩备份\nmysqldump -u emotional_chat -p emotional_chat | gzip > backup_$(date +%Y%m%d).sql.gz\n# 设置自动备份（crontab）\n0 2 * * * mysqldump -u emotional_chat -p[password] emotional_chat > /backup/emotional_chat_$(date +\\%Y\\%m\\%d).sql"
+    },
+    {
+      "type": "paragraph",
+      "text": "**恢复数据库**："
+    },
+    {
+      "type": "code",
+      "text": "# 恢复\nmysql -u emotional_chat -p emotional_chat < backup_20250116.sql"
+    },
+    {
+      "type": "paragraph",
+      "text": "**数据库清理**："
+    },
+    {
+      "type": "code",
+      "text": "# 清理旧日志\nmysql -u emotional_chat -p << EOF\nDELETE FROM emotional_chat.system_logs WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY);\nEOF\n# 优化表\nmysql -u emotional_chat -p -e \"OPTIMIZE TABLE emotional_chat.chat_messages;\""
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "7.4 性能优化"
+    },
+    {
+      "type": "paragraph",
+      "text": "**数据库索引**："
+    },
+    {
+      "type": "code",
+      "text": "-- 查看慢查询\nSHOW VARIABLES LIKE 'slow_query%';\n-- 添加索引\nCREATE INDEX idx_session_created ON chat_messages(session_id, created_at);\nCREATE INDEX idx_user_emotion ON chat_messages(user_id, emotion);"
+    },
+    {
+      "type": "paragraph",
+      "text": "**缓存策略**："
+    },
+    {
+      "type": "code",
+      "text": "# Redis缓存（项目已配置）\ndocker-compose exec redis redis-cli ping\n# 查看缓存统计\ndocker-compose exec redis redis-cli INFO stats"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "7.5 安全审计"
+    },
+    {
+      "type": "paragraph",
+      "text": "**定期更新依赖**："
+    },
+    {
+      "type": "code",
+      "text": "# 检查过时的包\npip list --outdated\n# 更新依赖\npip install --upgrade -r requirements.txt\n# Docker镜像更新\ndocker-compose pull\ndocker-compose up -d"
+    },
+    {
+      "type": "paragraph",
+      "text": "**安全扫描**："
+    },
+    {
+      "type": "code",
+      "text": "# 使用Docker安全扫描\ndocker scan emotional_chat_backend\n# 使用npm audit（前端）\ncd frontend\nnpm audit\nnpm audit fix"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "7.6 应急预案"
+    },
+    {
+      "type": "paragraph",
+      "text": "**服务降级**："
+    },
+    {
+      "type": "code",
+      "text": "# 关闭非关键功能\n# 编辑config.env，禁用RAG或Agent\nRAG_ENABLED=false\nAGENT_ENABLED=false\n# 重启服务\nsudo systemctl restart xinyu"
+    },
+    {
+      "type": "paragraph",
+      "text": "**回滚版本**："
+    },
+    {
+      "type": "code",
+      "text": "# Git回滚\ngit log --oneline\ngit checkout <previous-commit-hash>\n# 重新部署\ndocker-compose down\ndocker-compose up -d"
+    },
+    {
+      "type": "paragraph",
+      "text": "**紧急重启**："
+    },
+    {
+      "type": "code",
+      "text": "# 快速重启\nsudo systemctl restart xinyu\n# Docker重启\ndocker-compose restart backend"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "八、结语：部署不是终点，而是新旅程的起点"
+    },
+    {
+      "type": "paragraph",
+      "text": "当我们成功将“心语“机器人部署到云端，看着第一个真实用户发来消息：“谢谢你听我说这些……我觉得好多了”，那一刻，所有的技术细节都化作了温暖的回响。"
+    },
+    {
+      "type": "paragraph",
+      "text": "本指南我们完成了从本地开发到多平台部署的全过程，掌握了两种核心部署方式。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**Docker 容器化，**迈向现代化工程："
+    },
+    {
+      "type": "list",
+      "items": [
+        "通过容器化技术实现环境一致性，解决了“在我机器上能跑”的经典问题。",
+        "一键部署、快速迁移，支持多环境（开发、测试、生产）的无缝切换。",
+        "资源隔离、依赖管理自动化，让运维工作更加高效可靠。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "**云服务器部署，**打下坚实基础："
+    },
+    {
+      "type": "list",
+      "items": [
+        "直接部署到云服务器，掌握从系统配置到服务管理的全流程。",
+        "通过 Nginx 反向代理、Systemd 服务管理，构建稳定可靠的生产环境。",
+        "理解底层原理，为后续的容器化部署和云原生架构打下坚实基础。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "但这并非终点，而是新旅程的起点。一个真正成熟的大模型应用，还需面对以下问题。"
+    },
+    {
+      "type": "list",
+      "items": [
+        "如何监控系统健康？（项目已集成 Prometheus/Grafana）",
+        "如何应对流量高峰？（负载均衡与自动扩缩容）",
+        "如何持续迭代而不中断服务？（蓝绿部署 / 灰度发布）"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "**更重要的是，部署之后的价值闭环**："
+    },
+    {
+      "type": "blockquote",
+      "text": "技术的终极意义，不在于它多先进，而在于它能否真正帮助一个人，哪怕只是片刻的安慰。"
+    },
+    {
+      "type": "paragraph",
+      "text": "你今天部署的，不仅仅是一个 AI 聊天机器人，更是一个可能改变他人生活的数字生命体。它的每一次回应，都承载着你的设计哲学与人文关怀。"
+    },
+    {
+      "type": "paragraph",
+      "text": "在未来的迭代中，我们将继续深化应用监控与运维体系的构建，学习如何通过日志分析、性能追踪与故障恢复机制，让“心语”在风雨中依然稳健前行。"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "思考题"
+    },
+    {
+      "type": "paragraph",
+      "text": "在完成“心语”情感聊天机器人的部署后，假设你的应用突然收到大量用户反馈：对话响应延迟显著增加，部分请求甚至超时失败。此时你作为系统负责人，需快速定位并解决问题。"
+    },
+    {
+      "type": "paragraph",
+      "text": "请结合本章所学内容，系统性地回答以下问题："
+    },
+    {
+      "type": "paragraph",
+      "text": "你会从哪几个维度进行排查？（提示：可从网络、服务、资源、依赖等层面展开）如果最终定位到问题是“向量数据库 ChromaDB 在高并发下检索性能急剧下降”，你会采取哪些短期应急措施和长期优化策略？为什么在生产环境中使用 Docker 或云服务器时，仅靠重启服务不能从根本上解决问题？你认为一个具备“自愈能力”的部署架构应包含哪些关键组件？"
+    },
+    {
+      "type": "blockquote",
+      "text": "要求：回答需体现运维思维与工程化视角，结合这一讲提到的技术栈（如 Nginx、Gunicorn、Docker、Prometheus、Redis 等），提出可落地的解决方案，而非泛泛而谈。希望通过今天的学习，让你对情感机器人的开发全程有个大致认识。如果有任何疑问，期待你在留言区和我交流。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/e1/be/e1920df75c9a6583cea335a35705e7be.png",
+      "alt": ""
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/5c/44/5c6be66a96ea82b1fdc24216f92c7544.png?wh=2676x1420",
+      "alt": ""
+    }
+  ],
+  "images": [
+    {
+      "src": "https://static001.geekbang.org/resource/image/e7/cb/e73d616fa935cb080yyb079069bb69cb.jpg?wh=6851x3379",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/58/98/5876612328f98033770c4a720ed96298.png?wh=1484x1544",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/54/14/54d6a693494f01624358d1bcbaa7f314.jpg?wh=6661x3349",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/47/5f/477ff575f0ba27907325615dcba3e15f.png?wh=2930x1346",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/18/4b/183a19524f39973f2ca3a8509a49d34b.jpg?wh=7455x3339",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/e1/be/e1920df75c9a6583cea335a35705e7be.png",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/5c/44/5c6be66a96ea82b1fdc24216f92c7544.png?wh=2676x1420",
+      "alt": ""
+    }
+  ],
+  "totalBlocks": 842,
+  "textLength": 15923,
+  "imageFiles": {
+    "https://static001.geekbang.org/resource/image/e7/cb/e73d616fa935cb080yyb079069bb69cb.jpg?wh=6851x3379": "assets/20260518-937680-01-头图.jpg",
+    "https://static001.geekbang.org/resource/image/58/98/5876612328f98033770c4a720ed96298.png?wh=1484x1544": "assets/20260518-937680-02-图片1.png",
+    "https://static001.geekbang.org/resource/image/54/14/54d6a693494f01624358d1bcbaa7f314.jpg?wh=6661x3349": "assets/20260518-937680-03-图片2.jpg",
+    "https://static001.geekbang.org/resource/image/47/5f/477ff575f0ba27907325615dcba3e15f.png?wh=2930x1346": "assets/20260518-937680-04-图片3.png",
+    "https://static001.geekbang.org/resource/image/18/4b/183a19524f39973f2ca3a8509a49d34b.jpg?wh=7455x3339": "assets/20260518-937680-05-图片4.jpg",
+    "https://static001.geekbang.org/resource/image/e1/be/e1920df75c9a6583cea335a35705e7be.png": "assets/20260518-937680-06-图片5.png",
+    "https://static001.geekbang.org/resource/image/5c/44/5c6be66a96ea82b1fdc24216f92c7544.png?wh=2676x1420": "assets/20260518-937680-07-图片6.png"
+  }
+}

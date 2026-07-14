@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Obsidian
+.trash/
+
+# Logs
+*.log
+
+# Videos
+*.mp4
+*.m3u8
+*.ts
+
+# Downloaded courses
+geekbang_video/
+sanjieke_video/
+
+# Trae session-specific temp files (2026-06-02 batch extract)
+.trae/skills/*/scripts/_*
+!.trae/skills/*/scripts/_debug.js
+!.trae/skills/*/scripts/_debug_expr.txt
+.trae/documents/final_report.md
+.trae/documents/validation_report.json
+.trae/documents/validation_report.md
+.trae/documents/文档通译校验与修复计划.md

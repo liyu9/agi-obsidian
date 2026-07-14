@@ -1,0 +1,463 @@
+{
+  "index": 31,
+  "title": "31｜可靠性：重试、循环控制与成本围栏",
+  "chapter": "模块五：企业级加固，确保系统安全可控 (4讲)",
+  "duration": "时长 24:36",
+  "blocks": [
+    {
+      "type": "text",
+      "text": "欢迎回来！上节课我们搭好了可观测性的地基——Hook 骨架 + Langfuse 全链路追踪。现在你能看见 Agent 的每一步了：第几轮推理、调了什么工具、花了多少 token。"
+    },
+    {
+      "type": "paragraph",
+      "text": "但这里有个问题：你不可能一直盯着 Dashboard。 Agent 凌晨三点触发了一个任务，你不在；周末跑了一批数据处理，你不看。就算你看了，看见 Agent 第 47 轮还在重复搜索——然后呢？你能做的只是手动停掉它，但损失已经发生了。"
+    },
+    {
+      "type": "paragraph",
+      "text": "观测解决的是看见的问题。但真正让 Agent 变得可靠的，不是看见，而是自动干预。利用上节课搭好的 Hook 骨架，在关键节点上挂载策略——不是记录日志，而是在问题发生的那一刻就拦截。这节课我们做的就是这件事：在 30 课的 Hook 骨架上插入三个可靠性策略，让系统自己保护自己。"
+    },
+    {
+      "type": "text",
+      "text": "一、三个痛点，三个策略"
+    },
+    {
+      "type": "quote",
+      "text": "💡 课程说明：本节代码已同步至 GitHub，地址：https://github.com/kid0317/crewai_mas_demo/blob/main/m5l31/"
+    },
+    {
+      "type": "text",
+      "text": "在给出方案之前，先看看 Agent 在生产环境里最常遇到的三个可靠性问题。它们分别指向我们今天要实现的三个策略。"
+    },
+    {
+      "type": "paragraph",
+      "text": "需要提前说明的是：课程中的三个痛点是通用痛点——所有 Agent 系统都会遇到。但你在自己的业务里，一定要发现自己的痛点。比如金融场景，Agent 在工具请求中发出了用户身份证号，你可能就要立刻拦住它；代码场景，Agent 提交的代码没过单测，你也要在 Hook 层拦截。这些业务专属的护栏策略，同样可以用我们今天搭的框架来实现——写一个策略类，挂到 Hook 上就行。"
+    },
+    {
+      "type": "paragraph",
+      "text": "痛点一：长任务被单步失败拖垮。 你的 Agent 执行一个三小时的复杂任务——调用了上百次模型，做了几十次工具调用。到最后一步，某个 API 返回了 500 错误。整个任务失败，前面三小时全白跑。问题是，这个 500 错误可能只是服务端的瞬态抖动——等 2 秒再试一次就好了。但你的 Agent 不会重试，它直接报告失败。一个长任务会成百次调用模型，任意一次的偶发失败都会拖垮整体成功率。 这指向我们的第一个策略：重试。"
+    },
+    {
+      "type": "paragraph",
+      "text": "痛点二：Agent 陷入死胡同无限循环。 Agent 在推理过程中遇到了一个它解决不了的问题，但它不知道自己解决不了——它反复用同样的参数调同一个工具，每次得到同样的结果，然后再试一次。它可能循环 200 次才被 max_iter 硬性截断。相同参数重复 200 次花了 $63、两个 Agent 互聊六小时花了 $200——这些都是真实发生的事故。Agent 没有\"记住自己已经试过\"的机制，同样的输入大概率产生同样的输出。 这指向我们的第二个策略：循环检测。"
+    },
+    {
+      "type": "paragraph",
+      "text": "痛点三：Agent 真的在干活，但方式太贵。 Agent 没有循环，确实在有效推进任务。但它选择的方式有问题——用了最贵的模型、加载了过多的上下文、做了不必要的深度搜索。它干了一夜，第二天早上你发现账单 $300。它做完了事情，但成本完全不可接受。Agent 的成本不可预测性是结构性的——同一个任务可能 3 步也可能 17 步。 这指向我们的第三个策略：成本围栏。"
+    },
+    {
+      "type": "text",
+      "text": "三个问题，三个策略。下面逐个展开。"
+    },
+    {
+      "type": "text",
+      "text": "二、重试：什么时候该重试，什么时候不该"
+    },
+    {
+      "type": "paragraph",
+      "text": "重试本身在工程上很简单——等一下再试一次。Agent 场景下，难的不是\"怎么重试\"，而是\"该不该重试\"。 错误的重试比不重试更贵。"
+    },
+    {
+      "type": "text",
+      "text": "可重试 vs 不可重试"
+    },
+    {
+      "type": "text",
+      "text": "错误类型"
+    },
+    {
+      "type": "text",
+      "text": "该重试吗"
+    },
+    {
+      "type": "text",
+      "text": "原因"
+    },
+    {
+      "type": "text",
+      "text": "429 限流"
+    },
+    {
+      "type": "text",
+      "text": "✅ 该重试"
+    },
+    {
+      "type": "text",
+      "text": "瞬态，等一下就好"
+    },
+    {
+      "type": "text",
+      "text": "500/502/503/504 服务端错误"
+    },
+    {
+      "type": "text",
+      "text": "✅ 该重试"
+    },
+    {
+      "type": "text",
+      "text": "服务端抖动，大概率自愈"
+    },
+    {
+      "type": "text",
+      "text": "400 请求错误"
+    },
+    {
+      "type": "text",
+      "text": "❌ 不该重试"
+    },
+    {
+      "type": "text",
+      "text": "请求本身有问题，重试 100 次还是 400"
+    },
+    {
+      "type": "text",
+      "text": "401/403 权限错误"
+    },
+    {
+      "type": "text",
+      "text": "❌ 不该重试"
+    },
+    {
+      "type": "text",
+      "text": "权限问题不会自愈"
+    },
+    {
+      "type": "text",
+      "text": "上下文溢出"
+    },
+    {
+      "type": "text",
+      "text": "❌ 不该重试"
+    },
+    {
+      "type": "text",
+      "text": "重试只会更溢出——错误信息本身也塞进上下文"
+    },
+    {
+      "type": "text",
+      "text": "这个判断才是重试策略的核心。如果你不区分错误类型，一律重试，结果就是：400 错误重试了 3 次，每次都失败，还往上下文里塞了 3K 垃圾 token。"
+    },
+    {
+      "type": "text",
+      "text": "Agent 场景为什么最多 2-3 次"
+    },
+    {
+      "type": "paragraph",
+      "text": "不只是因为第 4 次大概率也不行——更重要的是，每次失败的错误信息都会留在上下文里。一次失败的报错信息通常 1-3K token，三次重试就多了将近 10K 垃圾 token。上下文越脏，后续推理质量越差。重试有隐性成本：不只是多花一次调用的钱，还污染了后续所有步骤的上下文。"
+    },
+    {
+      "type": "text",
+      "text": "RetryTracker：观测重试效果"
+    },
+    {
+      "type": "paragraph",
+      "text": "重试本身不是在 Hook 层做的——重试是调度层的事情，框架自己会处理。Hook 能帮你做的是重试的追踪和观测：哪些工具在反复失败？重试成功率多少？该不该调整重试策略？"
+    },
+    {
+      "type": "paragraph",
+      "text": "我们的 RetryTracker 是纯观测的——它不决定\"要不要重试\"（这是框架的事），它记录\"重试了几次、成功了没有\"："
+    },
+    {
+      "type": "code",
+      "text": "# reliability/retry_tracker.py\n\n\tclass RetryTracker:\n\n\t    def __init__(self, max_retries: int = 3):\n\n\t        self._failures: dict[str, int] = {}       # 每个工具的连续失败次数\n\n\t        self._total_retries = 0\n\n\t        self._successful_retries = 0\n\n\t \n\n\t    def after_tool_handler(self, ctx):\n\n\t        tool = ctx.tool_name\n\n\t        if not ctx.success:\n\n\t            prev = self._failures.get(tool, 0)\n\n\t            self._failures[tool] = prev + 1\n\n\t            if prev > 0:                           # 💡 第一次失败不算\"重试\"\n\n\t                self._total_retries += 1\n\n\t            if self._failures[tool] >= self._max_retries:\n\n\t                self._emit_warning(tool)           # 连续失败达上限 → 告警\n\n\t        else:\n\n\t            if self._failures.get(tool, 0) > 0:\n\n\t                self._successful_retries += 1      # 💡 失败后成功 = 重试成功\n\n\t            self._failures[tool] = 0               # 重置计数"
+    },
+    {
+      "type": "paragraph",
+      "text": "注意第一次失败不计为\"重试\"——第一次是\"初始故障\"，第二次才是\"重试\"。这样 retry_success_rate = successful_retries / total_retries 才有意义。如果这个数字低于 10%，说明你在浪费钱重试不可恢复的错误——该减少重试次数或改进错误分类。"
+    },
+    {
+      "type": "text",
+      "text": "三、循环检测：Agent 最贵的 Bug 是无限循环"
+    },
+    {
+      "type": "paragraph",
+      "text": "为什么 Agent 特别容易循环？因为 LLM 没有\"记住自己已经试过\"的机制。同样的输入大概率产生同样的输出，于是同样的失败反复发生。你的 Agent 用完全一样的参数重试了 200 多次，$63。max_iter=200 确实能救它，但你已经浪费了 197 次的钱。"
+    },
+    {
+      "type": "text",
+      "text": "状态哈希去重"
+    },
+    {
+      "type": "paragraph",
+      "text": "核心方案很直观：对每一步的 tool_name + output 做哈希，连续匹配达到阈值（默认 3 次）即判定为循环并终止。"
+    },
+    {
+      "type": "code",
+      "text": "# reliability/loop_detector.py\n\n\tclass LoopDetector:\n\n\t    def __init__(self, threshold: int = 3):\n\n\t        self._threshold = threshold\n\n\t        self._tool_hashes: list[str] = []      # 💡 工具调用路径\n\n\t        self._turn_hashes: list[str] = []      # 💡 推理轮次路径\n\n\t \n\n\t    def _check_loop(self, hashes: list[str], state: str, ctx):\n\n\t        h = hashlib.md5(state.encode()).hexdigest()[:16]\n\n\t        hashes.append(h)\n\n\t        if len(hashes) >= self._threshold:\n\n\t            recent = hashes[-self._threshold:]\n\n\t            if len(set(recent)) == 1:          # 连续 N 个哈希完全相同\n\n\t                raise GuardrailDeny(\n\n\t                    f\"Loop detected: identical state repeated \"\n\n\t                    f\"{self._threshold} consecutive times\"\n\n\t                )"
+    },
+    {
+      "type": "paragraph",
+      "text": "你可能会问：这和 CrewAI 自带的 max_iter 有什么区别？"
+    },
+    {
+      "type": "paragraph",
+      "text": "max_iter是限速器，哈希去重是方向检测。 max_iter=200，但 200 次里可能只有 3 次是重复——其余 197 次是有效推进。哈希去重在第 3 次重复就发现了\"你在兜圈子\"。两者不矛盾：哈希去重是精准检测，max_iter是最后防线，双保险。"
+    },
+    {
+      "type": "text",
+      "text": "为什么需要两个独立的哈希列表"
+    },
+    {
+      "type": "paragraph",
+      "text": "你可能注意到了 _tool_hashes 和 _turn_hashes 两个列表。这跟 CrewAI 的两种执行路径有关："
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "ReAct 模式：每次工具调用后触发 step_callback（对应 AFTER_TURN）",
+        "原生 function calling 模式：只在最终回答时触发 step_callback——中间的工具调用不触发"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "如果只在 AFTER_TURN 里检测循环，原生 FC 路径下工具连续循环调用 10 次你都发现不了。所以循环检测必须双路径覆盖：after_turn_handler 检测推理循环，after_tool_handler 检测工具调用循环。两条线各自独立计数，互不干扰。"
+    },
+    {
+      "type": "text",
+      "text": "四、成本围栏：在 Agent Loop 里实时算账"
+    },
+    {
+      "type": "text",
+      "text": "Agent 的成本不可预测性是结构性的——1 个用户动作触发 3 到 30+ 个 LLM 调用，团队预估和实际差 3-5 倍不是估不准，是 Agent 路径本身非确定性。"
+    },
+    {
+      "type": "paragraph",
+      "text": "你在 System Prompt 里写\"请控制成本不超过 $10\"。Agent 非常配合：\"好的我会注意控制成本的\"。然后花了 $50。因为它根本不知道每次调用花了多少钱——成本控制必须在 Hook 层用代码实现，不能靠 Agent 自觉。"
+    },
+    {
+      "type": "text",
+      "text": "CostGuard：实时算、设上限"
+    },
+    {
+      "type": "code",
+      "text": "# reliability/cost_guard.py\n\n\tMODEL_PRICES = {\n\n\t    \"qwen-plus\":  {\"input\": 0.80,  \"output\": 2.00},\n\n\t    \"qwen-turbo\": {\"input\": 0.30,  \"output\": 0.60},\n\n\t    \"qwen-max\":   {\"input\": 2.40,  \"output\": 9.60},\n\n\t    \"gpt-4o\":     {\"input\": 2.50,  \"output\": 10.00},\n\n\t    \"gpt-4o-mini\": {\"input\": 0.15, \"output\": 0.60},\n\n\t}\n\n\t \n\n\tclass CostGuard:\n\n\t    def __init__(self, budget_usd: float = 1.0, model: str = \"\"):\n\n\t        self._budget = budget_usd\n\n\t        self._model = model or os.environ.get(\"AGENT_MODEL\", \"qwen-plus\")\n\n\t        self._total_input_tokens = 0\n\n\t        self._total_output_tokens = 0\n\n\t        self._estimated_cost = 0.0\n\n\t \n\n\t    # 💡 AFTER_TURN: 每轮推理后累加 token，计算成本\n\n\t    def after_turn_handler(self, ctx):\n\n\t        self._total_input_tokens += ctx.input_tokens\n\n\t        self._total_output_tokens += ctx.output_tokens\n\n\t        self._estimated_cost = self._calculate_cost()\n\n\t        self._emit_cost_update(ctx)                   # 实时输出成本日志\n\n\t        if self._estimated_cost >= self._budget:\n\n\t            raise GuardrailDeny(\n\n\t                f\"Budget exceeded: ${self._estimated_cost:.4f} >= limit ${self._budget:.2f}\"\n\n\t            )\n\n\t \n\n\t    # 💡 BEFORE_TOOL_CALL: 工具调用前检查预算\n\n\t    def before_tool_handler(self, ctx):\n\n\t        if self._estimated_cost >= self._budget:\n\n\t            raise GuardrailDeny(...)"
+    },
+    {
+      "type": "paragraph",
+      "text": "双重检查：推理完查一次（AFTER_TURN），工具调用前再查一次（BEFORE_TOOL_CALL）。token 数据来自适配层的粗估——中文大约 1 个字 = 1.5 个 token，代码里用 max(1, len(text) * 2 // 3) 做统一估算。粗估够用，精确计费走 Langfuse。"
+    },
+    {
+      "type": "text",
+      "text": "五、代码实战：从策略到 Hook 的工程落地"
+    },
+    {
+      "type": "quote",
+      "text": "🧠 回忆一下：上节课我们讲了 dispatch() 是 fire-and-forget——handler 异常被吞掉，不影响执行。但可靠性策略需要的是阻断能力——检测到循环就停、超预算就拒绝。这就是这节要解决的核心工程问题。"
+    },
+    {
+      "type": "text",
+      "text": "5.1 dispatch_gate：从报警器到保险丝"
+    },
+    {
+      "type": "paragraph",
+      "text": "30 课的 dispatch() 是报警器——响了不影响执行。可靠性策略需要的是保险丝——触发就断电。"
+    },
+    {
+      "type": "paragraph",
+      "text": "方案：在 HookRegistry 上新增一个 dispatch_gate() 方法，唯一的区别是GuardrailDeny异常会向上传播："
+    },
+    {
+      "type": "code",
+      "text": "# hook_framework/registry.py\n\n\t \n\n\tclass GuardrailDeny(Exception):\n\n\t    \"\"\"可靠性策略拒绝当前操作时抛出。\"\"\"\n\n\t    def __init__(self, reason: str):\n\n\t        self.reason = reason\n\n\t        super().__init__(reason)\n\n\t \n\n\tclass HookRegistry:\n\n\t    # 30 课已有 dispatch()\n\n\t \n\n\t    # 💡 核心点：GuardrailDeny 传播，其他异常吞掉\n\n\t    def dispatch_gate(self, event_type, context):\n\n\t        for handler in self._handlers[event_type]:\n\n\t            try:\n\n\t                handler(context)\n\n\t            except GuardrailDeny:\n\n\t                raise                    # 保险丝：传播\n\n\t            except Exception as e:\n\n\t                print(f\"handler error: {e}\", file=sys.stderr)"
+    },
+    {
+      "type": "paragraph",
+      "text": "为什么不直接让 dispatch() 也传播异常？因为观测 handler 和策略 handler 混用同一个 registry。Langfuse handler 网络超时抛异常，你不希望 Agent 因此停下来。只有策略 handler 主动抛出的 GuardrailDeny 才应该阻断执行。"
+    },
+    {
+      "type": "text",
+      "text": "5.2 pending_deny：绕过框架的异常吞噬"
+    },
+    {
+      "type": "paragraph",
+      "text": "这里有一个实际的框架约束：CrewAI 的 @before_tool_call 和 @after_tool_call 内部用 except Exception: pass 吞掉了所有异常。你在 handler 里抛 GuardrailDeny，CrewAI 直接吃掉，Agent 继续运行。"
+    },
+    {
+      "type": "paragraph",
+      "text": "解决方案是 pending_deny 模式："
+    },
+    {
+      "type": "code",
+      "text": "# hook_framework/crew_adapter.py\n\n\tclass CrewObservabilityAdapter:\n\n\t    def __init__(self, registry, session_id=\"\"):\n\n\t        # ...\n\n\t        self._pending_deny: GuardrailDeny | None = None\n\n\t \n\n\t    def install_global_hooks(self):\n\n\t        @before_tool_call\n\n\t        def _before_tool(context):\n\n\t            if self._pending_deny:\n\n\t                return False               # 已有 deny → 直接阻止\n\n\t            try:\n\n\t                registry.dispatch_gate(EventType.BEFORE_TOOL_CALL, ...)\n\n\t            except GuardrailDeny as e:\n\n\t                self._pending_deny = e     # 💡 存下来，不抛出（会被吞掉）\n\n\t                return False               # 用 CrewAI 原生机制阻止工具调用\n\n\t            return None"
+    },
+    {
+      "type": "paragraph",
+      "text": "工作流程：handler 抛 GuardrailDeny → 适配层 catch 住、存到 _pending_deny、返回 False → CrewAI 原生阻止工具 → 下一次 step_callback 触发时真正 raise。"
+    },
+    {
+      "type": "paragraph",
+      "text": "为什么在 step_callback 里 raise？因为 step_callback 是通过 Crew(step_callback=...) 传入的普通回调——不在 CrewAI 的 try/except 保护范围内。"
+    },
+    {
+      "type": "code",
+      "text": "def make_step_callback(self):\n\n\t        def callback(step):\n\n\t            try:\n\n\t                registry.dispatch_gate(EventType.AFTER_TURN, ...)\n\n\t            finally:\n\n\t                self._current_turn_has_llm = False\n\n\t                self._pending_input_tokens = 0\n\n\t \n\n\t            pending = self._pending_deny\n\n\t            self._pending_deny = None          # 💡 无条件清除\n\n\t            if pending:\n\n\t                raise pending                  # 在安全的上下文中抛出\n\n\t        return callback"
+    },
+    {
+      "type": "paragraph",
+      "text": "两个关键细节：try/finally 确保状态重置；无条件清除 _pending_deny 防止残留。当框架吞掉你的异常时，你需要找到另一个不被保护的出口。 这是处理框架约束的通用思路。"
+    },
+    {
+      "type": "text",
+      "text": "5.3 策略声明式注册：hooks.yaml strategies 段"
+    },
+    {
+      "type": "paragraph",
+      "text": "三个策略怎么注册到 HookRegistry 上？不是写代码手动注册——而是在 hooks.yaml 里用 strategies 段声明式加载。列表顺序就是执行顺序，顺序影响行为。"
+    },
+    {
+      "type": "code",
+      "text": "# shared_hooks/hooks.yaml（下半部分，31 课新增）\n\n\t# ⚠️ 顺序敏感：列表顺序 = 执行顺序\n\n\t# 💡 cost_guard 必须在 loop_detector 之前——已发生的成本必须先记录\n\n\tstrategies:\n\n\t  - class: retry_tracker.RetryTracker\n\n\t    config:\n\n\t      max_retries: 3\n\n\t    hooks:\n\n\t      AFTER_TOOL_CALL: after_tool_handler\n\n\t \n\n\t  - class: cost_guard.CostGuard\n\n\t    config:\n\n\t      budget_usd: 1.0\n\n\t    hooks:\n\n\t      AFTER_TURN: after_turn_handler\n\n\t      BEFORE_TOOL_CALL: before_tool_handler\n\n\t \n\n\t  - class: loop_detector.LoopDetector\n\n\t    config:\n\n\t      threshold: 3\n\n\t    hooks:\n\n\t      AFTER_TOOL_CALL: after_tool_handler\n\n\t      AFTER_TURN: after_turn_handler"
+    },
+    {
+      "type": "paragraph",
+      "text": "和 30 课的 hooks 段（无状态函数）不同，strategies 段加载的是有状态的类实例。HookLoader 读到 class: cost_guard.CostGuard 后，用 config 里的参数调用构造函数，创建一个实例，然后把 hooks 里声明的实例方法注册到对应事件上。同一个 CostGuard 实例的 after_turn_handler（累加成本）和 before_tool_handler（检查预算）共享 _estimated_cost 状态——这就是为什么需要\"有状态类\"而不是\"无状态函数\"。"
+    },
+    {
+      "type": "paragraph",
+      "text": "关键决策：AFTER_TURN 上 cost_guard 在 loop_detector 之前。 因为 dispatch_gate 在第一个 GuardrailDeny 处就停止后续 handler。如果循环检测先执行并 deny，成本记录被跳过——已发生的成本必须先记录。"
+    },
+    {
+      "type": "text",
+      "text": "5.4 端到端演示"
+    },
+    {
+      "type": "paragraph",
+      "text": "demo.py 把所有组件串在一起："
+    },
+    {
+      "type": "code",
+      "text": "# 正常运行——观测 + 策略全部在线\n\n\tpython3 demo.py\n\n\tpython3 demo.py \"为一个短链接服务产出技术设计文档\"\n\n\t \n\n\t# 低预算模式——几轮推理后触发成本围栏\n\n\tCOST_GUARD_BUDGET=0.001 python3 demo.py"
+    },
+    {
+      "type": "paragraph",
+      "text": "核心结构：HookLoader.load_two_layers() 一次性加载 30 课的观测 hooks 和 31 课的策略 hooks。 两者共用同一个 HookRegistry、同一套 EventType、同一份 hooks.yaml——上半部分是 hooks 段（无状态函数），下半部分是 strategies 段（有状态类）。同一条管道，两种加载方式。"
+    },
+    {
+      "type": "paragraph",
+      "text": "和 30 课的 demo.py 比，唯一的结构差异是执行区多了 try/except GuardrailDeny：策略触发时不是程序崩溃，而是优雅拦截、输出原因、打印度量数据。在不改 Agent 代码的前提下，通过 hooks.yaml 声明式增加可靠性保障。"
+    },
+    {
+      "type": "paragraph",
+      "text": "执行结束后，每个策略暴露 get_metrics() 方法输出度量数据。这些数据驱动后续调参——retry_success_rate 太低就减少重试次数，loop_detections 频繁就降低阈值，deny_count 太多就调整预算或任务复杂度。护栏和 Agent 一样需要可观测性：Agent 的可观测性让你看见问题，护栏的可观测性让你确认问题被解决了。"
+    },
+    {
+      "type": "text",
+      "text": "六、避坑指南：最佳实践与反模式"
+    },
+    {
+      "type": "text",
+      "text": "🚫 严重破坏可靠性的\"反模式\""
+    },
+    {
+      "type": "paragraph",
+      "text": "1. 靠 Prompt 控制成本：Agent 说\"好的\"然后超支 5 倍"
+    },
+    {
+      "type": "paragraph",
+      "text": "现象：System Prompt 里写\"请控制成本不超过 $10\"，Agent 回复\"好的我会注意控制成本\"。实际花费 $50。致命后果：Agent 没有成本感知能力，它不知道每次调用花了多少钱。Prompt 层面的成本控制就像跟员工说\"注意节约\"但不给预算表——态度很好，执行为零。成本控制必须在 Hook 层用代码实现，不能靠 Agent 自觉。"
+    },
+    {
+      "type": "paragraph",
+      "text": "2. 只设 max_iter 不做状态去重：200 次无效循环才停下来"
+    },
+    {
+      "type": "paragraph",
+      "text": "现象：设了 max_iter=200 作为安全网。Agent 从第 3 次开始就在重复，但一直到第 200 次才被停下来。致命后果：197 次无效推理，每次都在烧 token。max_iter 是最后防线，不是检测机制——它不关心\"内容是不是重复的\"，只关心\"次数够了没有\"。状态哈希去重在第 3 次就能发现循环，省下 197 次的成本。"
+    },
+    {
+      "type": "paragraph",
+      "text": "3. 所有错误都重试：不可恢复错误白白浪费 token"
+    },
+    {
+      "type": "paragraph",
+      "text": "现象：不区分错误类型，400/401/403 也重试。每次都失败，还往上下文里塞 1-3K 垃圾 token。致命后果：三次无效重试 = ~10K 上下文污染，后续推理质量急剧下降。区分可重试（429/5xx 瞬态）vs 不可重试（4xx 永久），只对瞬态错误重试。"
+    },
+    {
+      "type": "paragraph",
+      "text": "4. 用请求数限流而不用 token：成本差几百倍"
+    },
+    {
+      "type": "paragraph",
+      "text": "现象：不管是循环次数控制还是成本围栏，都用\"请求次数\"而非 token 计量。设了\"最多 50 次请求\"就觉得安全了。致命后果：Agent 的每次请求 token 量天差地别——一次简单的工具调用和一次带几万上下文的推理，成本可以差几百倍。用请求数做限流和成本控制没有任何实际意义。所有限流和成本围栏都应该换算到 token——包括 Agent 的整体限流，因为服务器能扛多少也取决于 token 总量，而不是请求数。"
+    },
+    {
+      "type": "text",
+      "text": "💡 稳健落地的\"最佳实践\""
+    },
+    {
+      "type": "paragraph",
+      "text": "1. 先记录再判断：成本累加必须在循环检测之前"
+    },
+    {
+      "type": "paragraph",
+      "text": "落地心法：AFTER_TURN 事件上，cost_guard.accumulate 的注册顺序必须在 loop_detector 之前。dispatch_gate 在第一个 GuardrailDeny 处就停止后续 handler。如果循环检测先执行并 deny，成本累加被跳过——已发生的成本必须先记录，然后才能做拦截判断。"
+    },
+    {
+      "type": "paragraph",
+      "text": "2. 度量驱动调参：跑一周数据再定阈值"
+    },
+    {
+      "type": "paragraph",
+      "text": "落地心法：不要拍脑袋定阈值。先用宽松阈值（重试 3 次、循环 5 次、大预算）跑一周，收集 retry_success_rate、loop_detections、budget_utilization 数据。数据告诉你：第 3 次重试成功率 2%（改成 2 次）、2 次重复就足够判定循环（阈值从 5 降到 2）。"
+    },
+    {
+      "type": "paragraph",
+      "text": "3. 启用重试前确保工具幂等性"
+    },
+    {
+      "type": "paragraph",
+      "text": "落地心法：有副作用的操作（支付、发消息、写数据库）在启用重试前必须实现幂等键。金融工具超时后重试 = 双重扣款。非幂等工具不启用自动重试，或加幂等键后再启用。更进一步说，只要是给模型用的工具，都建议做成幂等的——模型的不确定性会导致它不知道多少次调用同一个工具，幂等是你唯一的安全网。"
+    },
+    {
+      "type": "paragraph",
+      "text": "4. token 估算用粗估就够，精确计费走 Langfuse"
+    },
+    {
+      "type": "paragraph",
+      "text": "落地心法：护栏场景不需要精确到每个 token 的计算——那需要调用 tokenizer API，成本太高。生产上的做法是粗估：中文按字符数 × 1.5，英文按字符数 × 1.2，大差不差。我们代码里用 max(1, len(text) * 2 // 3) 做统一估算，精度足够做围栏决策——差 10-20% 不影响\"$0.50 的预算是否用完了\"这种判断。最终的精确计费，异步在 Langfuse 里完成——观测层做精确，护栏层做快速。"
+    },
+    {
+      "type": "text",
+      "text": "课程总结"
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "我们从三个生产痛点出发——单步失败拖垮长任务、无限循环烧钱、成本失控——引出了三个对应的可靠性策略。",
+        "我们理解了 Agent 场景下重试的核心不是\"怎么重试\"而是“什么时候该重试”——区分可重试的瞬态错误和不可重试的永久错误，最多 2-3 次，因为每次重试都有上下文污染的隐性成本。",
+        "我们实现了状态哈希去重的循环检测——双路径覆盖 ReAct 和原生 FC，配合 max_iter 做双保险。哈希去重第 3 次就发现循环，max_iter 是最后防线。",
+        "我们实现了实时成本围栏——代码层硬停止，不靠 Agent 自觉。粗估 token 做围栏决策，精确计费走 Langfuse。",
+        "我们在代码实战中理解了 dispatch_gate（报警器→保险丝）和 pending_deny 模式（绕过框架异常吞噬），并用 hooks.yaml 的 strategies 段实现了声明式加载——新增策略只需写一个 .py 文件加一段 YAML 声明。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "今天讲的三个策略是通用护栏——重试、循环、成本，所有 Agent 系统都会遇到。但你的业务一定有自己独特的护栏需求：金融场景要拦截用户身份证号等敏感信息泄露，编程场景要保证单测必须通过才能提交，客服场景要检测情绪升级……这些策略同样用 Hook 框架落地——写一个策略类，在 hooks.yaml 里声明，完成。"
+    },
+    {
+      "type": "paragraph",
+      "text": "现在你的 Agent 不会无限循环，不会烧钱。但这一切有个前提：Agent 是善意的，用户输入是正常的。 如果有人在 Prompt 里注入恶意指令？如果 Agent 尝试执行危险操作？可靠性保证你的 Agent 不会\"蠢死\"，但不能保证它不会\"被骗\"。下一节课，我们加安全——沙箱、权限网关与身份认证，让系统不只是可靠，而且安全。我们下节课见！"
+    },
+    {
+      "type": "text",
+      "text": "课末学习活动"
+    },
+    {
+      "type": "paragraph",
+      "text": "费曼检验：在你脑中，用一句话把\"哈希去重和 max_iter 的区别\"解释给一个没学过的同事听——不许用专业术语。"
+    },
+    {
+      "type": "paragraph",
+      "text": "思考题 1（精细质询）：为什么 pending_deny 要在 step_callback 里抛出，而不是在 @before_tool_call 里直接抛出？如果直接抛出，会发生什么？"
+    },
+    {
+      "type": "paragraph",
+      "text": "思考题 2（知识迁移）：在你自己的业务场景里，Agent 最容易遇到的可靠性问题是哪一类（重试、循环、还是成本）？你会怎么设置初始阈值？（提示：从\"最坏情况下损失多少\"的角度思考）"
+    },
+    {
+      "type": "text",
+      "text": "欢迎在评论区分享你的真实案例，我们下一讲见！"
+    }
+  ],
+  "text": "欢迎回来！上节课我们搭好了可观测性的地基——Hook 骨架 + Langfuse 全链路追踪。现在你能看见 Agent 的每一步了：第几轮推理、调了什么工具、花了多少 token。\n\n但这里有个问题：你不可能一直盯着 Dashboard。 Agent 凌晨三点触发了一个任务，你不在；周末跑了一批数据处理，你不看。就算你看了，看见 Agent 第 47 轮还在重复搜索——然后呢？你能做的只是手动停掉它，但损失已经发生了。\n\n观测解决的是看见的问题。但真正让 Agent 变得可靠的，不是看见，而是自动干预。利用上节课搭好的 Hook 骨架，在关键节点上挂载策略——不是记录日志，而是在问题发生的那一刻就拦截。这节课我们做的就是这件事：在 30 课的 Hook 骨架上插入三个可靠性策略，让系统自己保护自己。\n\n一、三个痛点，三个策略\n\n💡 课程说明：本节代码已同步至 GitHub，地址：https://github.com/kid0317/crewai_mas_demo/blob/main/m5l31/\n\n在给出方案之前，先看看 Agent 在生产环境里最常遇到的三个可靠性问题。它们分别指向我们今天要实现的三个策略。\n\n需要提前说明的是：课程中的三个痛点是通用痛点——所有 Agent 系统都会遇到。但你在自己的业务里，一定要发现自己的痛点。比如金融场景，Agent 在工具请求中发出了用户身份证号，你可能就要立刻拦住它；代码场景，Agent 提交的代码没过单测，你也要在 Hook 层拦截。这些业务专属的护栏策略，同样可以用我们今天搭的框架来实现——写一个策略类，挂到 Hook 上就行。\n\n痛点一：长任务被单步失败拖垮。 你的 Agent 执行一个三小时的复杂任务——调用了上百次模型，做了几十次工具调用。到最后一步，某个 API 返回了 500 错误。整个任务失败，前面三小时全白跑。问题是，这个 500 错误可能只是服务端的瞬态抖动——等 2 秒再试一次就好了。但你的 Agent 不会重试，它直接报告失败。一个长任务会成百次调用模型，任意一次的偶发失败都会拖垮整体成功率。 这指向我们的第一个策略：重试。\n\n痛点二：Agent 陷入死胡同无限循环。 Agent 在推理过程中遇到了一个它解决不了的问题，但它不知道自己解决不了——它反复用同样的参数调同一个工具，每次得到同样的结果，然后再试一次。它可能循环 200 次才被 max_iter 硬性截断。相同参数重复 200 次花了 $63、两个 Agent 互聊六小时花了 $200——这些都是真实发生的事故。Agent 没有\"记住自己已经试过\"的机制，同样的输入大概率产生同样的输出。 这指向我们的第二个策略：循环检测。\n\n痛点三：Agent 真的在干活，但方式太贵。 Agent 没有循环，确实在有效推进任务。但它选择的方式有问题——用了最贵的模型、加载了过多的上下文、做了不必要的深度搜索。它干了一夜，第二天早上你发现账单 $300。它做完了事情，但成本完全不可接受。Agent 的成本不可预测性是结构性的——同一个任务可能 3 步也可能 17 步。 这指向我们的第三个策略：成本围栏。\n\n三个问题，三个策略。下面逐个展开。\n\n二、重试：什么时候该重试，什么时候不该\n\n重试本身在工程上很简单——等一下再试一次。Agent 场景下，难的不是\"怎么重试\"，而是\"该不该重试\"。 错误的重试比不重试更贵。\n\n可重试 vs 不可重试\n错误类型\t该重试吗\t原因\n429 限流\t✅ 该重试\t瞬态，等一下就好\n500/502/503/504 服务端错误\t✅ 该重试\t服务端抖动，大概率自愈\n400 请求错误\t❌ 不该重试\t请求本身有问题，重试 100 次还是 400\n401/403 权限错误\t❌ 不该重试\t权限问题不会自愈\n上下文溢出\t❌ 不该重试\t重试只会更溢出——错误信息本身也塞进上下文\n\n这个判断才是重试策略的核心。如果你不区分错误类型，一律重试，结果就是：400 错误重试了 3 次，每次都失败，还往上下文里塞了 3K 垃圾 token。\n\nAgent 场景为什么最多 2-3 次\n\n不只是因为第 4 次大概率也不行——更重要的是，每次失败的错误信息都会留在上下文里。一次失败的报错信息通常 1-3K token，三次重试就多了将近 10K 垃圾 token。上下文越脏，后续推理质量越差。重试有隐性成本：不只是多花一次调用的钱，还污染了后续所有步骤的上下文。\n\nRetryTracker：观测重试效果\n\n重试本身不是在 Hook 层做的——重试是调度层的事情，框架自己会处理。Hook 能帮你做的是重试的追踪和观测：哪些工具在反复失败？重试成功率多少？该不该调整重试策略？\n\n我们的 RetryTracker 是纯观测的——它不决定\"要不要重试\"（这是框架的事），它记录\"重试了几次、成功了没有\"：\n\n\t# reliability/retry_tracker.py\n\n\tclass RetryTracker:\n\n\t    def __init__(self, max_retries: int = 3):\n\n\t        self._failures: dict[str, int] = {}       # 每个工具的连续失败次数\n\n\t        self._total_retries = 0\n\n\t        self._successful_retries = 0\n\n\t \n\n\t    def after_tool_handler(self, ctx):\n\n\t        tool = ctx.tool_name\n\n\t        if not ctx.success:\n\n\t            prev = self._failures.get(tool, 0)\n\n\t            self._failures[tool] = prev + 1\n\n\t            if prev > 0:                           # 💡 第一次失败不算\"重试\"\n\n\t                self._total_retries += 1\n\n\t            if self._failures[tool] >= self._max_retries:\n\n\t                self._emit_warning(tool)           # 连续失败达上限 → 告警\n\n\t        else:\n\n\t            if self._failures.get(tool, 0) > 0:\n\n\t                self._successful_retries += 1      # 💡 失败后成功 = 重试成功\n\n\t            self._failures[tool] = 0               # 重置计数\n\n注意第一次失败不计为\"重试\"——第一次是\"初始故障\"，第二次才是\"重试\"。这样 retry_success_rate = successful_retries / total_retries 才有意义。如果这个数字低于 10%，说明你在浪费钱重试不可恢复的错误——该减少重试次数或改进错误分类。\n\n三、循环检测：Agent 最贵的 Bug 是无限循环\n\n为什么 Agent 特别容易循环？因为 LLM 没有\"记住自己已经试过\"的机制。同样的输入大概率产生同样的输出，于是同样的失败反复发生。你的 Agent 用完全一样的参数重试了 200 多次，$63。max_iter=200 确实能救它，但你已经浪费了 197 次的钱。\n\n状态哈希去重\n\n核心方案很直观：对每一步的 tool_name + output 做哈希，连续匹配达到阈值（默认 3 次）即判定为循环并终止。\n\n\t# reliability/loop_detector.py\n\n\tclass LoopDetector:\n\n\t    def __init__(self, threshold: int = 3):\n\n\t        self._threshold = threshold\n\n\t        self._tool_hashes: list[str] = []      # 💡 工具调用路径\n\n\t        self._turn_hashes: list[str] = []      # 💡 推理轮次路径\n\n\t \n\n\t    def _check_loop(self, hashes: list[str], state: str, ctx):\n\n\t        h = hashlib.md5(state.encode()).hexdigest()[:16]\n\n\t        hashes.append(h)\n\n\t        if len(hashes) >= self._threshold:\n\n\t            recent = hashes[-self._threshold:]\n\n\t            if len(set(recent)) == 1:          # 连续 N 个哈希完全相同\n\n\t                raise GuardrailDeny(\n\n\t                    f\"Loop detected: identical state repeated \"\n\n\t                    f\"{self._threshold} consecutive times\"\n\n\t                )\n\n你可能会问：这和 CrewAI 自带的 max_iter 有什么区别？\n\nmax_iter是限速器，哈希去重是方向检测。 max_iter=200，但 200 次里可能只有 3 次是重复——其余 197 次是有效推进。哈希去重在第 3 次重复就发现了\"你在兜圈子\"。两者不矛盾：哈希去重是精准检测，max_iter是最后防线，双保险。\n\n为什么需要两个独立的哈希列表\n\n你可能注意到了 _tool_hashes 和 _turn_hashes 两个列表。这跟 CrewAI 的两种执行路径有关：\n\nReAct 模式：每次工具调用后触发 step_callback（对应 AFTER_TURN）\n\n原生 function calling 模式：只在最终回答时触发 step_callback——中间的工具调用不触发\n\n如果只在 AFTER_TURN 里检测循环，原生 FC 路径下工具连续循环调用 10 次你都发现不了。所以循环检测必须双路径覆盖：after_turn_handler 检测推理循环，after_tool_handler 检测工具调用循环。两条线各自独立计数，互不干扰。\n\n四、成本围栏：在 Agent Loop 里实时算账\n\nAgent 的成本不可预测性是结构性的——1 个用户动作触发 3 到 30+ 个 LLM 调用，团队预估和实际差 3-5 倍不是估不准，是 Agent 路径本身非确定性。\n\n你在 System Prompt 里写\"请控制成本不超过 $10\"。Agent 非常配合：\"好的我会注意控制成本的\"。然后花了 $50。因为它根本不知道每次调用花了多少钱——成本控制必须在 Hook 层用代码实现，不能靠 Agent 自觉。\n\nCostGuard：实时算、设上限\n\t# reliability/cost_guard.py\n\n\tMODEL_PRICES = {\n\n\t    \"qwen-plus\":  {\"input\": 0.80,  \"output\": 2.00},\n\n\t    \"qwen-turbo\": {\"input\": 0.30,  \"output\": 0.60},\n\n\t    \"qwen-max\":   {\"input\": 2.40,  \"output\": 9.60},\n\n\t    \"gpt-4o\":     {\"input\": 2.50,  \"output\": 10.00},\n\n\t    \"gpt-4o-mini\": {\"input\": 0.15, \"output\": 0.60},\n\n\t}\n\n\t \n\n\tclass CostGuard:\n\n\t    def __init__(self, budget_usd: float = 1.0, model: str = \"\"):\n\n\t        self._budget = budget_usd\n\n\t        self._model = model or os.environ.get(\"AGENT_MODEL\", \"qwen-plus\")\n\n\t        self._total_input_tokens = 0\n\n\t        self._total_output_tokens = 0\n\n\t        self._estimated_cost = 0.0\n\n\t \n\n\t    # 💡 AFTER_TURN: 每轮推理后累加 token，计算成本\n\n\t    def after_turn_handler(self, ctx):\n\n\t        self._total_input_tokens += ctx.input_tokens\n\n\t        self._total_output_tokens += ctx.output_tokens\n\n\t        self._estimated_cost = self._calculate_cost()\n\n\t        self._emit_cost_update(ctx)                   # 实时输出成本日志\n\n\t        if self._estimated_cost >= self._budget:\n\n\t            raise GuardrailDeny(\n\n\t                f\"Budget exceeded: ${self._estimated_cost:.4f} >= limit ${self._budget:.2f}\"\n\n\t            )\n\n\t \n\n\t    # 💡 BEFORE_TOOL_CALL: 工具调用前检查预算\n\n\t    def before_tool_handler(self, ctx):\n\n\t        if self._estimated_cost >= self._budget:\n\n\t            raise GuardrailDeny(...)\n\n双重检查：推理完查一次（AFTER_TURN），工具调用前再查一次（BEFORE_TOOL_CALL）。token 数据来自适配层的粗估——中文大约 1 个字 = 1.5 个 token，代码里用 max(1, len(text) * 2 // 3) 做统一估算。粗估够用，精确计费走 Langfuse。\n\n五、代码实战：从策略到 Hook 的工程落地\n\n🧠 回忆一下：上节课我们讲了 dispatch() 是 fire-and-forget——handler 异常被吞掉，不影响执行。但可靠性策略需要的是阻断能力——检测到循环就停、超预算就拒绝。这就是这节要解决的核心工程问题。\n\n5.1 dispatch_gate：从报警器到保险丝\n\n30 课的 dispatch() 是报警器——响了不影响执行。可靠性策略需要的是保险丝——触发就断电。\n\n方案：在 HookRegistry 上新增一个 dispatch_gate() 方法，唯一的区别是GuardrailDeny异常会向上传播：\n\n\t# hook_framework/registry.py\n\n\t \n\n\tclass GuardrailDeny(Exception):\n\n\t    \"\"\"可靠性策略拒绝当前操作时抛出。\"\"\"\n\n\t    def __init__(self, reason: str):\n\n\t        self.reason = reason\n\n\t        super().__init__(reason)\n\n\t \n\n\tclass HookRegistry:\n\n\t    # 30 课已有 dispatch()\n\n\t \n\n\t    # 💡 核心点：GuardrailDeny 传播，其他异常吞掉\n\n\t    def dispatch_gate(self, event_type, context):\n\n\t        for handler in self._handlers[event_type]:\n\n\t            try:\n\n\t                handler(context)\n\n\t            except GuardrailDeny:\n\n\t                raise                    # 保险丝：传播\n\n\t            except Exception as e:\n\n\t                print(f\"handler error: {e}\", file=sys.stderr)\n\n为什么不直接让 dispatch() 也传播异常？因为观测 handler 和策略 handler 混用同一个 registry。Langfuse handler 网络超时抛异常，你不希望 Agent 因此停下来。只有策略 handler 主动抛出的 GuardrailDeny 才应该阻断执行。\n\n5.2 pending_deny：绕过框架的异常吞噬\n\n这里有一个实际的框架约束：CrewAI 的 @before_tool_call 和 @after_tool_call 内部用 except Exception: pass 吞掉了所有异常。你在 handler 里抛 GuardrailDeny，CrewAI 直接吃掉，Agent 继续运行。\n\n解决方案是 pending_deny 模式：\n\n\t# hook_framework/crew_adapter.py\n\n\tclass CrewObservabilityAdapter:\n\n\t    def __init__(self, registry, session_id=\"\"):\n\n\t        # ...\n\n\t        self._pending_deny: GuardrailDeny | None = None\n\n\t \n\n\t    def install_global_hooks(self):\n\n\t        @before_tool_call\n\n\t        def _before_tool(context):\n\n\t            if self._pending_deny:\n\n\t                return False               # 已有 deny → 直接阻止\n\n\t            try:\n\n\t                registry.dispatch_gate(EventType.BEFORE_TOOL_CALL, ...)\n\n\t            except GuardrailDeny as e:\n\n\t                self._pending_deny = e     # 💡 存下来，不抛出（会被吞掉）\n\n\t                return False               # 用 CrewAI 原生机制阻止工具调用\n\n\t            return None\n\n工作流程：handler 抛 GuardrailDeny → 适配层 catch 住、存到 _pending_deny、返回 False → CrewAI 原生阻止工具 → 下一次 step_callback 触发时真正 raise。\n\n为什么在 step_callback 里 raise？因为 step_callback 是通过 Crew(step_callback=...) 传入的普通回调——不在 CrewAI 的 try/except 保护范围内。\n\n\t    def make_step_callback(self):\n\n\t        def callback(step):\n\n\t            try:\n\n\t                registry.dispatch_gate(EventType.AFTER_TURN, ...)\n\n\t            finally:\n\n\t                self._current_turn_has_llm = False\n\n\t                self._pending_input_tokens = 0\n\n\t \n\n\t            pending = self._pending_deny\n\n\t            self._pending_deny = None          # 💡 无条件清除\n\n\t            if pending:\n\n\t                raise pending                  # 在安全的上下文中抛出\n\n\t        return callback\n\n两个关键细节：try/finally 确保状态重置；无条件清除 _pending_deny 防止残留。当框架吞掉你的异常时，你需要找到另一个不被保护的出口。 这是处理框架约束的通用思路。\n\n5.3 策略声明式注册：hooks.yaml strategies 段\n\n三个策略怎么注册到 HookRegistry 上？不是写代码手动注册——而是在 hooks.yaml 里用 strategies 段声明式加载。列表顺序就是执行顺序，顺序影响行为。\n\n\t# shared_hooks/hooks.yaml（下半部分，31 课新增）\n\n\t# ⚠️ 顺序敏感：列表顺序 = 执行顺序\n\n\t# 💡 cost_guard 必须在 loop_detector 之前——已发生的成本必须先记录\n\n\tstrategies:\n\n\t  - class: retry_tracker.RetryTracker\n\n\t    config:\n\n\t      max_retries: 3\n\n\t    hooks:\n\n\t      AFTER_TOOL_CALL: after_tool_handler\n\n\t \n\n\t  - class: cost_guard.CostGuard\n\n\t    config:\n\n\t      budget_usd: 1.0\n\n\t    hooks:\n\n\t      AFTER_TURN: after_turn_handler\n\n\t      BEFORE_TOOL_CALL: before_tool_handler\n\n\t \n\n\t  - class: loop_detector.LoopDetector\n\n\t    config:\n\n\t      threshold: 3\n\n\t    hooks:\n\n\t      AFTER_TOOL_CALL: after_tool_handler\n\n\t      AFTER_TURN: after_turn_handler\n\n和 30 课的 hooks 段（无状态函数）不同，strategies 段加载的是有状态的类实例。HookLoader 读到 class: cost_guard.CostGuard 后，用 config 里的参数调用构造函数，创建一个实例，然后把 hooks 里声明的实例方法注册到对应事件上。同一个 CostGuard 实例的 after_turn_handler（累加成本）和 before_tool_handler（检查预算）共享 _estimated_cost 状态——这就是为什么需要\"有状态类\"而不是\"无状态函数\"。\n\n关键决策：AFTER_TURN 上 cost_guard 在 loop_detector 之前。 因为 dispatch_gate 在第一个 GuardrailDeny 处就停止后续 handler。如果循环检测先执行并 deny，成本记录被跳过——已发生的成本必须先记录。\n\n5.4 端到端演示\n\ndemo.py 把所有组件串在一起：\n\n\t# 正常运行——观测 + 策略全部在线\n\n\tpython3 demo.py\n\n\tpython3 demo.py \"为一个短链接服务产出技术设计文档\"\n\n\t \n\n\t# 低预算模式——几轮推理后触发成本围栏\n\n\tCOST_GUARD_BUDGET=0.001 python3 demo.py\n\n核心结构：HookLoader.load_two_layers() 一次性加载 30 课的观测 hooks 和 31 课的策略 hooks。 两者共用同一个 HookRegistry、同一套 EventType、同一份 hooks.yaml——上半部分是 hooks 段（无状态函数），下半部分是 strategies 段（有状态类）。同一条管道，两种加载方式。\n\n和 30 课的 demo.py 比，唯一的结构差异是执行区多了 try/except GuardrailDeny：策略触发时不是程序崩溃，而是优雅拦截、输出原因、打印度量数据。在不改 Agent 代码的前提下，通过 hooks.yaml 声明式增加可靠性保障。\n\n执行结束后，每个策略暴露 get_metrics() 方法输出度量数据。这些数据驱动后续调参——retry_success_rate 太低就减少重试次数，loop_detections 频繁就降低阈值，deny_count 太多就调整预算或任务复杂度。护栏和 Agent 一样需要可观测性：Agent 的可观测性让你看见问题，护栏的可观测性让你确认问题被解决了。\n\n六、避坑指南：最佳实践与反模式\n🚫 严重破坏可靠性的\"反模式\"\n\n1. 靠 Prompt 控制成本：Agent 说\"好的\"然后超支 5 倍\n\n现象：System Prompt 里写\"请控制成本不超过 $10\"，Agent 回复\"好的我会注意控制成本\"。实际花费 $50。致命后果：Agent 没有成本感知能力，它不知道每次调用花了多少钱。Prompt 层面的成本控制就像跟员工说\"注意节约\"但不给预算表——态度很好，执行为零。成本控制必须在 Hook 层用代码实现，不能靠 Agent 自觉。\n\n2. 只设 max_iter 不做状态去重：200 次无效循环才停下来\n\n现象：设了 max_iter=200 作为安全网。Agent 从第 3 次开始就在重复，但一直到第 200 次才被停下来。致命后果：197 次无效推理，每次都在烧 token。max_iter 是最后防线，不是检测机制——它不关心\"内容是不是重复的\"，只关心\"次数够了没有\"。状态哈希去重在第 3 次就能发现循环，省下 197 次的成本。\n\n3. 所有错误都重试：不可恢复错误白白浪费 token\n\n现象：不区分错误类型，400/401/403 也重试。每次都失败，还往上下文里塞 1-3K 垃圾 token。致命后果：三次无效重试 = ~10K 上下文污染，后续推理质量急剧下降。区分可重试（429/5xx 瞬态）vs 不可重试（4xx 永久），只对瞬态错误重试。\n\n4. 用请求数限流而不用 token：成本差几百倍\n\n现象：不管是循环次数控制还是成本围栏，都用\"请求次数\"而非 token 计量。设了\"最多 50 次请求\"就觉得安全了。致命后果：Agent 的每次请求 token 量天差地别——一次简单的工具调用和一次带几万上下文的推理，成本可以差几百倍。用请求数做限流和成本控制没有任何实际意义。所有限流和成本围栏都应该换算到 token——包括 Agent 的整体限流，因为服务器能扛多少也取决于 token 总量，而不是请求数。\n\n💡 稳健落地的\"最佳实践\"\n\n1. 先记录再判断：成本累加必须在循环检测之前\n\n落地心法：AFTER_TURN 事件上，cost_guard.accumulate 的注册顺序必须在 loop_detector 之前。dispatch_gate 在第一个 GuardrailDeny 处就停止后续 handler。如果循环检测先执行并 deny，成本累加被跳过——已发生的成本必须先记录，然后才能做拦截判断。\n\n2. 度量驱动调参：跑一周数据再定阈值\n\n落地心法：不要拍脑袋定阈值。先用宽松阈值（重试 3 次、循环 5 次、大预算）跑一周，收集 retry_success_rate、loop_detections、budget_utilization 数据。数据告诉你：第 3 次重试成功率 2%（改成 2 次）、2 次重复就足够判定循环（阈值从 5 降到 2）。\n\n3. 启用重试前确保工具幂等性\n\n落地心法：有副作用的操作（支付、发消息、写数据库）在启用重试前必须实现幂等键。金融工具超时后重试 = 双重扣款。非幂等工具不启用自动重试，或加幂等键后再启用。更进一步说，只要是给模型用的工具，都建议做成幂等的——模型的不确定性会导致它不知道多少次调用同一个工具，幂等是你唯一的安全网。\n\n4. token 估算用粗估就够，精确计费走 Langfuse\n\n落地心法：护栏场景不需要精确到每个 token 的计算——那需要调用 tokenizer API，成本太高。生产上的做法是粗估：中文按字符数 × 1.5，英文按字符数 × 1.2，大差不差。我们代码里用 max(1, len(text) * 2 // 3) 做统一估算，精度足够做围栏决策——差 10-20% 不影响\"$0.50 的预算是否用完了\"这种判断。最终的精确计费，异步在 Langfuse 里完成——观测层做精确，护栏层做快速。\n\n课程总结\n\n我们从三个生产痛点出发——单步失败拖垮长任务、无限循环烧钱、成本失控——引出了三个对应的可靠性策略。\n\n我们理解了 Agent 场景下重试的核心不是\"怎么重试\"而是“什么时候该重试”——区分可重试的瞬态错误和不可重试的永久错误，最多 2-3 次，因为每次重试都有上下文污染的隐性成本。\n\n我们实现了状态哈希去重的循环检测——双路径覆盖 ReAct 和原生 FC，配合 max_iter 做双保险。哈希去重第 3 次就发现循环，max_iter 是最后防线。\n\n我们实现了实时成本围栏——代码层硬停止，不靠 Agent 自觉。粗估 token 做围栏决策，精确计费走 Langfuse。\n\n我们在代码实战中理解了 dispatch_gate（报警器→保险丝）和 pending_deny 模式（绕过框架异常吞噬），并用 hooks.yaml 的 strategies 段实现了声明式加载——新增策略只需写一个 .py 文件加一段 YAML 声明。\n\n今天讲的三个策略是通用护栏——重试、循环、成本，所有 Agent 系统都会遇到。但你的业务一定有自己独特的护栏需求：金融场景要拦截用户身份证号等敏感信息泄露，编程场景要保证单测必须通过才能提交，客服场景要检测情绪升级……这些策略同样用 Hook 框架落地——写一个策略类，在 hooks.yaml 里声明，完成。\n\n现在你的 Agent 不会无限循环，不会烧钱。但这一切有个前提：Agent 是善意的，用户输入是正常的。 如果有人在 Prompt 里注入恶意指令？如果 Agent 尝试执行危险操作？可靠性保证你的 Agent 不会\"蠢死\"，但不能保证它不会\"被骗\"。下一节课，我们加安全——沙箱、权限网关与身份认证，让系统不只是可靠，而且安全。我们下节课见！\n\n课末学习活动\n\n费曼检验：在你脑中，用一句话把\"哈希去重和 max_iter 的区别\"解释给一个没学过的同事听——不许用专业术语。\n\n思考题 1（精细质询）：为什么 pending_deny 要在 step_callback 里抛出，而不是在 @before_tool_call 里直接抛出？如果直接抛出，会发生什么？\n\n思考题 2（知识迁移）：在你自己的业务场景里，Agent 最容易遇到的可靠性问题是哪一类（重试、循环、还是成本）？你会怎么设置初始阈值？（提示：从\"最坏情况下损失多少\"的角度思考）\n\n欢迎在评论区分享你的真实案例，我们下一讲见！",
+  "extractedAt": "2026-06-02T02:21:38.742Z"
+}

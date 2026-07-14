@@ -1,0 +1,251 @@
+{
+  "main": {
+    "id": "46e8e78a0fa27aa1",
+    "type": "split",
+    "children": [
+      {
+        "id": "edae9fc36cad03b2",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "6c1e71c78d59667c",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/方案文档/企业分散知识统一管理方案.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "企业分散知识统一管理方案"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "b883690478fbdb14",
+    "type": "split",
+    "children": [
+      {
+        "id": "5b0339a75cbe0327",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4bc6572c27f9194b",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "文件列表"
+            }
+          },
+          {
+            "id": "8915a3ae17d0a7e6",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "搜索"
+            }
+          },
+          {
+            "id": "ae5441abf16207c1",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "书签"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 341.5
+  },
+  "right": {
+    "id": "11117506aa29ba30",
+    "type": "split",
+    "children": [
+      {
+        "id": "fde0b61de000158b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4b68efc1deeca991",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "常用命令.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "常用命令 的反向链接列表"
+            }
+          },
+          {
+            "id": "579e8a77c8a7eeb6",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "常用命令.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "常用命令 的出链列表"
+            }
+          },
+          {
+            "id": "0c2c963e951cab93",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "标签"
+            }
+          },
+          {
+            "id": "43cf48e20ad58e22",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "添加笔记属性"
+            }
+          },
+          {
+            "id": "e979f3abefe3c550",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "常用命令.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "常用命令 的大纲"
+            }
+          },
+          {
+            "id": "861fc22de56ccf79",
+            "type": "leaf",
+            "state": {
+              "type": "git-view",
+              "state": {},
+              "icon": "git-pull-request",
+              "title": "Source Control"
+            }
+          }
+        ],
+        "currentTab": 5
+      }
+    ],
+    "direction": "horizontal",
+    "width": 200
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:打开快速切换": false,
+      "graph:查看关系图谱": false,
+      "canvas:新建白板": false,
+      "daily-notes:打开/创建今天的日记": false,
+      "templates:插入模板": false,
+      "command-palette:打开命令面板": false,
+      "bases:新建数据库": false,
+      "workspaces:管理工作区布局": false,
+      "terminal:Open terminal": false,
+      "obsidian-local-images-plus:Local Images Plus  0.16.4\r\nLocalize attachments (plugin folder)": false,
+      "obshare:分享当前页面": false,
+      "obsidian-git:Open Git source control": false,
+      "templater-obsidian:Templater": false
+    }
+  },
+  "active": "6c1e71c78d59667c",
+  "lastOpenFiles": [
+    "云端Agent记忆系统调研（从多agent调研版）/归档备份/云端Agent记忆系统方案设计-v2.0.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/方案文档/云端Agent记忆系统方案设计-v2.1.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/方案文档/云端Agent记忆系统方案设计-v2.0.html",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/方案文档/云端Agent记忆系统调研报告-修订记录.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/方案文档/云端Agent记忆系统调研报告-v2.0.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/方案文档/云端Agent记忆系统调研报告-v2.0.html",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/方案文档/云端Agent记忆系统·简版报告.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/方案文档/云端Agent记忆系统·简版报告.html",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/方案文档/附件3-智能体集成OpenViking实证.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/方案文档/附件2-引用来源与竞品参考.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/方案文档/附件1-候选产品调研详情.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/方案文档",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/新建文件夹",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/知识库产品调研/云端Agent记忆系统权限方案设计.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/知识库产品调研/VikingDB_记忆库_产品调研报告.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/知识库产品调研/VikingDB_向量知识库_产品调研报告.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/知识库产品调研/OpenViking模式与多agent集成方案.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/归档备份/云端Agent记忆系统调研报告-v1.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/归档备份/云端Agent记忆系统调研报告-v1.6.pre-简化.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/归档备份/云端Agent记忆系统调研报告-v1.6.pre-产品框架.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/归档备份/云端Agent记忆系统调研报告-v1.6.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/归档备份/云端Agent记忆系统调研报告-v1.6.pre-产品架构视图.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/归档备份/云端Agent记忆系统调研报告-v1.5.pre-重编号详细化.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/归档备份/云端Agent记忆系统调研报告-v1.5.pre-第六章评审.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/归档备份/云端Agent记忆系统调研报告-v1.5.pre-瘦身.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/归档备份/云端Agent记忆系统调研报告-v1.5.pre-痛点概念.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/归档备份/云端Agent记忆系统调研报告-v1.5.pre-架构优化.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/归档备份/云端Agent记忆系统调研报告-v1.5.pre-头部修正.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/归档备份/云端Agent记忆系统调研报告-v1.5.pre-全文校验.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/归档备份/云端Agent记忆系统调研报告-v1.5.pre-§1-6完善.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/归档备份/云端Agent记忆系统调研报告-v1.5.md",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/知识库产品调研",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/归档备份",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/云端Agent记忆系统调研报告-v2.0.html",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/云端Agent记忆系统方案设计-v2.0.html",
+    "云Agent记忆系统调研与方案/云端Agent记忆系统调研（从多agent调研版）/云端Agent记忆系统·简版报告.html",
+    "6084935617cd058571164399a7408a33_MD5.png",
+    "9c20224a73d9c5f21453a82162af0814_MD5.png",
+    "05d5502cf81be8bc05b91e5993304d2d_MD5.png",
+    "0fcfc54a89858af3c45d18444cb9acbd_MD5.png",
+    "0ed1df733cdb681d03951ffff88d3bf5_MD5.png",
+    "0f4eef33602806a4abe100f58ac6134e_MD5.png",
+    "00-AI实例/应用类/智能客服/【AI客服】Coze_AI客服设计思路/07-附件与素材/uploads/fb46e16d-9172-4743-9cf2-420b43e18b18_screenshot_1.png",
+    "00-AI实例/应用类/智能客服/【AI客服】Coze_AI客服设计思路/07-附件与素材/uploads/eb28029c-1949-4fcc-99db-e447514a8ce1_screenshot_3.png",
+    "00-AI实例/应用类/智能客服/【AI客服】Coze_AI客服设计思路/07-附件与素材/uploads/e5595397-6977-45bb-bd8a-a0de4b3a6bcf_screenshot_1.png",
+    "00-AI实例/应用类/智能客服/【AI客服】Coze_AI客服设计思路/07-附件与素材/uploads/dfe87a8e-ca37-4942-97e6-1af73f7e57c0_screenshot_2.png"
+  ]
+}

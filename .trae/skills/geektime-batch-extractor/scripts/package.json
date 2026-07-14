@@ -1,0 +1,8 @@
+{
+  "name": "geektime-batch-extractor",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "dependencies": {
+    "ws": "^8.20.0"
+  }
+}

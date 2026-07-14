@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__web-reader__webReader",
+      "Bash(curl -s http://127.0.0.1:9222/json)",
+      "mcp__web-search-prime__web_search_prime",
+      "Bash(python -c ' *)"
+    ]
+  }
+}

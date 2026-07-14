@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>云端Agent记忆系统调研报告-v2.0</title>
+
+<style>
+:root {
+  --fg: #1f2328; --fg-muted: #57606a; --bg: #ffffff; --bg-subtle: #f6f8fa;
+  --border: #d0d7de; --accent: #0969da; --code-bg: #f6f8fa; --code-fg: #1f2328;
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--fg); background: var(--bg); line-height: 1.7; margin: 0;
+  font-size: 15px;
+}
+.container { max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; }
+h1 { font-size: 1.9em; border-bottom: 2px solid var(--border); padding-bottom: 0.3em; margin-top: 0; }
+h2 { font-size: 1.45em; border-bottom: 1px solid var(--border); padding-bottom: 0.25em; margin-top: 2em; }
+h3 { font-size: 1.2em; margin-top: 1.6em; }
+h4 { font-size: 1.05em; margin-top: 1.4em; color: var(--fg); }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+table {
+  border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 0.9em;
+  display: block; overflow-x: auto;
+}
+th, td { border: 1px solid var(--border); padding: 6px 13px; text-align: left; }
+th { background: var(--bg-subtle); font-weight: 600; }
+tr:nth-child(even) { background: var(--bg-subtle); }
+code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  background: var(--code-bg); padding: 0.2em 0.4em; border-radius: 4px;
+  font-size: 0.88em; color: var(--code-fg);
+}
+pre {
+  background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px;
+  padding: 14px; overflow-x: auto; line-height: 1.5; font-size: 0.82em;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+blockquote {
+  margin: 1em 0; padding: 0.5em 1em; border-left: 4px solid var(--accent);
+  background: var(--bg-subtle); color: var(--fg-muted);
+}
+blockquote p { margin: 0.5em 0; }
+hr { border: none; border-top: 1px solid var(--border); margin: 2em 0; }
+ul, ol { padding-left: 1.8em; }
+li { margin: 0.25em 0; }
+.toc { background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 6px; padding: 16px 20px; margin: 1em 0 2em; }
+.toc h3 { margin-top: 0; font-size: 1.05em; }
+.back-top { position: fixed; bottom: 24px; right: 24px; background: var(--accent); color: #fff;
+  padding: 8px 14px; border-radius: 20px; font-size: 0.85em; text-decoration: none; opacity: 0.85; }
+.back-top:hover { opacity: 1; text-decoration: none; }
+strong { font-weight: 600; }
+</style>
+
+</head>
+<body>
+<div class="container">
+<div class="toc"><div class="toc">
+<ul>
+<li><a href="#agent">云端 Agent 记忆系统调研报告</a><ul>
+<li><a href="#0">0. 阅读说明</a></li>
+<li><a href="#1">1. 业务背景</a></li>
+<li><a href="#2">2. 典型用户</a></li>
+<li><a href="#3">3. 要解决的问题</a></li>
+<li><a href="#4-agent">4. Agent 记忆系统：定义、边界与能力框架</a><ul>
+<li><a href="#41">4.1 记忆系统的组成层次</a></li>
+<li><a href="#42">4.2 参考实践</a></li>
+<li><a href="#43">4.3 记忆系统的产品形态</a></li>
+<li><a href="#44-agent">4.4 Agent 记忆系统核心能力</a><ul>
+<li><a href="#441">4.4.1 作用域与隔离</a></li>
+<li><a href="#442">4.4.2 记忆写入</a></li>
+<li><a href="#443">4.4.3 记忆类型</a></li>
+<li><a href="#444">4.4.4 记忆召回</a></li>
+<li><a href="#445">4.4.5 生命周期</a></li>
+<li><a href="#446-agent">4.4.6 跨 Agent 共享</a></li>
+<li><a href="#447">4.4.7 治理与安全</a></li>
+<li><a href="#448">4.4.8 可观测性</a></li>
+</ul>
+</li>
+<li><a href="#45-rag">4.5 RAG / 向量数据库底座能力</a><ul>
+<li><a href="#451">4.5.1 数据处理</a></li>
+<li><a href="#452">4.5.2 数据存储</a></li>
+<li><a href="#453">4.5.3 数据获取</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#5">5. 候选产品调研</a><ul>
+<li><a href="#50">5.0 产品能力对比总览</a></li>
+<li><a href="#51-openviking">5.1 OpenViking（详尽）</a></li>
+<li><a href="#52-mem0">5.2 Mem0（重点）</a></li>
+<li><a href="#53-letta-memgpt">5.3 Letta（原 MemGPT）（重点）</a></li>
+<li><a href="#54-cognee">5.4 Cognee（概览）</a></li>
+<li><a href="#55">5.5 调研执行方法与限制</a></li>
+<li><a href="#56">5.6 业务侧选型结论</a><ul>
+<li><a href="#561">5.6.1 业务约束与选型范围</a></li>
+<li><a href="#562">5.6.2 四款开源候选综合判断</a></li>
+<li><a href="#563">5.6.3 选型结论与竞品不入选说明</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<h1 id="agent">云端 Agent 记忆系统调研报告<a class="headerlink" href="#agent" title="Permanent link">#</a></h1>
+<h2 id="0">0. 阅读说明<a class="headerlink" href="#0" title="Permanent link">#</a></h2>
+<p>本报告面向 2000 人规模互联网公司<strong>统一部署多类 AI Agent</strong>（Claude Code / OpenClaw / Hermes 等）的记忆共享与治理需求。<strong>核心结论</strong>：以「知识库」为中心抽象、<strong>OpenViking</strong> 为底座，叠加<strong>② 层知识库授权中心</strong>与 <strong>account 级隔离</strong>，实现跨 Agent 记忆复用、部门/个人/会话三级隔离与企业级合规治理。</p>
+<p>各章节安排：</p>
+<ul>
+<li>第 1-3 章：业务背景、问题、用户</li>
+<li>第 4 章：<strong>Agent 记忆系统的定义、边界与能力框架</strong>（先定义记忆系统，再区分组成层次、产品形态、核心能力与 RAG / 向量数据库底座能力）</li>
+<li>第 5 章：候选产品调研（OpenViking 详尽、Mem0/Letta 重点、Cognee 概览）+ 业务侧选型结论</li>
+<li>附件2（<a href="附件2-引用来源与竞品参考.md">附件2-引用来源与竞品参考.md</a>）：引用来源 + 竞品功能参考（Coze / 火山 VikingDB / Dify，仅用于借鉴功能设计，不参与选型）</li>
+</ul>
+<blockquote>
+<p><strong>方案设计</strong>：基于本报告 §5.6 选型结论（OpenViking），详细的业务侧方案设计、接入与记忆模型、产品框架、关键风险与建议见<a href="云端Agent记忆系统方案设计-v2.0.md">《云端Agent记忆系统方案设计-v2.0》</a>。</p>
+</blockquote>
+<hr />
+<h2 id="1">1. 业务背景<a class="headerlink" href="#1" title="Permanent link">#</a></h2>
+<p><strong>术语约定</strong>（按主题分组）：</p>
+<p><strong>① Agent 名称</strong>（公司统一部署的外部 AI Agent）</p>
+<ul>
+<li><strong>Hermes</strong>：外部第三方 AI Agent，公司部署使用，与 Claude Code 同类。</li>
+<li><strong>OpenClaw</strong>：外部第三方 AI Agent 平台，公司部署使用。</li>
+</ul>
+<p><strong>② 核心概念</strong></p>
+<ul>
+<li><strong>云端 Agent 记忆系统</strong>：正式术语；正文尽量避免"云 Agent / 记忆中间件"混用。</li>
+<li><strong>知识库（Knowledge Base）</strong>：本方案的核心抽象，指组织/部门/个人拥有的一组结构化记忆集合（含偏好/技能/会话/项目上下文/SOP/政策等），物理上对应一个或多个 OpenViking 实例的区域（namespace 或整实例）。Agent 不拥有知识库，只被授权访问；一个 Agent 可同时访问多个知识库，多个 Agent 可访问同一知识库。全文"知识库"即此义，不再用缩写 KB。</li>
+</ul>
+<p><strong>③ 基础设施与服务</strong></p>
+<ul>
+<li><strong>KMS（Key Management Service）</strong>：密钥管理服务，管理知识库实例的静态加密密钥与租户密钥，由企业侧部署（火山引擎 KMS 或同类产品），被 ②③ 层调用。</li>
+<li><strong>TOS</strong>：火山引擎对象存储（Tinder Object Storage），用于知识库 180 天冷存归档与原始附件存储。</li>
+</ul>
+<p><strong>公司规模与场景</strong>：互联网公司 <strong>2000 人规模</strong>，希望在云端搭建<strong>云端 Agent 平台</strong>，为员工统一部署 <strong>Claude Code / OpenClaw / Hermes</strong> 等多类 AI 智能体，未来仍会持续接入新 Agent。</p>
+<p><strong>当前痛点</strong>：</p>
+<blockquote>
+<p>根因：当前部署的 Agent <strong>既无独立记忆系统，也无 RAG 知识库</strong>，上下文只存在于单次会话的临时窗口，导致执行质量与成本双重问题。</p>
+</blockquote>
+<ul>
+<li><strong>原生记忆弱 → 执行质量差</strong>：Claude Code / OpenClaw 等仅有基础会话上下文，原生记忆能力弱、跨会话即失忆，无用户偏好/项目结构/部门 SOP 的持久承载，每次都从零开始，输出频繁偏离规范、重复试错</li>
+<li><strong>无 RAG 知识库 → 知识无法沉淀复用</strong>：部门规范、项目文档、历史决策没有统一入库与语义检索入口，Agent 无法按需调取权威资料，只能靠用户手工粘贴。<strong>RAG 知识库的价值</strong>（参考 OpenViking 官方定位"Context Database for AI Agents"）：把文档/SOP/代码统一入库 + 语义索引 + 按需检索，Agent 像查文件系统一样调取权威知识，告别手工粘贴、避免凭空臆造</li>
+<li><strong>使用成本高</strong>：跨会话记忆缺失（同一用户明天再来还要"重讲一遍"）+ 跨 Agent 上下文不复用（Claude Code 写入的偏好，OpenClaw/Hermes 读不到）→ 重复输入、重复 token、重复人工校对</li>
+<li><strong>数据边界模糊</strong>：部门 / 个人间无统一治理入口，安全、审计、合规无处落地</li>
+</ul>
+<p><strong>目标形态</strong>：为云端 Agent 挂载<strong>以「知识库」为中心的记忆系统</strong>——知识库按归属与用途分类（个人偏好库 / 个人技能库 / 项目上下文库 / 部门 SOP 库 / 公司政策库 / 会话归档库，详见 《方案文档》§1.3.3），Agent 不拥有知识库、只被授权访问。具体具备：</p>
+<ul>
+<li><strong>按库分类承载</strong>：短期（会话内）+ 跨会话工作 + 长期稳定 + 归档冷存，分别落在对应类型的知识库</li>
+<li><strong>隔离分两级（单实例内）</strong>：</li>
+<li><strong>account 级隔离</strong>：部门 SOP、公司政策等高敏/只读库，用独立 OpenViking account 隔离（单实例 + account 级隔离，见 《方案文档》§1.3.0）</li>
+<li><strong>namespace 级隔离</strong>：个人偏好/技能/会话归档等，account 内以 namespace 隔离</li>
+<li><strong>迁移与授权</strong>：一个 Agent 可访问多个知识库（跨 account 联邦查询，见 《方案文档》§1.3.0）；<strong>一期跑通 L1 基础 RAG + L2 记忆基础链路（单实例 + account 级隔离·默认配置）</strong>，二期补全 L1/L2 产品化 + 多 Agent 多库治理 + 跨 account 联邦（见 《方案文档》§1.3.0 分期规划）</li>
+<li><strong>企业级治理</strong>：Agent×知识库 授权矩阵 + ACL + 审计 + 合规 + 可观测（见 《方案文档》§1.3.1 ②层）</li>
+</ul>
+<blockquote>
+<p>具体的落地模式与产品选型延后到 §5 候选调研与 《方案文档》§1 业务侧方案设计，本章不预设结论。</p>
+</blockquote>
+<h2 id="2">2. 典型用户<a class="headerlink" href="#2" title="Permanent link">#</a></h2>
+<p>本报告涉及三类用户，按「使用—治理—建设」分层：</p>
+<p><strong>A · Agent 使用方</strong>（通过 Agent 消费记忆系统）</p>
+<ul>
+<li><strong>个人用户</strong>（研发/产品/设计等员工）：使用 Claude Code / OpenClaw / Hermes 完成日常任务，需要记住个人偏好、项目状态、常用规范</li>
+<li><strong>团队 / 业务知识库维护方</strong>（如法务部门）：负责维护本业务领域的知识库（法务知识库、研发 SOP 库等），既是使用方也是该库的内容治理方</li>
+</ul>
+<p><strong>B · 公司 / 部门</strong>（管理视角 · 监察与统一治理）</p>
+<ul>
+<li><strong>部门管理者</strong>：关注本部门知识库的内容合规、访问审计、敏感数据不外泄</li>
+<li><strong>公司治理层</strong>（安全/合规/审计）：关注 2000 人规模下的统一治理入口、数据驻留、GDPR/个保法、跨部门数据边界、成本与可观测大盘</li>
+</ul>
+<p><strong>C · 云端 Agent 团队</strong>（平台建设与运营方）</p>
+<ul>
+<li><strong>平台工程</strong>：负责知识库实例池部署、Agent 接入、②层授权中心、隔离与生命周期治理</li>
+<li><strong>安全 / 合规工程</strong>：落地 ACL、审计日志、KMS 密钥、数据驻留策略</li>
+<li><strong>可观测工程</strong>：负责命中率、污染率、P95 延迟、LLM/Embedding token 成本等运行指标</li>
+</ul>
+<h2 id="3">3. 要解决的问题<a class="headerlink" href="#3" title="Permanent link">#</a></h2>
+<blockquote>
+<p>由 §1 痛点与 §5 候选调研提炼。聚焦两类核心问题，对应 《方案文档》§1 选型与方案设计要回答的设计目标：</p>
+</blockquote>
+<p><strong>问题一 · Agent 原生记忆弱且无 RAG</strong>（使用侧）</p>
+<ul>
+<li>Claude Code/OpenClaw 等原生记忆弱、跨会话失忆、跨 Agent 不复用，且无 RAG 知识库、部门文档/SOP 无入库入口 → 执行质量差、使用成本高</li>
+<li>要回答：记忆怎么分层承载（短期/工作/长期/归档）、怎么自动沉淀与按需召回、怎么把部门文档/SOP 入库做语义检索供 Agent 按需调取（RAG 价值）</li>
+</ul>
+<p><strong>问题二 · 企业级多 Agent 记忆系统建设</strong>（治理与建设侧）</p>
+<ul>
+<li>2000 人多 Agent 共存下，如何做部门/个人/会话三级隔离、Agent×知识库 授权、跨库联邦、审计与成本治理</li>
+<li>要回答：库怎么分类与隔离（规范库/实例库）、Agent 怎么被授权访问多个库、新增 Agent 如何零改造接入、合规与可观测怎么落</li>
+</ul>
+<blockquote>
+<p>以上两类问题在 《方案文档》§1 选型与方案设计中进一步拆解为 5 道业务题（Q1 跨 Agent 共享 / Q2 短期+长期闭环 / Q3 三级隔离 / Q4 企业级治理 / Q5 可观测）。</p>
+</blockquote>
+<h2 id="4-agent">4. Agent 记忆系统：定义、边界与能力框架<a class="headerlink" href="#4-agent" title="Permanent link">#</a></h2>
+<p><strong>定义</strong>：Agent 记忆系统是位于 <strong>Agent Runtime（Agent 运行时，即 Agent 执行对话/工具调用的运行环境）与知识/存储底座之间</strong>的<strong>上下文管理层</strong>，由「记忆分层 + 写入判断 + 召回 + 生命周期治理 + 跨 Agent 共享 + 治理审计」几个部分组成，把会话中产生的事实、偏好、任务状态与可共享知识，沉淀为可写入、可检索、可治理、可审计的记忆，按用户/部门/Agent/会话边界安全召回。</p>
+<p><strong>组成部分简介</strong>：</p>
+<ul>
+<li><strong>记忆分层</strong>：短期上下文 / 工作记忆 / 长期记忆 / 归档记忆四层（见 §4.1）</li>
+<li><strong>写入判断</strong>：决定什么该被记住、由谁写入、记到哪一层</li>
+<li><strong>召回</strong>：按任务按需检索并注入上下文</li>
+<li><strong>生命周期治理</strong>：何时更新、合并、归档或删除</li>
+<li><strong>跨 Agent 共享</strong>：多 Agent 安全复用同一份记忆/知识</li>
+<li><strong>治理与审计</strong>：ACL、来源追溯、审计日志</li>
+</ul>
+<p><strong>与 RAG / 向量数据库的边界</strong>：RAG / 向量数据库主要解决"从资料中找相关内容"；Agent 记忆系统还要解决<strong>什么应该被记住、由谁写入、谁可以使用、何时更新或删除、如何跨 Agent 共享、如何避免记忆污染</strong>。本方案的 RAG/向量底座能力见 §4.5。</p>
+<h3 id="41">4.1 记忆系统的组成层次<a class="headerlink" href="#41" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>层次</th>
+<th>生命周期</th>
+<th>典型内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>短期上下文</strong></td>
+<td>单次会话内</td>
+<td>当前对话轮次、临时变量、工具调用中间结果</td>
+</tr>
+<tr>
+<td><strong>工作记忆</strong></td>
+<td>跨会话、任务级</td>
+<td>未完成任务状态、过程草稿、暂存偏好</td>
+</tr>
+<tr>
+<td><strong>长期记忆</strong></td>
+<td>跨用户生命周期</td>
+<td>稳定事实、偏好、部门 SOP、项目知识</td>
+</tr>
+<tr>
+<td><strong>归档记忆</strong></td>
+<td>冷数据</td>
+<td>时效过期但需保留的历史条目</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42">4.2 参考实践<a class="headerlink" href="#42" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>参考对象</th>
+<th>一手事实</th>
+<th>可迁移原则</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Claude Code Memory</td>
+<td>官方 <strong>4 层</strong>：Enterprise policy（组织级只读）+ Project memory（<code>./CLAUDE.md</code>）+ User memory（<code>~/.claude/CLAUDE.md</code>）+ Project memory local（<code>./CLAUDE.local.md</code>，已 Deprecated 建议改用 imports）；提供 <code>/memory</code> 编辑入口</td>
+<td>企业场景需要<strong>组织级只读 + 项目级 + 用户级</strong>分层承载（本方案对应 《方案文档》§1.3.3 六类知识库：公司政策库=组织级只读、部门SOP库=项目级、个人偏好/技能库=用户级）</td>
+</tr>
+<tr>
+<td>Codex / AGENTS.md</td>
+<td>将项目规则、测试命令、代码风格、安全注意事项写成 Agent 可读文档，并支持目录级覆盖</td>
+<td>需要项目级、目录级、团队级<strong>记忆类型</strong></td>
+</tr>
+<tr>
+<td>MemGPT / Letta</td>
+<td>强调 Core / Archival / Conversation 层次与外部工具集，跨会话记忆持续复用</td>
+<td>需要短期、工作、长期<strong>记忆的组成层次</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="43">4.3 记忆系统的产品形态<a class="headerlink" href="#43" title="Permanent link">#</a></h3>
+<table>
+<thead>
+<tr>
+<th>形态</th>
+<th>代表</th>
+<th>边界</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Agent 内置长期记忆</td>
+<td>Claude Code、Coze LTM</td>
+<td>平台内部闭环；Coze LTM 是 Coze 记忆资源之一（Coze 完整记忆分层见附件2 B.1）</td>
+</tr>
+<tr>
+<td>平台型知识库 / 应用记忆</td>
+<td>Dify、Coze</td>
+<td>应用内可用，不天然跨 Agent</td>
+</tr>
+<tr>
+<td>记忆中间件</td>
+<td>Mem0、Letta、OpenViking</td>
+<td>独立治理 schema/权限/生命周期</td>
+</tr>
+<tr>
+<td>RAG / 向量数据库底座</td>
+<td>VikingDB、Qdrant、Milvus</td>
+<td>靠切片、向量索引、语义召回解决检索，不直接解决记忆写入判断和治理</td>
+</tr>
+</tbody>
+</table>
+<h3 id="44-agent">4.4 Agent 记忆系统核心能力<a class="headerlink" href="#44-agent" title="Permanent link">#</a></h3>
+<p>本节给出 Agent 记忆系统的 8 类核心能力框架（4.4.1 作用域与隔离 / 4.4.2 记忆写入 / 4.4.3 记忆类型 / 4.4.4 记忆召回 / 4.4.5 生命周期 / 4.4.6 跨 Agent 共享 / 4.4.7 治理与安全 / 4.4.8 可观测性），按「能力类 → 必要能力 → 能力说明」三层展开。这 8 类能力对应完整记忆闭环：写入前先判断作用域和权限，写入时记录来源和类型，运行时按任务召回，长期通过生命周期治理保持准确，并通过可观测指标发现污染、延迟和成本问题。此框架同时作为 §5 候选调研的评估维度。</p>
+<h4 id="441">4.4.1 作用域与隔离<a class="headerlink" href="#441" title="Permanent link">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>子能力</th>
+<th>能力说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>隔离层级</td>
+<td>用户级隔离</td>
+<td>每个自然人独立命名空间，防止跨人污染</td>
+</tr>
+<tr>
+<td>隔离层级</td>
+<td>部门/团队级隔离</td>
+<td>按组织层级隔离记忆域，支持部门间共享或独占</td>
+</tr>
+<tr>
+<td>隔离层级</td>
+<td>项目/资源级隔离</td>
+<td>以项目、知识库或资源为边界，跨用户共享同一份项目记忆</td>
+</tr>
+<tr>
+<td>隔离层级</td>
+<td>Agent 级隔离</td>
+<td>不同 Agent（Claude Code / Hermes / OpenClaw 等）可持有独立或共享记忆</td>
+</tr>
+<tr>
+<td>隔离层级</td>
+<td>会话级隔离</td>
+<td>单次会话/任务的短期上下文与长期记忆解耦</td>
+</tr>
+<tr>
+<td>权限模型</td>
+<td>命名空间与 ID 体系</td>
+<td>user_id / agent_id / run_id / app_id / workspace 等多级 ID 组合</td>
+</tr>
+<tr>
+<td>权限模型</td>
+<td>访问控制 ACL</td>
+<td>Read / Write / Delete / Share 细粒度权限（能力上限，如 Cognee dataset 粒度 4 类 ACL）；本方案据 Agent 意图驱动特性降为布尔粒度（允许/不允许），详见 《方案文档》§1.3.3</td>
+</tr>
+<tr>
+<td>权限模型</td>
+<td>多租户与数据驻留</td>
+<td>租户级密钥、region 隔离、私有化部署可控</td>
+</tr>
+</tbody>
+</table>
+<h4 id="442">4.4.2 记忆写入<a class="headerlink" href="#442" title="Permanent link">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>子能力</th>
+<th>能力说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>写入方式</td>
+<td>显式写入</td>
+<td>Agent 或用户主动通过 API/工具调用把事实写入长期记忆</td>
+</tr>
+<tr>
+<td>写入方式</td>
+<td>自动抽取</td>
+<td>LLM 从对话/文档中被动抽取事实、偏好、关系并入库</td>
+</tr>
+<tr>
+<td>写入方式</td>
+<td>批量导入</td>
+<td>从文件、外部知识库、历史会话批量导入</td>
+</tr>
+<tr>
+<td>写入治理</td>
+<td>来源记录</td>
+<td>每条记忆保留来源 URL / 会话 ID / 用户 / 时间戳</td>
+</tr>
+<tr>
+<td>写入治理</td>
+<td>写入确认与撤回</td>
+<td>支持写入前确认、写入后撤回，避免误写污染</td>
+</tr>
+<tr>
+<td>写入治理</td>
+<td>幂等与去重</td>
+<td>同一事实多次写入不产生重复条目</td>
+</tr>
+</tbody>
+</table>
+<h4 id="443">4.4.3 记忆类型<a class="headerlink" href="#443" title="Permanent link">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>子能力</th>
+<th>能力说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>结构化记忆</td>
+<td>事实型</td>
+<td>人名、时间、数值、状态等原子事实</td>
+</tr>
+<tr>
+<td>结构化记忆</td>
+<td>偏好型</td>
+<td>用户偏好、风格、口味、习惯</td>
+</tr>
+<tr>
+<td>结构化记忆</td>
+<td>实体-关系型</td>
+<td>人-项目-文档等图状关联，支持图检索</td>
+</tr>
+<tr>
+<td>半结构化记忆</td>
+<td>过程型</td>
+<td>任务步骤、流程状态、Agent 执行轨迹</td>
+</tr>
+<tr>
+<td>半结构化记忆</td>
+<td>任务状态</td>
+<td>待办、进行中、已完成的任务上下文</td>
+</tr>
+<tr>
+<td>非结构化记忆</td>
+<td>文档型</td>
+<td>长文档、笔记、纪要、代码片段</td>
+</tr>
+<tr>
+<td>非结构化记忆</td>
+<td>多模态</td>
+<td>图像、音频、视频及其描述文本</td>
+</tr>
+</tbody>
+</table>
+<h4 id="444">4.4.4 记忆召回<a class="headerlink" href="#444" title="Permanent link">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>子能力</th>
+<th>能力说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>召回维度</td>
+<td>按任务/查询召回</td>
+<td>基于当前对话或工具调用意图检索相关记忆</td>
+</tr>
+<tr>
+<td>召回维度</td>
+<td>按用户/主体召回</td>
+<td>按 user_id / agent_id 限定召回范围</td>
+</tr>
+<tr>
+<td>召回维度</td>
+<td>按时间召回</td>
+<td>支持时间窗、最近 N 条、时间衰减加权</td>
+</tr>
+<tr>
+<td>召回维度</td>
+<td>按来源/重要性召回</td>
+<td>按来源可信度、访问频次、置信度加权</td>
+</tr>
+<tr>
+<td>召回控制</td>
+<td>Top-K 与阈值</td>
+<td>控制返回条数与最低相关度门槛</td>
+</tr>
+<tr>
+<td>召回控制</td>
+<td>多信号融合</td>
+<td>语义 + 关键词 + 元数据 + 图 多路合并排序</td>
+</tr>
+<tr>
+<td>召回控制</td>
+<td>上下文注入策略</td>
+<td>决定召回结果如何拼接进 Agent Prompt</td>
+</tr>
+</tbody>
+</table>
+<h4 id="445">4.4.5 生命周期<a class="headerlink" href="#445" title="Permanent link">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>子能力</th>
+<th>能力说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>去重与合并</td>
+<td>语义去重</td>
+<td>同义/近似事实归并成单条记忆</td>
+</tr>
+<tr>
+<td>去重与合并</td>
+<td>冲突解决</td>
+<td>新旧事实冲突时按时间/来源/置信度裁决</td>
+</tr>
+<tr>
+<td>更新与版本</td>
+<td>记忆更新</td>
+<td>支持字段级或整条更新，保留历史版本</td>
+</tr>
+<tr>
+<td>更新与版本</td>
+<td>版本化与回溯</td>
+<td>记忆变更可审计、可回滚</td>
+</tr>
+<tr>
+<td>遗忘与归档</td>
+<td>时间衰减</td>
+<td>长期未使用记忆分数衰减、退出热召回</td>
+</tr>
+<tr>
+<td>遗忘与归档</td>
+<td>自动归档</td>
+<td>冷记忆迁移到归档层或对象存储</td>
+</tr>
+<tr>
+<td>遗忘与归档</td>
+<td>删除与遗忘</td>
+<td>显式删除、级联删除（连同引用与摘要一并清理，即"被引用清理"）、GDPR 遗忘权支持</td>
+</tr>
+</tbody>
+</table>
+<h4 id="446-agent">4.4.6 跨 Agent 共享<a class="headerlink" href="#446-agent" title="Permanent link">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>子能力</th>
+<th>能力说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>接入形态</td>
+<td>API / HTTP 接口</td>
+<td>语言无关，任何 Agent 可通过 HTTP 接入</td>
+</tr>
+<tr>
+<td>接入形态</td>
+<td>多语言 SDK</td>
+<td>Python / TypeScript / Go 等主流语言 SDK</td>
+</tr>
+<tr>
+<td>接入形态</td>
+<td>MCP 协议</td>
+<td>通过 Model Context Protocol 让新 Agent 零改造接入</td>
+</tr>
+<tr>
+<td>共享语义</td>
+<td>统一 schema</td>
+<td>事实/偏好/文档等类型有跨 Agent 一致定义</td>
+</tr>
+<tr>
+<td>共享语义</td>
+<td>共享/私有边界</td>
+<td>明确哪些记忆全 Agent 可读、哪些仅本 Agent 可读</td>
+</tr>
+<tr>
+<td>共享语义</td>
+<td>冲突协调</td>
+<td>多 Agent 同时写入时的锁/合并/顺序策略</td>
+</tr>
+</tbody>
+</table>
+<h4 id="447">4.4.7 治理与安全<a class="headerlink" href="#447" title="Permanent link">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>子能力</th>
+<th>能力说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>访问控制</td>
+<td>细粒度 ACL</td>
+<td>Read / Write / Delete / Share 分权到 dataset / 目录</td>
+</tr>
+<tr>
+<td>访问控制</td>
+<td>SSO / RBAC</td>
+<td>企业级单点登录 + 角色权限模型；组织级只读策略可参考 Claude Code Enterprise policy</td>
+</tr>
+<tr>
+<td>数据安全</td>
+<td>传输与静态加密</td>
+<td>HTTPS + 存储侧 AES / KMS + 租户密钥</td>
+</tr>
+<tr>
+<td>数据安全</td>
+<td>敏感数据脱敏</td>
+<td>写入前对手机号、身份证、密钥等自动脱敏</td>
+</tr>
+<tr>
+<td>合规与审计</td>
+<td>审计日志</td>
+<td>每次读/写/删可追溯到人、Agent、时间</td>
+</tr>
+<tr>
+<td>合规与审计</td>
+<td>删除权与数据驻留</td>
+<td>支持用户级彻底删除；数据 region 可选</td>
+</tr>
+<tr>
+<td>合规与审计</td>
+<td>合规证书</td>
+<td>SOC 2 / HIPAA 等企业合规资质；ISO 27001 为通用行业期望（本次 4 款候选未公开该证书）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="448">4.4.8 可观测性<a class="headerlink" href="#448" title="Permanent link">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>子能力</th>
+<th>能力说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>质量指标</td>
+<td>命中率</td>
+<td>召回结果被 Agent 实际采用的比例</td>
+</tr>
+<tr>
+<td>质量指标</td>
+<td>错误召回 / 污染率</td>
+<td>误召回、被 Agent 拒用、被用户负反馈的比例</td>
+</tr>
+<tr>
+<td>质量指标</td>
+<td>记忆有效性</td>
+<td>记忆条目在下游任务中的贡献度</td>
+</tr>
+<tr>
+<td>性能指标</td>
+<td>延迟</td>
+<td>召回 P95 / P99、写入延迟、端到端响应时长</td>
+</tr>
+<tr>
+<td>性能指标</td>
+<td>QPS 与并发</td>
+<td>峰值 QPS、并发上限、限流策略</td>
+</tr>
+<tr>
+<td>成本指标</td>
+<td>存储与计算成本</td>
+<td>向量库、对象存储、Embedding / Rerank 调用费用</td>
+</tr>
+<tr>
+<td>追踪与调试</td>
+<td>调用链追踪</td>
+<td>OTel Trace 关联 Agent 调用 → 记忆读写 → LLM 调用</td>
+</tr>
+<tr>
+<td>追踪与调试</td>
+<td>记忆使用回放</td>
+<td>复盘每次会话中记忆的读写、命中、被用情况</td>
+</tr>
+</tbody>
+</table>
+<h3 id="45-rag">4.5 RAG / 向量数据库底座能力<a class="headerlink" href="#45-rag" title="Permanent link">#</a></h3>
+<p>按<strong>数据处理 / 数据存储 / 数据获取</strong>三维展开。</p>
+<h4 id="451">4.5.1 数据处理<a class="headerlink" href="#451" title="Permanent link">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>子能力</th>
+<th>能力说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数据类型</td>
+<td>非结构化</td>
+<td>Markdown、TXT、PDF、HTML、Office 文档</td>
+</tr>
+<tr>
+<td>数据类型</td>
+<td>结构化</td>
+<td>表格、CSV、JSON、数据库导出</td>
+</tr>
+<tr>
+<td>数据类型</td>
+<td>多模态</td>
+<td>图像 / 音频 / 视频 + 其描述文本</td>
+</tr>
+<tr>
+<td>数据类型</td>
+<td>代码</td>
+<td>代码仓库、AST、跨语言解析</td>
+</tr>
+<tr>
+<td>处理方式</td>
+<td>解析与转换</td>
+<td>各类文件到统一文本表示</td>
+</tr>
+<tr>
+<td>处理方式</td>
+<td>切片 / 分段</td>
+<td>按段落 / Token / 结构切片</td>
+</tr>
+<tr>
+<td>处理方式</td>
+<td>摘要 / L1 抽取</td>
+<td>生成短摘要、Overview 层</td>
+</tr>
+</tbody>
+</table>
+<h4 id="452">4.5.2 数据存储<a class="headerlink" href="#452" title="Permanent link">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>子能力</th>
+<th>能力说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>存储介质</td>
+<td>向量索引</td>
+<td>语义召回，支持 HNSW / IVF / Flat / DiskANN</td>
+</tr>
+<tr>
+<td>存储介质</td>
+<td>元数据存储</td>
+<td>结构化字段、过滤条件</td>
+</tr>
+<tr>
+<td>存储介质</td>
+<td>全文索引</td>
+<td>关键词 / BM25 检索</td>
+</tr>
+<tr>
+<td>存储介质</td>
+<td>对象存储</td>
+<td>原始附件、冷归档</td>
+</tr>
+<tr>
+<td>后端选择</td>
+<td>向量数据库</td>
+<td>Qdrant / Milvus / Weaviate / pgvector / VikingDB 等（品牌为示意，非选型池）</td>
+</tr>
+<tr>
+<td>后端选择</td>
+<td>图数据库</td>
+<td>Ladybug / Neo4j，用于实体-关系型记忆</td>
+</tr>
+<tr>
+<td>权限与规模</td>
+<td>多租户与 ACL</td>
+<td>namespace / collection / row 级权限</td>
+</tr>
+<tr>
+<td>权限与规模</td>
+<td>容量与限流</td>
+<td>单集合上限、QPS、副本、计费</td>
+</tr>
+</tbody>
+</table>
+<h4 id="453">4.5.3 数据获取<a class="headerlink" href="#453" title="Permanent link">#</a></h4>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>子能力</th>
+<th>能力说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>检索模式</td>
+<td>向量检索</td>
+<td>语义相似度召回</td>
+</tr>
+<tr>
+<td>检索模式</td>
+<td>关键词 / 全文检索</td>
+<td>BM25 / 精确匹配</td>
+</tr>
+<tr>
+<td>检索模式</td>
+<td>混合检索</td>
+<td>向量 + 关键词 + 图 融合</td>
+</tr>
+<tr>
+<td>过滤与排序</td>
+<td>元数据过滤</td>
+<td>按字段过滤（user_id / dept / 时间等）</td>
+</tr>
+<tr>
+<td>过滤与排序</td>
+<td>Rerank</td>
+<td>Cross-Encoder / 神经重排</td>
+</tr>
+<tr>
+<td>过滤与排序</td>
+<td>阈值控制</td>
+<td>相似度阈值、Top-K、置信度</td>
+</tr>
+<tr>
+<td>检索测试</td>
+<td>命中调试面板</td>
+<td>查询、召回、排序结果可视化</td>
+</tr>
+<tr>
+<td>检索测试</td>
+<td>运行观测</td>
+<td>QPS、P95、命中率指标暴露</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5">5. 候选产品调研<a class="headerlink" href="#5" title="Permanent link">#</a></h2>
+<p>本节先给出 §4.4 与 §4.5 两个能力框架对 4 款开源候选产品的横向总览，每格采用「符号 + 一句摘要」。总览在前，§5.1-§5.4 为逐产品详情。Coze / VikingDB / Dify 定位为竞品功能参考，见<a href="附件2-引用来源与竞品参考.md">附件2</a>。</p>
+<p><strong>调研范围与打分口径</strong></p>
+<ul>
+<li><strong>调研对象</strong>：4 款开源候选（OpenViking / Mem0 / Letta / Cognee）参与选型打分；3 款竞品（Coze / VikingDB / Dify）仅作功能借鉴，见<a href="附件2-引用来源与竞品参考.md#附录-b竞品功能参考coze--vikingdb--dify">附件2 B</a>。</li>
+<li><strong>调研内容</strong>：§4.4 8 项核心能力 + §4.5 3 维 RAG 底座 + §3 5 道业务题（多 Agent 共享 / 四层分级 / 三级隔离 / 企业治理 / 可观测）的作答</li>
+<li><strong>打分口径</strong>：✅ 官方文档已明示 / ⚠️ 部分支持或需自建 / ❌ 官方明示不支持 / <code>INSUFFICIENT_DATA</code> 官方未公开</li>
+<li><strong>来源等级</strong>：P0 官方仓库 / 官方文档；P1 官方博客 / 论文；P2 二手权威（企业级评测）；P3 社区讨论</li>
+<li><strong>检索截止</strong>：2026-07-01；调研方法与已知局限见 §5.5</li>
+</ul>
+<h3 id="50">5.0 产品能力对比总览<a class="headerlink" href="#50" title="Permanent link">#</a></h3>
+<p><strong>候选池说明</strong>：将 Coze、火山引擎 VikingDB、Dify 从候选池移出，仅保留为<strong>竞品功能参考</strong>，独立承载在 <a href="附件2-引用来源与竞品参考.md">附件2</a>；候选池只保留 4 款开源框架（OpenViking / Mem0 / Letta / Cognee）。</p>
+<p>以下四张表分别从 §4.4 核心能力（表 A）、§4.5 RAG 底座三维（表 B-1 数据处理 / B-2 数据存储 / B-3 数据获取）对 4 款开源候选横向对比，每格「符号 + 一句摘要」。</p>
+<p><strong>表 A：§4.4 核心能力 × 4 产品</strong></p>
+<table>
+<thead>
+<tr>
+<th>核心能力</th>
+<th>OpenViking</th>
+<th>Mem0</th>
+<th>Letta</th>
+<th>Cognee</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>作用域与隔离</td>
+<td>⚠️ 目录级天然分层，企业 ACL 需自建</td>
+<td>✅ user_id/agent_id/run_id/app_id 四级 ID 原生</td>
+<td>⚠️ 用户/Agent 级完备（原生多 Agent 共享 + read-only），部门级 ACL 自建</td>
+<td>⚠️ 自托管可控，无企业级 ACL</td>
+</tr>
+<tr>
+<td>记忆写入</td>
+<td>✅ 文件式 + L0/L1/L2 摘要</td>
+<td>✅ add API + LLM 自动抽取</td>
+<td>✅ 显式工具调用 core/archival</td>
+<td>✅ 自动抽取实体-关系图</td>
+</tr>
+<tr>
+<td>记忆类型</td>
+<td>✅ 事实/偏好/文档；实体-关系弱</td>
+<td>✅ 事实/偏好为主 + entity linking（v3）</td>
+<td>✅ 事实/偏好/过程/文档</td>
+<td>✅ 实体-关系图为最大特色</td>
+</tr>
+<tr>
+<td>记忆召回</td>
+<td>✅ 向量+关键词+元数据+doubao-seed-rerank</td>
+<td>✅ 多信号并行融合（semantic + BM25 + entity）+ 时序推理</td>
+<td>✅ 向量+全文 hybrid+RRF</td>
+<td>✅ 向量+图混合</td>
+</tr>
+<tr>
+<td>生命周期</td>
+<td>✅ 读写完备 + commit/archive 归档管线；去重/合并/版本部分需自建</td>
+<td>✅ v3 单次 ADD-only 累积不覆写；实体链接跨记忆检索</td>
+<td>✅ FIFO 层 recursive summary + sleep-time 后台整合</td>
+<td>⚠️ forget 支持，图去重需上层维护</td>
+</tr>
+<tr>
+<td>跨 Agent 共享</td>
+<td>✅ HTTP API + Python/Go SDK</td>
+<td>✅ Python + TypeScript SDK + HTTP API</td>
+<td>✅ 多 Agent 原生共享 memory blocks</td>
+<td>⚠️ SDK + MCP 集成</td>
+</tr>
+<tr>
+<td>治理与安全</td>
+<td>⚠️ AGPL 自托管 + KMS + 租户密钥</td>
+<td>✅ SOC 2 声明 + HIPAA 声明 + BYOK（级别以官方 trust 页为准）</td>
+<td>⚠️ Enterprise RBAC + SSO；未见公开合规证书</td>
+<td>⚠️ 自托管 + Read/Write/Delete/Share ACL</td>
+</tr>
+<tr>
+<td>可观测性</td>
+<td>✅ Prometheus + rerank_used_total 等指标</td>
+<td>✅ Mem0 Platform 面板</td>
+<td>✅ OTel + ClickHouse/Signoz/Datadog</td>
+<td>✅ OTEL Collector + audit trails</td>
+</tr>
+</tbody>
+</table>
+<p><strong>表 B-1：§4.5.1 数据处理</strong></p>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>OpenViking</th>
+<th>Mem0</th>
+<th>Letta</th>
+<th>Cognee</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>支持数据类型</td>
+<td>文本 + 图/视频/音频 L2</td>
+<td>主要对话文本 + 图像 ≤20MB（Cloud 官方限制）</td>
+<td>主要对话文本</td>
+<td>Text / PDF / Unstructured / Docling</td>
+</tr>
+<tr>
+<td>解析与切片</td>
+<td>靠 VLM 生成 L0/L1，L2 挂原文</td>
+<td>无内置文档解析</td>
+<td>archival passage ≤300 tokens 简单分段</td>
+<td>内置 Parser + AdvancedPdfLoader + OCR</td>
+</tr>
+<tr>
+<td>多模态</td>
+<td>✅ L2 层支持 image/video/audio + VLM 描述</td>
+<td>⚠️ 图像 ≤20MB（JPEG/PNG/WebP/GIF）</td>
+<td>⚠️ 图像依赖底座模型</td>
+<td>✅ ImageLoader + AudioLoader</td>
+</tr>
+</tbody>
+</table>
+<p><strong>表 B-2：§4.5.2 数据存储</strong></p>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>OpenViking</th>
+<th>Mem0</th>
+<th>Letta</th>
+<th>Cognee</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>存储后端</td>
+<td>内置 dense + sparse + flat_hybrid</td>
+<td>20+ 向量后端可插拔</td>
+<td>TurboPuffer / pgvector / SQLite-vec</td>
+<td>LanceDB / PGVector / <strong>Ladybug（默认，v1.0.4 起替换 Kuzu）</strong> / Neo4j</td>
+</tr>
+<tr>
+<td>索引</td>
+<td>flat_hybrid（cosine + int8 量化）</td>
+<td>各后端原生</td>
+<td>向量 + FTS</td>
+<td>向量 + 图</td>
+</tr>
+<tr>
+<td>权限模型</td>
+<td>account/user/peer + ROOT/ADMIN/USER；账号密钥隔离</td>
+<td>元数据可查询；条目级容量未公开</td>
+<td>Memory Blocks &lt;50k characters / &lt;20 blocks</td>
+<td>ENABLE_BACKEND_ACCESS_CONTROL + dataset 粒度 ACL</td>
+</tr>
+<tr>
+<td>规模与容量</td>
+<td>LOCOMO 端到端千万级案例</td>
+<td>BEAM 1M/10M（1M/10M token 上下文，非条目数）</td>
+<td>Cloud 有条目上限；企业级另议</td>
+<td>取决于图/向量后端</td>
+</tr>
+</tbody>
+</table>
+<p><strong>表 B-3：§4.5.3 数据获取</strong></p>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>OpenViking</th>
+<th>Mem0</th>
+<th>Letta</th>
+<th>Cognee</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>检索模式</td>
+<td>向量 + 关键词 + 元数据两阶段</td>
+<td>多信号并行融合（semantic + BM25 + entity）+ 时序推理</td>
+<td>向量 + FTS hybrid</td>
+<td>向量 + 图 hybrid</td>
+</tr>
+<tr>
+<td>Rerank</td>
+<td>内置 doubao-seed-rerank</td>
+<td>v3 rank fusion（多信号并行评分）</td>
+<td>⚠️ RRF 合并，无独立神经 Rerank</td>
+<td>⚠️ triplet_distance_penalty，无 Cross-Encoder</td>
+</tr>
+<tr>
+<td>阈值</td>
+<td>需上层实现</td>
+<td>threshold 默认 0.3</td>
+<td>分数返回，阈值上层实现</td>
+<td>wide_search_top_k + 排序权重</td>
+</tr>
+<tr>
+<td>多路合并</td>
+<td>两阶段 vector recall + rerank</td>
+<td>Multi-signal parallel + rank fusion</td>
+<td>RRF</td>
+<td>图 + 向量合并</td>
+</tr>
+<tr>
+<td>检索测试</td>
+<td>手动调试为主</td>
+<td>Platform 面板可视化</td>
+<td>内置 CLI 工具</td>
+<td>evals/ + HotpotQA 基准</td>
+</tr>
+<tr>
+<td>运行观测</td>
+<td>Prometheus + rerank_used_total</td>
+<td>Platform 命中/延迟/成本看板</td>
+<td>OTel + ClickHouse</td>
+<td>OTEL + audit trails</td>
+</tr>
+</tbody>
+</table>
+<h3 id="51-openviking">5.1 OpenViking（详尽）<a class="headerlink" href="#51-openviking" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>定位</strong>：火山引擎开源记忆中间件；文件系统式抽象；AGPL-3.0</li>
+<li><strong>独特优势</strong>：4 款中唯一"文件系统式抽象 + 内置 doubao-seed-rerank + 原生 Prometheus + 火山生态亲和"；分级目录直接映射公司/部门/个人四级</li>
+<li><strong>独特短板</strong>：部门级 ACL / 合规资质需自建；SDK 覆盖 Python/Go/TS（TS 为社区/实验性支持）；实体-关系记忆弱</li>
+</ul>
+<blockquote>
+<p>详细能力映射（§4.4 × §4.5）、§3 5 道业务题作答、行内证据 URL 见 <a href="附件1-候选产品调研详情.md#1-openviking详尽">候选调研详情 §1</a></p>
+</blockquote>
+<hr />
+<h3 id="52-mem0">5.2 Mem0（重点）<a class="headerlink" href="#52-mem0" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>定位</strong>：开源个人化记忆中间件；LLM 自动抽取事实/偏好；4 级 ID 隔离</li>
+<li><strong>独特优势</strong>：4 款中唯一同时公开 SOC 2 + HIPAA + BYOK + Air-gapped；<strong>2026-04 v3 新算法</strong>给出 LoCoMo <strong>91.6</strong>（+20）、LongMemEval <strong>94.8</strong>（+27）、BEAM 1M <strong>64.1</strong>、BEAM 10M <strong>48.6</strong>（单次调用，非 agentic 循环）；引入 entity linking + 多信号（semantic + BM25 + entity）并行融合 + 时序推理</li>
+<li><strong>独特短板</strong>：文档型记忆仍弱；开源版无内置观测面板；部门级隔离靠元数据过滤自建</li>
+</ul>
+<blockquote>
+<p>详情见 <a href="附件1-候选产品调研详情.md#2-mem0重点">候选调研详情 §2</a>；基准来源见 GitHub <code>mem0ai/mem0</code> README "New Memory Algorithm (April 2026)" 与 <code>mem0.ai/research</code></p>
+</blockquote>
+<hr />
+<h3 id="53-letta-memgpt">5.3 Letta（原 MemGPT）（重点）<a class="headerlink" href="#53-letta-memgpt" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>定位</strong>：分层记忆 Agent 框架；Memory Blocks（Core）+ Archival + Conversation 三层 + 外部工具集；唯一原生多 Agent 共享 memory blocks</li>
+<li><strong>独特优势</strong>：4 款中唯一原生"多 Agent 共享 memory blocks + read-only 权限"；分层记忆最完整；OTel + ClickHouse 观测栈最完整</li>
+<li><strong>独特短板</strong>：显式 LLM 调用模式，2000 人高频场景成本高；无独立神经 Rerank；archival passage ≤300 tokens</li>
+</ul>
+<blockquote>
+<p>详情见 <a href="附件1-候选产品调研详情.md#3-letta原-memgpt重点">候选调研详情 §3</a></p>
+</blockquote>
+<hr />
+<h3 id="54-cognee">5.4 Cognee（概览）<a class="headerlink" href="#54-cognee" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>定位</strong>：认知图 + 向量融合；实体-关系图为核心；Apache-2.0</li>
+<li><strong>独特优势</strong>：4 款中唯一内置"实体-关系图 + 向量混合"；唯一 Read/Write/Delete/Share 4 类 ACL（dataset 粒度）；数据处理管线最丰富（Docling / OCR / Parser）</li>
+<li><strong>独特短板</strong>：多 Agent 成熟度弱；图数据库运维成本高；分层记忆抽象弱</li>
+<li><strong>重要变更（2026-05）</strong>：v1.0.4 主图后端由 Kuzu 迁移到 <strong>Ladybug</strong>（Kuzu 目录保留兼容）；主 API 已改为 <code>remember</code> / <code>recall</code> / <code>forget</code> / <code>improve</code>（原 <code>add</code> / <code>cognify</code> / <code>search</code> 语义收敛）</li>
+</ul>
+<blockquote>
+<p>详情见 <a href="附件1-候选产品调研详情.md#4-cognee概览">候选调研详情 §4</a></p>
+</blockquote>
+<hr />
+<h3 id="55">5.5 调研执行方法与限制<a class="headerlink" href="#55" title="Permanent link">#</a></h3>
+<ul>
+<li><strong>来源分级</strong>：P0 官方仓库/文档 · P1 官方博客/论文 · P2 二手权威 · P3 社区；<strong>本报告结论性论述所需的引用均使用 P0/P1</strong>，附录 A 部分参考阅读会标注 P2/P3 等级</li>
+<li><strong>覆盖清单</strong>：§4.4 8 项 × 4 产品 = 32 单元 + §4.5 3 维 × 4 产品 = 12 单元 + §3 5 道题 × 4 产品 = 20 单元，均已完成</li>
+<li><strong>已知局限</strong>：未做压测、未真实 2000 人部署、<code>INSUFFICIENT_DATA</code> 表示官方未公开但可能实际存在、版本截止 2026-07-01</li>
+</ul>
+<blockquote>
+<p>完整分级方法、一手引用位置、未覆盖项与复核建议见 <a href="附件1-候选产品调研详情.md#5-调研执行方法与限制">候选调研详情 §5</a></p>
+<p>以上完成 4 款开源候选的能力调研与横向对比。下文 §5.6 基于此调研结论，结合 §1 业务约束与 §3 业务题，给出业务侧选型结论。</p>
+</blockquote>
+<hr />
+<h3 id="56">5.6 业务侧选型结论<a class="headerlink" href="#56" title="Permanent link">#</a></h3>
+<h4 id="561">5.6.1 业务约束与选型范围<a class="headerlink" href="#561" title="Permanent link">#</a></h4>
+<p><strong>业务约束</strong>：</p>
+<ul>
+<li>2000 人并发</li>
+<li>多 Agent 共存：Claude Code / OpenClaw / Hermes + 未来</li>
+<li>隔离：部门 → 个人 → 会话 三级（对齐 Q3 三级隔离）</li>
+<li>信息新鲜度：2026 年技术栈</li>
+</ul>
+<p><strong>对齐 §1 痛点</strong>：</p>
+<ul>
+<li>原生记忆弱 → 执行质量差（跨会话失忆、无偏好/SOP 持久承载）</li>
+<li>无 RAG 知识库 → 知识无法沉淀复用（部门文档/SOP 无入库入口）</li>
+<li>使用成本高（重复输入、重复 token、重复人工校对）</li>
+<li>数据边界模糊（部门/个人间无统一治理入口）</li>
+</ul>
+<p><strong>对齐 §3 五道业务题</strong>（选型与方案须逐一回答）：</p>
+<ul>
+<li>Q1 跨 Agent 共享 · Q2 短期+长期闭环 · Q3 三级隔离 · Q4 企业级治理 · Q5 可观测</li>
+</ul>
+<p><strong>候选池范围</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>产品</th>
+<th>参与主选型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>开源候选</strong></td>
+<td>OpenViking / Mem0 / Letta / Cognee</td>
+<td>✅ 4 款平等参与，综合判断见 §5.6.2</td>
+</tr>
+<tr>
+<td><strong>竞品功能参考</strong></td>
+<td>Coze、VikingDB、Dify</td>
+<td>⚠️ 商业闭源不参与选型，仅作功能借鉴，见<a href="附件2-引用来源与竞品参考.md">附件2</a></td>
+</tr>
+</tbody>
+</table>
+<h4 id="562">5.6.2 四款开源候选综合判断<a class="headerlink" href="#562" title="Permanent link">#</a></h4>
+<blockquote>
+<p><strong>判断方法</strong>：4 款开源候选（OpenViking / Mem0 / Letta / Cognee）平等参与主选型，从<strong>能力、知识库、范式与体验、一体化、落地约束</strong>五个维度综合对比（含与 Cognee 的逐项对比），不局限于单一维度或单一产品视角。</p>
+</blockquote>
+<p><strong>五维度综合判断总表</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>OpenViking</th>
+<th>Mem0</th>
+<th>Letta</th>
+<th>Cognee</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① 能力（会话压缩+三层结构+三类上下文）</td>
+<td>✅ transcript→commit→archive→L0/L1/L2 完整压缩管线 + Memory/Resources/Skills 三类统一（附件3 第 11、40、42 行）</td>
+<td>⚠️ 无 transcript 压缩归档；扁平条目；以记忆为主</td>
+<td>✅ Core/Archival/Conversation 三层 + sleep-time 整合；无资源/技能抽象</td>
+<td>⚠️ remember→知识图谱；无分层压缩归档；以图谱为核心</td>
+</tr>
+<tr>
+<td>② 知识库（文档型+混合型承载）</td>
+<td>✅ 文件系统范式匹配文档结构；L0/L1/L2 下钻定位；Memory+Resources 统一承载记忆与文档</td>
+<td>⚠️ 文档型承载弱；无资源范式</td>
+<td>⚠️ archival ≤300 tokens 限制大文档</td>
+<td>⚠️ 文档→图谱丢失原文档结构；记忆与文档非统一范式</td>
+</tr>
+<tr>
+<td>③ 范式与体验（可解释+Token+自动化+可观测）</td>
+<td>✅ viking:// 路径可视化 + L0/L1/L2 按需加载大幅省 Token + commit 自动沉淀 + web-studio 检索轨迹</td>
+<td>⚠️ 条目式无路径；全量召回</td>
+<td>⚠️ blocks 式；显式 LLM 调用成本高</td>
+<td>⚠️ 图谱节点式；子图召回</td>
+</tr>
+<tr>
+<td>④ 一体化（记忆+知识库统一引擎）</td>
+<td>✅ Context Database，喂对话=记忆、喂文档=知识库，统一 viking://（附件3 第 11 行）</td>
+<td>❌ 仅记忆中间件</td>
+<td>❌ 仅记忆+工具</td>
+<td>⚠️ 以图谱为核心，非"记忆+知识库"双范式</td>
+</tr>
+<tr>
+<td>⑤ 落地约束（许可/运维/生态）</td>
+<td>⚠️ AGPL-3.0 传染性 + 自建向量库 + 生态约 6 个月</td>
+<td>✅ Apache-2.0 友好 + 20+ 后端可插拔</td>
+<td>⚠️ Enterprise 需付费 + 显式调用成本</td>
+<td>✅ Apache-2.0 友好 + 图后端运维成本高</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>能力维度决定记忆系统是否可用</strong>：本方案为<strong>多知识库架构</strong>（个人/部门/公司多库分担负载，见 《方案文档》§1.3.1 ③层（单实例多 account）），2000 人高频场景下各实例按隔离粒度承载相应负载；能否把长对话自动压缩为按需加载的分层摘要，决定 token 成本与召回质量。OpenViking 是 4 款中唯一具备"transcript→commit→archive→L0/L1/L2 完整会话压缩管线 + 三层信息结构 + Memory/Resources/Skills 三类上下文统一"三合一能力的产品；Cognee 以知识图谱为核心（remember→图谱），无分层压缩归档管线，更适合作为关系推理增强层而非独立承担会话记忆。</p>
+<p><strong>一体化维度是本场景刚需</strong>：本报告要建"记忆+知识库"混合系统（部门 SOP + 项目上下文 + 个人偏好），OpenViking 官方定位即"Context Database for AI Agents"（附件3 第 11 行），以统一 viking:// 文件系统同时承载会话记忆与文档资源，是 4 款中范式统一性最完整的方案；Cognee 的对话与文档均归一为知识图谱，非"记忆+知识库"双范式。</p>
+<p><strong>落地约束决定适用场景</strong>：OpenViking 的 AGPL-3.0 传染性许可证对闭源商用产品有法律风险，且需自建向量库、生态仅约 6 个月（2026-01 开源）。本报告场景为<strong>公司内部云端 Agent 平台、自托管内网部署</strong>，AGPL-3.0 自托管不构成阻断风险，故选型成立；若未来出现闭源商用外发需求，需重估 AGPL-3.0 许可合规。</p>
+</blockquote>
+<p><strong>落选理由（对齐五维度）</strong>：</p>
+<ul>
+<li><strong>Mem0</strong>：能力维度——无 transcript 压缩归档、三层结构缺、三类上下文以记忆为主；知识库维度——文档型承载弱；范式维度——条目式无路径可视化。以"个人化偏好"为核心叙事，与本报告"部门 SOP / 项目上下文"侧重错位。</li>
+<li><strong>Letta</strong>：能力维度——会话压缩强但显式 LLM 调用模式在 2000 人高频场景成本高；archival passage ≤300 tokens 限制大文档承载；三类上下文统一弱（无资源/技能抽象）。</li>
+<li><strong>Cognee</strong>：能力维度——无分层压缩归档、扁平图谱无 L0/L1/L2；知识库维度——文档→图谱丢失原文档结构；一体化维度——以图谱为核心，非"记忆+知识库"双范式。实体-关系图能力可作为"能力借鉴"而非主栈（图后端 Ladybug/Neo4j 运维成本高）。</li>
+</ul>
+<p><strong>综上</strong>：OpenViking 在<strong>能力、知识库、范式与体验、一体化</strong>四维度综合最优，胜出为主选型，是 4 款中唯一具备"会话压缩管线 + 三层信息结构 + 三类上下文统一 + 记忆与知识库一体化"的方案；Mem0 / Letta / Cognee 综合判断落选，保留作能力参考。落地约束（AGPL-3.0 / 自建向量库 / 生态早期）决定 OpenViking 适用于内网 / POC / 非闭源商用场景，与本报告公司内部自托管场景匹配，故选型成立。</p>
+<h4 id="563">5.6.3 选型结论与竞品不入选说明<a class="headerlink" href="#563" title="Permanent link">#</a></h4>
+<blockquote>
+<p><strong>选型结论</strong>：本报告选定 OpenViking 作为云端 Agent 记忆系统的主选型。下文 《方案文档》§1 起围绕此选型展开业务场景覆盖与方案架构设计。</p>
+<p>竞品功能参考的三款商业产品仅用于借鉴功能设计，不进入选型池，原因：</p>
+<ol>
+<li><strong>不是开源候选</strong>：本轮候选池的定位是"未来可能落地的开源框架"，商业闭源平台与本目标不匹配。</li>
+<li><strong>平台边界定位不同</strong>：Coze 是 Bot 平台，Dify 是应用开发平台，VikingDB 是向量底座，均与本报告的"Agent 记忆系统"目标不在同一抽象层。</li>
+<li><strong>能力覆盖 ≤ 开源候选</strong>：三者在 §4.4 的 <strong>作用域与隔离（部门/ACL） / 生命周期 / 跨 Agent 共享</strong> 等能力上比开源候选弱。详细一手事实见<a href="附件2-引用来源与竞品参考.md">附件2</a>。</li>
+</ol>
+<p>→ 详细方案设计见<a href="云端Agent记忆系统方案设计-v2.0.md">《云端Agent记忆系统方案设计-v2.0》</a>（业务侧方案设计、接入与记忆模型、产品功能架构、关键风险）。</p>
+</blockquote>
+<hr />
+<blockquote>
+<p>引用来源与竞品功能参考详情见 <a href="附件2-引用来源与竞品参考.md">附件2-引用来源与竞品参考.md</a>。</p>
+</blockquote>
+</div>
+<a href="#" class="back-top">回到顶部</a>
+</body>
+</html>

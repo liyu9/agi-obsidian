@@ -1,0 +1,7 @@
+# Private configuration
+config.json
+.DS_Store
+__pycache__/
+*.pyc
+ima_last_result.txt
+.git/

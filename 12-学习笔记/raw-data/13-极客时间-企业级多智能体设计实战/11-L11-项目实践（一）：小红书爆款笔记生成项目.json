@@ -1,0 +1,158 @@
+{
+  "index": 11,
+  "title": "11｜项目实践（一）：小红书爆款笔记生成项目",
+  "chapter": "模块一：运行你的第一个企业级 Multi-Agent (5讲)",
+  "duration": "时长 42:50",
+  "blocks": [
+    {
+      "type": "text",
+      "text": "欢迎来到激动人心的时刻！经过前面一系列基础理论与底层逻辑的学习，我们终于迎来了课程的第一次核心项目实践课。"
+    },
+    {
+      "type": "paragraph",
+      "text": "项目地址：https://github.com/kid0317/crewai_mas_demo_m2l7"
+    },
+    {
+      "type": "paragraph",
+      "text": "在之前的模块中，我们系统拆解了 Agent（智能体）、Task（任务）、Process（流程）以及多模态模型的基础用法。今天，我们将把这些散落的“珍珠”串联起来，从 0 到 1 打造一个真正能够应用于企业级生产环境的复杂 Multi-Agent 系统：小红书爆款笔记生成引擎。这绝不是一个只会在命令行里打印几行字的模型玩具，而是一个集成了视觉分析、策略规划、文案撰写与 SEO 优化，并支持完整 API 调用的后端服务系统。"
+    },
+    {
+      "type": "text",
+      "text": "一、 产品需求与业务目标梳理"
+    },
+    {
+      "type": "text",
+      "text": "在动手写任何一行代码之前，架构师的首要任务是清晰定义产品需求。"
+    },
+    {
+      "type": "paragraph",
+      "text": "面对小红书这个以视觉和生活方式为主导的内容社区，用户的创作输入通常是“几张未修的图片”加上“一段粗略的灵感或想法”。我们的系统需要接管后续所有的脑力劳动，最终交付一份结构化的、可直接落地的爆款笔记方案。"
+    },
+    {
+      "type": "paragraph",
+      "text": "核心业务流程与交付物要求："
+    },
+    {
+      "type": "paragraph",
+      "text": "用户通过 API 一次性提交笔记的创作意图（Idea Text）与多张图片，系统将自动生成一份包含以下维度的结构化报告："
+    },
+    {
+      "type": "numbered",
+      "items": [
+        "单图多模态解析：针对每一张上传的图片，独立输出视觉分析结果与针对性的图片编辑 /P 图方案。",
+        "全局内容策划：基于所有图片的视觉特征和用户意图，制定整体的内容策略简报。",
+        "文案生成：撰写符合小红书网感、自带 Emoji 且情绪价值拉满的标题与正文。",
+        "SEO 与分发优化：提炼 5-8 个有助于搜索召回和流量分发的长尾标签（Tags），并给出图片发布顺序建议。"
+      ]
+    },
+    {
+      "type": "text",
+      "text": "二、 核心架构：Agent - Task - Process 深度设计"
+    },
+    {
+      "type": "text",
+      "text": "为了完成上述复杂的长链路任务，我们需要设计一个高度协同的 Multi-Agent 组织架构。"
+    },
+    {
+      "type": "text",
+      "text": "1. 定人：定义 5 大专业数字员工 (Agents)"
+    },
+    {
+      "type": "paragraph",
+      "text": "在我们的设计中，摒弃了“一个全能 Agent 包打天下”的反模式，而是精细化定义了 5 个不同岗位的专家。我们在代码工程上做了一次极佳的最佳实践隔离：将 Agent 的人设文案（Role/Goal/Backstory）放在 YAML 配置文件中维护，而将大模型引擎（LLM）和工具（Tools）的绑定放在 Python 代码中实现。"
+    },
+    {
+      "type": "paragraph",
+      "text": "例如，处理视觉和 P 图的 Agent 必须挂载具备多模态能力的大模型（如 qwen3-vl-plus），并赋予它们查看本地图片的工具 AddImageToolLocal："
+    },
+    {
+      "type": "code",
+      "text": "# agents.py 核心代码节选\n\n\tdef get_xhs_visual_analyst() -> Agent:\n\n\t    \"\"\"每次调用创建一个新的视觉分析 Agent 实例。\"\"\"\n\n\t    cfg_visual = _agent_cfg(\"xhs_visual_analyst\") # 从 agents.yaml 读取人设\n\n\t    return Agent(\n\n\t        config=cfg_visual,\n\n\t        multimodal=True, # 开启多模态能力\n\n\t        llm=get_llm(image_model=\"qwen3-vl-plus\", model=\"qwen3-max-2026-01-23\"),\n\n\t        tools=[AddImageToolLocal()], # 赋予查图工具\n\n\t    )\n\n\t \n\n\tdef get_xhs_content_writer() -> Agent:\n\n\t    \"\"\"文本撰写 Agent 实例。\"\"\"\n\n\t    cfg_writer = _agent_cfg(\"xhs_content_writer\")\n\n\t    return Agent(\n\n\t        config=cfg_writer,\n\n\t        tools=_INTERMEDIATE_TOOLS,\n\n\t        llm=get_llm(model=\"qwen3-max-2026-01-23\"), # 纯文本高智商模型\n\n\t    )"
+    },
+    {
+      "type": "paragraph",
+      "text": "在对应的 agents.yaml 中，我们为这些角色注入了极其深刻的行业认知。例如，“小红书 SEO 专家”的 Goal 被设定为：“在不牺牲内容可读性与情绪价值的前提下，以长尾关键词和 KFS 闭环为核心，将笔记自然嵌入小红书的搜索与推荐体系”。"
+    },
+    {
+      "type": "text",
+      "text": "2. 定事：结构化契约驱动任务 (Tasks)"
+    },
+    {
+      "type": "paragraph",
+      "text": "任务拆解是系统成败的基石。我们将复杂的业务拆解为细粒度的 Task，并且强制要求所有核心产出必须遵循 Pydantic 定义的结构化输出（output_pydantic），以便于上下游数据的精准传递。"
+    },
+    {
+      "type": "paragraph",
+      "text": "同时，我们通过显式传递 context 参数，确保下游环节（如文案撰写）能够精准获取上游环节（如内容策略）的中间思考结果，杜绝上下文污染："
+    },
+    {
+      "type": "code",
+      "text": "# tasks.py 核心代码节选\n\n\tdef get_task_copywriting(content_strategy_task: Task) -> Task:\n\n\t    \"\"\"基于内容策略 Task 构建文案撰写 Task，每次调用返回新实例。\"\"\"\n\n\t    cfg = _get_task_config(\"task_copywriting\")\n\n\t    return Task(\n\n\t        description=cfg.get(\"description\", \"\"),\n\n\t        expected_output=cfg.get(\"expected_output\", \"\"),\n\n\t        agent=get_xhs_content_writer(),  # 绑定撰写专家\n\n\t        context=[content_strategy_task],  # 显式依赖上游内容策略任务的成果\n\n\t        output_pydantic=XhsCopywritingOutput, # 强约束输出 JSON 结构\n\n\t        async_execution=False,\n\n\t    )"
+    },
+    {
+      "type": "text",
+      "text": "3. 定流程：从串行到高并发异步编排 (Process)"
+    },
+    {
+      "type": "text",
+      "text": "这是本次企业级架构升级的重头戏。传统的 CrewAI 教程往往教你将所有任务塞进一个大 Crew 里进行线性的串行执行（Sequential）。但面对包含多张图片的实际业务场景时，依次识别 10 张图会耗费极长的时间，导致 API 接口严重超时。"
+    },
+    {
+      "type": "paragraph",
+      "text": "在我们的 flows.py 编排中，采取了 “异步并发拆解 + 核心链路串行” 的混合编排策略："
+    },
+    {
+      "type": "numbered",
+      "items": [
+        "多模态极速并发：按照图片拆分为多个异步任务。每一张图并发执行对应的“视觉分析 Task”和“编辑方案 Task”，最大化利用多线程与大模型并发吞吐能力。",
+        "业务逻辑严密串行：在所有图片的视觉数据被汇总为 XhsVisualBatchReport 后，再严格按照“内容策划 -> 文案撰写 -> 搜索优化”的顺序执行后续策略任务。"
+      ]
+    },
+    {
+      "type": "text",
+      "text": "这种深度的工程化重构，使得系统能够从容应对大量复杂的图片输入，显著压缩了用户的整体等待耗时。最后，系统会将所有结构化的中间结果（策略、文案、SEO 信息）进行组装拼接，并返回一个完整的最终 Markdown 报告或 JSON 响应。"
+    },
+    {
+      "type": "text",
+      "text": "三、 迈向云原生：通过 FastAPI 暴露 Web 服务"
+    },
+    {
+      "type": "paragraph",
+      "text": "当底层强大的 Multi-Agent 引擎构建完毕后，它不能仅仅是一个只能在开发者终端里 python main.py 运行的脚本。为了让业务前端能够接入，我们必须将其包装为一个可靠的 Web 服务。"
+    },
+    {
+      "type": "paragraph",
+      "text": "我们选用了 FastAPI 作为核心 Web 引擎。由于 AI 任务（特别是长文本生成和复杂的 Agent 循环协商）耗时动辄数秒甚至数分钟，FastAPI 底层基于 uvloop 的异步事件循环能够极好地应对这种极端的 I/O 密集型场景。它确保了当系统在等待千问大模型返回那漫长的 Token 时，不会阻塞整个 Web 服务器的运行线程，从而保证了系统在生产环境下的高并发连接承载力。在这里，我也特别给大家提供了一个用 FastAPI 作为基础，能方便开发 crewai 的 AI 应用的框架：https://github.com/kid0317/fastapi_base"
+    },
+    {
+      "type": "paragraph",
+      "text": "在这个设计下，我们在 Service 层封装调用逻辑、错误处理以及至关重要的监控日志埋点，最后通过 HTTP API 路由将 run_xhs_note_flow 暴露出去，完成了一个企业级 AI 产品后端的完美闭环。"
+    },
+    {
+      "type": "text",
+      "text": "因为大量的代码演示，所以本节课推荐大家还是通过视频学习。"
+    },
+    {
+      "type": "text",
+      "text": "课程总结与预告"
+    },
+    {
+      "type": "text",
+      "text": "通过这节详尽的实战课，我们完成了一次华丽的蜕变。我们不仅复习了模块一中各种基础理论组件，更实打实地用工程化的手段解决了诸如代码与配置解耦、上下文精准控制、长耗时任务的异步并发加速等在企业级落地中必须跨越的难题。"
+    },
+    {
+      "type": "paragraph",
+      "text": "课后，请务必前往源码仓库，仔细阅读并尝试运行这个项目。你可以尝试修改 agents.yaml 中的人设风格，看看最终生成的笔记会发生怎样有趣的化学反应！"
+    },
+    {
+      "type": "paragraph",
+      "text": "下节课预告："
+    },
+    {
+      "type": "paragraph",
+      "text": "在跑通了整体流程后，我们将开启工程篇的“模块二——Agent 工具生态”。我们将深入探讨：12｜Agent 工具设计范式：单一职责与容错机制，教你如何为大模型装备真正不会出错的“左膀右臂”。我们下期再见！"
+    }
+  ],
+  "text": "欢迎来到激动人心的时刻！经过前面一系列基础理论与底层逻辑的学习，我们终于迎来了课程的第一次核心项目实践课。\n\n项目地址：https://github.com/kid0317/crewai_mas_demo_m2l7\n\n在之前的模块中，我们系统拆解了 Agent（智能体）、Task（任务）、Process（流程）以及多模态模型的基础用法。今天，我们将把这些散落的“珍珠”串联起来，从 0 到 1 打造一个真正能够应用于企业级生产环境的复杂 Multi-Agent 系统：小红书爆款笔记生成引擎。这绝不是一个只会在命令行里打印几行字的模型玩具，而是一个集成了视觉分析、策略规划、文案撰写与 SEO 优化，并支持完整 API 调用的后端服务系统。\n\n一、 产品需求与业务目标梳理\n\n在动手写任何一行代码之前，架构师的首要任务是清晰定义产品需求。\n\n\n面对小红书这个以视觉和生活方式为主导的内容社区，用户的创作输入通常是“几张未修的图片”加上“一段粗略的灵感或想法”。我们的系统需要接管后续所有的脑力劳动，最终交付一份结构化的、可直接落地的爆款笔记方案。\n\n核心业务流程与交付物要求：\n\n用户通过 API 一次性提交笔记的创作意图（Idea Text）与多张图片，系统将自动生成一份包含以下维度的结构化报告：\n\n单图多模态解析：针对每一张上传的图片，独立输出视觉分析结果与针对性的图片编辑 /P 图方案。\n\n全局内容策划：基于所有图片的视觉特征和用户意图，制定整体的内容策略简报。\n\n文案生成：撰写符合小红书网感、自带 Emoji 且情绪价值拉满的标题与正文。\n\nSEO 与分发优化：提炼 5-8 个有助于搜索召回和流量分发的长尾标签（Tags），并给出图片发布顺序建议。\n\n二、 核心架构：Agent - Task - Process 深度设计\n\n为了完成上述复杂的长链路任务，我们需要设计一个高度协同的 Multi-Agent 组织架构。\n\n1. 定人：定义 5 大专业数字员工 (Agents)\n\n在我们的设计中，摒弃了“一个全能 Agent 包打天下”的反模式，而是精细化定义了 5 个不同岗位的专家。我们在代码工程上做了一次极佳的最佳实践隔离：将 Agent 的人设文案（Role/Goal/Backstory）放在 YAML 配置文件中维护，而将大模型引擎（LLM）和工具（Tools）的绑定放在 Python 代码中实现。\n\n例如，处理视觉和 P 图的 Agent 必须挂载具备多模态能力的大模型（如 qwen3-vl-plus），并赋予它们查看本地图片的工具 AddImageToolLocal：\n\n\t# agents.py 核心代码节选\n\n\tdef get_xhs_visual_analyst() -> Agent:\n\n\t    \"\"\"每次调用创建一个新的视觉分析 Agent 实例。\"\"\"\n\n\t    cfg_visual = _agent_cfg(\"xhs_visual_analyst\") # 从 agents.yaml 读取人设\n\n\t    return Agent(\n\n\t        config=cfg_visual,\n\n\t        multimodal=True, # 开启多模态能力\n\n\t        llm=get_llm(image_model=\"qwen3-vl-plus\", model=\"qwen3-max-2026-01-23\"),\n\n\t        tools=[AddImageToolLocal()], # 赋予查图工具\n\n\t    )\n\n\t \n\n\tdef get_xhs_content_writer() -> Agent:\n\n\t    \"\"\"文本撰写 Agent 实例。\"\"\"\n\n\t    cfg_writer = _agent_cfg(\"xhs_content_writer\")\n\n\t    return Agent(\n\n\t        config=cfg_writer,\n\n\t        tools=_INTERMEDIATE_TOOLS,\n\n\t        llm=get_llm(model=\"qwen3-max-2026-01-23\"), # 纯文本高智商模型\n\n\t    )\n\n在对应的 agents.yaml 中，我们为这些角色注入了极其深刻的行业认知。例如，“小红书 SEO 专家”的 Goal 被设定为：“在不牺牲内容可读性与情绪价值的前提下，以长尾关键词和 KFS 闭环为核心，将笔记自然嵌入小红书的搜索与推荐体系”。\n\n2. 定事：结构化契约驱动任务 (Tasks)\n\n任务拆解是系统成败的基石。我们将复杂的业务拆解为细粒度的 Task，并且强制要求所有核心产出必须遵循 Pydantic 定义的结构化输出（output_pydantic），以便于上下游数据的精准传递。\n\n同时，我们通过显式传递 context 参数，确保下游环节（如文案撰写）能够精准获取上游环节（如内容策略）的中间思考结果，杜绝上下文污染：\n\n\t# tasks.py 核心代码节选\n\n\tdef get_task_copywriting(content_strategy_task: Task) -> Task:\n\n\t    \"\"\"基于内容策略 Task 构建文案撰写 Task，每次调用返回新实例。\"\"\"\n\n\t    cfg = _get_task_config(\"task_copywriting\")\n\n\t    return Task(\n\n\t        description=cfg.get(\"description\", \"\"),\n\n\t        expected_output=cfg.get(\"expected_output\", \"\"),\n\n\t        agent=get_xhs_content_writer(),  # 绑定撰写专家\n\n\t        context=[content_strategy_task],  # 显式依赖上游内容策略任务的成果\n\n\t        output_pydantic=XhsCopywritingOutput, # 强约束输出 JSON 结构\n\n\t        async_execution=False,\n\n\t    )\n3. 定流程：从串行到高并发异步编排 (Process)\n\n这是本次企业级架构升级的重头戏。传统的 CrewAI 教程往往教你将所有任务塞进一个大 Crew 里进行线性的串行执行（Sequential）。但面对包含多张图片的实际业务场景时，依次识别 10 张图会耗费极长的时间，导致 API 接口严重超时。\n\n在我们的 flows.py 编排中，采取了 “异步并发拆解 + 核心链路串行” 的混合编排策略：\n\n多模态极速并发：按照图片拆分为多个异步任务。每一张图并发执行对应的“视觉分析 Task”和“编辑方案 Task”，最大化利用多线程与大模型并发吞吐能力。\n\n业务逻辑严密串行：在所有图片的视觉数据被汇总为 XhsVisualBatchReport 后，再严格按照“内容策划 -> 文案撰写 -> 搜索优化”的顺序执行后续策略任务。\n\n这种深度的工程化重构，使得系统能够从容应对大量复杂的图片输入，显著压缩了用户的整体等待耗时。最后，系统会将所有结构化的中间结果（策略、文案、SEO 信息）进行组装拼接，并返回一个完整的最终 Markdown 报告或 JSON 响应。\n\n三、 迈向云原生：通过 FastAPI 暴露 Web 服务\n\n当底层强大的 Multi-Agent 引擎构建完毕后，它不能仅仅是一个只能在开发者终端里 python main.py 运行的脚本。为了让业务前端能够接入，我们必须将其包装为一个可靠的 Web 服务。\n\n我们选用了 FastAPI 作为核心 Web 引擎。由于 AI 任务（特别是长文本生成和复杂的 Agent 循环协商）耗时动辄数秒甚至数分钟，FastAPI 底层基于 uvloop 的异步事件循环能够极好地应对这种极端的 I/O 密集型场景。它确保了当系统在等待千问大模型返回那漫长的 Token 时，不会阻塞整个 Web 服务器的运行线程，从而保证了系统在生产环境下的高并发连接承载力。在这里，我也特别给大家提供了一个用 FastAPI 作为基础，能方便开发 crewai 的 AI 应用的框架：https://github.com/kid0317/fastapi_base\n\n在这个设计下，我们在 Service 层封装调用逻辑、错误处理以及至关重要的监控日志埋点，最后通过 HTTP API 路由将 run_xhs_note_flow 暴露出去，完成了一个企业级 AI 产品后端的完美闭环。\n\n因为大量的代码演示，所以本节课推荐大家还是通过视频学习。\n\n课程总结与预告\n\n通过这节详尽的实战课，我们完成了一次华丽的蜕变。我们不仅复习了模块一中各种基础理论组件，更实打实地用工程化的手段解决了诸如代码与配置解耦、上下文精准控制、长耗时任务的异步并发加速等在企业级落地中必须跨越的难题。\n\n课后，请务必前往源码仓库，仔细阅读并尝试运行这个项目。你可以尝试修改 agents.yaml 中的人设风格，看看最终生成的笔记会发生怎样有趣的化学反应！\n\n下节课预告：\n\n在跑通了整体流程后，我们将开启工程篇的“模块二——Agent 工具生态”。我们将深入探讨：12｜Agent 工具设计范式：单一职责与容错机制，教你如何为大模型装备真正不会出错的“左膀右臂”。我们下期再见！",
+  "extractedAt": "2026-06-02T02:21:04.879Z"
+}

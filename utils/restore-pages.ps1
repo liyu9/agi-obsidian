@@ -1,0 +1,46 @@
+$urls = @(
+"https://time.geekbang.org/column/article/400737",
+"https://time.geekbang.org/column/article/400744",
+"https://time.geekbang.org/column/article/400764",
+"https://time.geekbang.org/column/article/401316",
+"https://time.geekbang.org/column/article/402945",
+"https://time.geekbang.org/column/article/403845",
+"https://time.geekbang.org/column/article/404779",
+"https://time.geekbang.org/column/article/405241",
+"https://time.geekbang.org/column/article/406706",
+"https://time.geekbang.org/column/article/407445",
+"https://time.geekbang.org/column/article/408181",
+"https://time.geekbang.org/column/article/408750",
+"https://time.geekbang.org/column/article/409828",
+"https://time.geekbang.org/column/article/410422",
+"https://time.geekbang.org/column/article/412094",
+"https://time.geekbang.org/column/article/412828",
+"https://time.geekbang.org/column/article/413734",
+"https://time.geekbang.org/column/article/414442",
+"https://time.geekbang.org/column/article/415120",
+"https://time.geekbang.org/column/article/415893",
+"https://time.geekbang.org/column/article/416739",
+"https://time.geekbang.org/column/article/417460",
+"https://time.geekbang.org/column/article/418334",
+"https://time.geekbang.org/column/article/419188",
+"https://time.geekbang.org/column/article/421384",
+"https://time.geekbang.org/column/article/422480",
+"https://time.geekbang.org/column/article/423163",
+"https://time.geekbang.org/column/article/424174",
+"https://time.geekbang.org/column/article/424348",
+"https://time.geekbang.org/column/article/424564",
+"https://time.geekbang.org/column/article/425246",
+"https://time.geekbang.org/column/article/425765",
+"https://time.geekbang.org/column/article/426662",
+"https://time.geekbang.org/column/article/427344",
+"https://time.geekbang.org/column/article/428069",
+"https://time.geekbang.org/column/article/411210",
+"https://time.geekbang.org/column/article/420203",
+"https://time.geekbang.org/column/article/420417",
+"https://time.geekbang.org/column/article/423939"
+)
+foreach ($url in $urls) {
+    Start-Process "chrome.exe" $url
+    Start-Sleep -Milliseconds 100
+}
+Write-Host "已打开 $($urls.Count) 个页面"

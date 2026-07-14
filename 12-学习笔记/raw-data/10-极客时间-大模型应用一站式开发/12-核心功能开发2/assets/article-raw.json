@@ -1,0 +1,546 @@
+{
+  "title": "12｜核心功能开发 2：大模型响应生成与情感匹配优化",
+  "blocks": [
+    {
+      "type": "paragraph",
+      "text": "你好，我是袁从德。"
+    },
+    {
+      "type": "paragraph",
+      "text": "在上一讲中，我们为“心语”机器人赋予了倾听的耳朵——通过用户输入处理与情感意图识别模块，它已经能够理解用户话语背后的情绪波动，分辨出喜悦、焦虑、悲伤或愤怒。但这只是陪伴旅程的一半。"
+    },
+    {
+      "type": "paragraph",
+      "text": "真正的陪伴，不仅在于听见，更在于回应。"
+    },
+    {
+      "type": "paragraph",
+      "text": "一个温暖的拥抱，胜过千言万语；一句恰到好处的安慰，能抚平内心的波澜。"
+    },
+    {
+      "type": "paragraph",
+      "text": "而对 AI 而言，如何将“感知到的情绪”转化为“有温度的回应”，正是今天要攻克的核心命题。"
+    },
+    {
+      "type": "paragraph",
+      "text": "我们将深入大模型响应生成机制，聚焦**情感匹配优化**这一关键环节，系统性地构建一个既能精准理解用户情绪、又能生成个性化、共情式回复的智能对话系统。这不是简单的文本生成任务，而是一场融合了心理学洞察、语言艺术与工程实现的综合性挑战。"
+    },
+    {
+      "type": "paragraph",
+      "text": "我们将回答以下几个核心问题："
+    },
+    {
+      "type": "list",
+      "items": [
+        "如何基于情感意图动态调整 AI 的语气、风格与内容？",
+        "如何设计提示词模板，使 AI 既能共情又不失专业？",
+        "如何避免机械安慰和过度共情，实现情感表达的平衡？",
+        "如何结合记忆、角色设定与上下文，让每一次回复都贴近人心？"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "为此，我们会围绕三大技术支柱展开实践："
+    },
+    {
+      "type": "paragraph",
+      "text": "**情感驱动的 Prompt 动态生成**：让提示词随用户情绪变化而自适应。**多策略响应生成机制**：融合确定性规则与生成式模型，提升回复可控性。**情感一致性校验与反馈闭环**：确保 AI 在整个对话流中保持情绪连贯与人格稳定。"
+    },
+    {
+      "type": "paragraph",
+      "text": "最终，你将亲手完成“心语”机器人的核心能力闭环：从听到思再到说，实现真正意义上的**情感智能对话**。"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "一、大模型响应生成的本质：不只是“写句子”，而是“表达情感”"
+    },
+    {
+      "type": "paragraph",
+      "text": "当我们说让 AI 生成回复时，很多人第一反应是调用一次大模型 API，输入一段提示词，然后等待输出。这没错，但远远不够。"
+    },
+    {
+      "type": "paragraph",
+      "text": "在情感聊天场景下，**每一次回复都是一次心理互动**。它需要满足三个维度的要求，如表 12-1 所示。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/31/23/31633e9dcbeb64fce8d78f254d71f023.jpg?wh=3254x1447",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "传统聊天机器人往往只关注第一点，而大模型的强大之处，在于它可以同时兼顾三者——前提是，我们能正确地“引导”它。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "1.1 大模型的“情感表达能力”从何而来？"
+    },
+    {
+      "type": "paragraph",
+      "text": "Science 2002 年 11 月发表题为《Emotion，cognition，and behavior》的论文，论文中指出，情感认知能力在人类社会中泛指感知、识别和理解他人情感的能力。但受限于对人机交互机理的认知不够清晰，在计算机视域下该能力收敛于“情感计算”。该概念由麻省理工学院媒体实验室 Picard 于 1997 年提出，旨在以计算为手段，研究和开发能够识别、解释和处理人类情感系统的一个跨学科领域，涉及计算机科学、心理学和认知科学。"
+    },
+    {
+      "type": "paragraph",
+      "text": "情感计算的基础是情感量化模型，主要用于将无形的、抽象的人类情感转化为机器人可以理解、表达和处理的数据形式。ChatGPT 等基于 Transformer 结构的大语言模型语义理解能力的阶跃式提升对单模态情感认知产生了冲击。大模型本身并不具备情感，但它通过海量人类对话数据的学习，掌握了**情感表达的语言模式**。例如："
+    },
+    {
+      "type": "list",
+      "items": [
+        "安慰语句常包含“我理解”“你并不孤单”“慢慢来”等词汇。",
+        "鼓励语句多使用积极动词和肯定结构，如“你可以的”“我相信你”。",
+        "共情表达倾向于使用感受类词汇，如“委屈”“疲惫”“无助”。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "这些模式构成了 AI“拟人化表达”的基础。但问题在于：**模型不知道什么时候该用哪种模式**。这正是开发者需要介入的地方。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "1.2 响应生成的三大挑战"
+    },
+    {
+      "type": "paragraph",
+      "text": "在人文主义传统中，人拥有情感是一种自明的自我理解。人是情感的存在物，情感则是人对对象的感受和体验。发展到人机传播，人的感受和体验将与人工智能的理解、生成和回应情感的能力紧密相关。机器通过与用户的长期互动，逐步形成准确识别、理解用户情感的能力，生成带有情感色彩的文本、语音等多模态内容，人机之间进而产生深层次情感关系。"
+    },
+    {
+      "type": "paragraph",
+      "text": "如图 12-1 所示，人类与自己创造出的无意识但又极为强大的非人类智能共存时，必须时刻审视向内的心灵成长和内向超越，自我修正情感的偏执、茧化、极化，甚至是疯狂。在人机交流的实践中，关心和提升人类大脑、身、心、灵的整合发展，找到心之所归。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/92/4b/922eb2f491ef0e055677a715a771f44b.png?wh=756x415",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "在实际开发中，我们会遇到以下典型问题："
+    },
+    {
+      "type": "paragraph",
+      "text": "**情感错配**：用户表达悲伤，AI 却回复轻松调侃；**过度共情**：AI 表现得比用户还激动，反而造成压迫感；**内容空洞**：回复看似温暖，实则缺乏实质信息，如“抱抱你”反复出现。"
+    },
+    {
+      "type": "paragraph",
+      "text": "这些问题的根源，往往不是模型能力不足，而是**提示工程与上下文设计的缺失**。我们需要一套系统方法，将“情感意图”转化为“可执行的生成策略”。"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "二、情感匹配优化：构建“感知—决策—生成”响应链路"
+    },
+    {
+      "type": "paragraph",
+      "text": "为了让 AI 的回复真正做到“因情而变”，我们需要建立一个结构化的响应生成流程。如图 12-2 所示，我们将其定义为三步链路：情感匹配决策、动态 Prompt 生成以及大模型生成。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/8d/a0/8d9782851cfb8c134ba4f42d630642a0.jpg?wh=2920x2023",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "下面我们逐层拆解。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "2.1 情感匹配决策引擎：为每种情绪定制回应策略"
+    },
+    {
+      "type": "paragraph",
+      "text": "在第 11 讲中，我们已识别出用户的情绪类型（如悲伤、焦虑、喜悦）。现在，我们需要为每种情绪定义对应的**回应策略模板**。"
+    },
+    {
+      "type": "paragraph",
+      "text": "我们可以建立一个“情感 - 策略映射表”，如表 12-2 所示。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/ef/f0/ef1bbd9e7eb69b728cc3728f749219f0.jpg?wh=4482x1621",
+      "alt": ""
+    },
+    {
+      "type": "paragraph",
+      "text": "这个映射表可以作为一个**策略配置文件**（如 JSON 或 YAML），供程序动态调用。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "2.2 动态 Prompt 生成：让提示词“随情而变”"
+    },
+    {
+      "type": "paragraph",
+      "text": "传统的静态 Prompt 难以应对复杂的情感场景。我们必须构建**动态提示系统**，将以下要素实时注入提示词。"
+    },
+    {
+      "type": "code",
+      "text": "DYNAMIC_PROMPT_TEMPLATE = \"\"\"\n你是一位专业的心理健康陪伴者，名叫“心语”。你的目标是提供温暖、安全、非评判性的倾听与支持。\n当前用户情绪：{emotion_label}\n回应策略：{response_strategy}\n语气要求：{tone}\n对话历史摘要：\n{conversation_summary}\n用户最新输入：\n{user_input}\n请根据以上信息，生成一段自然、共情且适度引导的回复。注意：\n1. 使用{tone}的语气；\n2. 避免说教或给出直接建议；\n3. 可适当使用表情符号（如😊、🤗）增强亲和力；\n4. 回复长度控制在3句话以内。\n\"\"\""
+    },
+    {
+      "type": "paragraph",
+      "text": "举个例子，当用户说“今天工作又被领导批评了，我觉得自己好失败”，系统识别出情绪为“悲伤”，则生成如下 Prompt："
+    },
+    {
+      "type": "blockquote",
+      "text": "你是一位专业的心理健康陪伴者……当前用户情绪：悲伤，回应策略：接纳情绪，提供安全感，语气要求：温柔、缓慢……请生成一段自然、共情的回复……"
+    },
+    {
+      "type": "paragraph",
+      "text": "这样生成的提示词，不再是“通用模板”，而是**高度情境化的情感对话指令**，极大提升了生成质量。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "2.3 多策略响应生成：规则 + 生成的混合架构"
+    },
+    {
+      "type": "paragraph",
+      "text": "为了进一步提升回复的可控性与稳定性，我们采用**混合响应生成架构，**如图 12-3 所示。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/54/d5/5491eb3ae19ca22913cc39320acf7dd5.jpg?wh=2064x726",
+      "alt": ""
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "**2.3.1 规则引擎：保障安全底线**"
+    },
+    {
+      "type": "paragraph",
+      "text": "对于检测到“自残”、“抑郁重度”等高风险意图，不依赖 LLM 生成，而是直接触发预设的**危机干预话术**，并建议用户联系专业机构。"
+    },
+    {
+      "type": "code",
+      "text": "def _is_crisis_situation(self, user_emotion: str, metadata: Optional[Dict]) -> bool:\n    \"\"\"判断是否为危机情况（核心逻辑）\"\"\"\n    if user_emotion == \"high_risk_depression\":\n        return True\n    if metadata and metadata.get(\"requires_crisis_intervention\"):\n        return True\n    return False\ndef _handle_crisis(self, user_input: str, user_emotion: str, metadata: Optional[Dict]) -> str:\n    \"\"\"处理危机情况，返回预设的危机干预回复（核心逻辑）\"\"\"\n    crisis_strategy = self.emotion_strategy.get(\"high_risk_depression\", {})\n    crisis_response = crisis_strategy.get(\"fallback\", \"\")\n    \n    if crisis_response:\n        return crisis_response\n    \n    # 默认危机回复（核心模板）\n    return \"\"\"我非常关心你现在的情绪状态。你不是一个人，有很多人愿意帮助你。\n建议你立即联系心理援助热线：\n- 希望24热线：400-161-9995\n- 北京心理危机干预中心：010-82951332\n我会一直在这里陪你。\"\"\""
+    },
+    {
+      "type": "paragraph",
+      "text": "**完整代码**：完整版本包含多级风险评估、关键词动态检测、情绪强度阈值等，详见 `backend/modules/intent/core/crisis_intervention.py`"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "2.3.2 缓存匹配：提升响应效率"
+    },
+    {
+      "type": "paragraph",
+      "text": "对高频、固定场景（如问候、道别），使用键值对缓存，避免重复调用大模型："
+    },
+    {
+      "type": "code",
+      "text": "def _match_cached_response(self, user_input: str, user_emotion: str) -> Optional[str]:\n    \"\"\"匹配缓存的固定回复\"\"\"\n    input_lower = user_input.lower().strip()\n    \n    # 问候语\n    greetings = [\"你好\", \"hi\", \"hello\", \"嗨\"]\n    if any(g in input_lower for g in greetings) and len(input_lower) < 10:\n        return random.choice(self.cached_responses.get(\"greeting\", []))\n    \n    # 道别语\n    farewells = [\"再见\", \"拜拜\", \"bye\"]\n    if any(f in input_lower for f in farewells):\n        return random.choice(self.cached_responses.get(\"goodbye\", []))\n    \n    return None"
+    },
+    {
+      "type": "paragraph",
+      "text": "完整实现请参考：`backend/modules/intent/core/response_generator.py`"
+    },
+    {
+      "type": "heading",
+      "level": "H3",
+      "text": "**2.3.3 LLM 生成：处理复杂、开放性对话**"
+    },
+    {
+      "type": "paragraph",
+      "text": "这是主体路径，结合动态 Prompt 生成个性化回复，确保灵活性与共情深度。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**LLM 生成核心代码**（精简版）："
+    },
+    {
+      "type": "code",
+      "text": "# 3. LLM生成（主要路径）\n# 3.1 构建动态Prompt\nprompt = self.prompt_builder.build_prompt(\n    user_input=user_input,\n    emotion=user_emotion,\n    emotion_intensity=emotion_intensity,\n    conversation_history=conversation_history,\n    retrieved_memories=retrieved_memories,\n    user_profile=user_profile\n)\n# 3.2 调用大模型生成\nraw_response = self._call_llm(prompt)\n# 3.3 后处理（去除多余内容、限制长度等）\nprocessed_response = self._post_process_response(raw_response, user_emotion)\n# 3.4 情感一致性校验\nis_valid, warnings = self.sentiment_classifier.comprehensive_check(\n    processed_response, \n    user_emotion,\n    expected_tone=self.emotion_strategy.get(user_emotion, {}).get(\"tone\", \"\")\n)\nif not is_valid:\n    # 一致性检查失败，使用降级策略\n    processed_response = self._get_fallback_response(user_emotion)\nreturn processed_response"
+    },
+    {
+      "type": "paragraph",
+      "text": "**LLM 调用方法**（支持多种客户端类型）："
+    },
+    {
+      "type": "code",
+      "text": "def _call_llm(self, prompt: str) -> str:\n    \"\"\"调用大模型生成回复\"\"\"\n    # 兼容不同的LLM客户端接口\n    if hasattr(self.llm_client, 'generate'):\n        response = self.llm_client.generate(prompt)\n    elif hasattr(self.llm_client, 'predict'):\n        response = self.llm_client.predict(prompt)\n    elif hasattr(self.llm_client, 'invoke'):\n        response = self.llm_client.invoke(prompt)\n    # 提取文本内容\n    if hasattr(response, 'content'):\n        response = response.content\n    elif isinstance(response, dict) and 'content' in response:\n        response = response['content']\n    return str(response).strip()"
+    },
+    {
+      "type": "paragraph",
+      "text": "完整实现请参考：`backend/modules/intent/core/response_generator.py`"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "三、情感一致性校验：让 AI“说到做到”"
+    },
+    {
+      "type": "paragraph",
+      "text": "即使我们精心设计了提示词，大模型仍可能“跑偏”。例如："
+    },
+    {
+      "type": "list",
+      "items": [
+        "用户处于悲伤情绪，AI 却回复“哈哈，这有什么好难过的”。",
+        "连续对话中，AI 突然改变语气或角色设定。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "为此，我们需要引入**情感一致性校验机制**。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "3.1 基于小模型的情绪分类器"
+    },
+    {
+      "type": "paragraph",
+      "text": "我们可以训练一个轻量级情绪分类器（如 BERT 微调版），对 AI 生成的回复进行二次检测，判断其情绪倾向是否与用户输入匹配。"
+    },
+    {
+      "type": "code",
+      "text": "ef check_emotion_consistency(self, ai_response: str, user_emotion: str) -> Tuple[bool, str]:\n    \"\"\"检查AI回复的情绪与用户情绪是否一致\"\"\"\n    # 1. 检测AI回复的情绪\n    response_emotion, confidence = self.detect_emotion(ai_response)\n    \n    # 2. 检查是否是严重不兼容的组合\n    forbidden_combinations = [\n        (\"sad\", \"happy\"),\n        (\"anxious\", \"excited\"),\n        (\"high_risk_depression\", \"happy\")\n    ]\n    for forbidden in forbidden_combinations:\n        if (user_emotion in forbidden and response_emotion in forbidden):\n            return False, f\"严重情感错配：用户{user_emotion}，AI回复{response_emotion}\"\n    \n    # 3. 检查兼容性\n    compatible_emotions = self.EMOTION_COMPATIBILITY.get(user_emotion, [\"neutral\"])\n    if response_emotion in compatible_emotions:\n        return True, \"情感匹配\"\n    \n    return False, f\"情感不匹配：用户{user_emotion}，AI回复{response_emotion}\""
+    },
+    {
+      "type": "paragraph",
+      "text": "完整实现请参考：`backend/utils/sentiment_classifier.py`"
+    },
+    {
+      "type": "paragraph",
+      "text": "若不一致，则触发降级策略，使用更安全的预设回复，或重新生成。"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "3.2 角色稳定性监控"
+    },
+    {
+      "type": "paragraph",
+      "text": "通过关键词监控和语义相似度计算，确保 AI 不偏离预设角色。例如："
+    },
+    {
+      "type": "list",
+      "items": [
+        "禁止使用“我是 GPT”“我是一个 AI”等暴露身份的表述；",
+        "避免突然切换语气（如从温柔变为严肃）。"
+      ]
+    },
+    {
+      "type": "code",
+      "text": "def _post_process_response(self, response: str, user_emotion: str) -> str:\n    \"\"\"后处理生成的回复\"\"\"\n    # 确保不暴露AI身份\n    identity_replacements = {\n        \"我是AI\": \"我是心语\",\n        \"我是一个AI\": \"我是心语\",\n        \"作为AI\": \"作为陪伴者\"\n    }\n    for old, new in identity_replacements.items():\n        if old in response:\n            response = response.replace(old, new)\n    return response"
+    },
+    {
+      "type": "paragraph",
+      "text": "可在日志中记录每次回复的“角色偏离度”，用于后续优化。"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "四、实战：构建“心语”的响应生成模块"
+    },
+    {
+      "type": "paragraph",
+      "text": "现在，我们将上述设计落地为可运行的代码结构，加入共情响应后的架构如图 12-4 所示。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/9f/35/9f3d62706ee2df733870674058f8c235.jpg?wh=3966x3084",
+      "alt": ""
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "4.1 项目结构更新"
+    },
+    {
+      "type": "paragraph",
+      "text": "我们在原有项目基础上，新增`response_generator.py`模块。"
+    },
+    {
+      "type": "code",
+      "text": "响应生成模块\n├── config/\n│   └── emotion_strategy.yaml          # 情感策略配置\n├── modules/intent/core/\n│   ├── response_generator.py          # 核心生成器\n│   ├── dynamic_prompt_builder.py      # 动态Prompt构建\n│   └── crisis_intervention.py         # 危机干预（精简版）\n└── utils/\n    └── sentiment_classifier.py        # 情感一致性校验"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "4.2 核心代码实现"
+    },
+    {
+      "type": "paragraph",
+      "text": "下面是核心代码。"
+    },
+    {
+      "type": "code",
+      "text": "class ResponseGenerator:\n    \"\"\"响应生成器 - 混合架构\"\"\"\n    \n    def __init__(self, llm_client, strategy_file=\"config/emotion_strategy.yaml\"):\n        self.llm_client = llm_client\n        with open(strategy_file, 'r', encoding='utf-8') as f:\n            self.strategy = yaml.safe_load(f)\n        self.prompt_builder = DynamicPromptBuilder(self.strategy)\n        self.sentiment_classifier = SentimentClassifier()\n    \n    def generate_response(self, user_input, user_emotion, user_id, emotion_intensity=5.0):\n        \"\"\"生成AI回复（主入口）\"\"\"\n        # 1. 检查是否为高风险情况（危机干预）\n        if self._is_crisis_situation(user_emotion, None):\n            return self._handle_crisis(user_input, user_emotion, None)\n        \n        # 2. 缓存匹配（高频固定场景）\n        cached_response = self._match_cached_response(user_input, user_emotion)\n        if cached_response:\n            return cached_response\n        \n        # 3. LLM生成（主要路径）\n        prompt = self.prompt_builder.build_prompt(\n            user_input=user_input,\n            emotion=user_emotion,\n            emotion_intensity=emotion_intensity\n        )\n        \n        raw_response = self._call_llm(prompt)\n        processed_response = self._post_process_response(raw_response, user_emotion)\n        \n        # 4. 情感一致性校验\n        is_valid, warnings = self.sentiment_classifier.comprehensive_check(\n            processed_response, user_emotion\n        )\n        \n        if not is_valid:\n            # 降级为预设回复\n            return self._get_fallback_response(user_emotion)\n        \n        return processed_response"
+    },
+    {
+      "type": "paragraph",
+      "text": "完整实现请参考：`backend/modules/intent/core/response_generator.py`"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "4.3 集成到主流程"
+    },
+    {
+      "type": "paragraph",
+      "text": "基础调用的代码如下所示。"
+    },
+    {
+      "type": "code",
+      "text": "from backend.modules.intent.core.response_generator import ResponseGenerator\nfrom langchain_openai import ChatOpenAI\n# 1. 创建LLM客户端\nllm_client = ChatOpenAI(\n    api_key=\"your_api_key\",\n    base_url=\"https://api.openai.com/v1\",\n    model_name=\"gpt-4\",\n    temperature=0.7\n)\n# 2. 创建响应生成器\ngenerator = ResponseGenerator(llm_client)\n# 3. 生成回复\nresult = generator.generate_response(\n    user_input=\"我今天被领导批评了，觉得自己一无是处\",\n    user_emotion=\"sad\",\n    user_id=\"user_001\",\n    emotion_intensity=7.5\n)\n# 4. 获取结果\nprint(f\"AI回复: {result['response']}\")\nprint(f\"生成方法: {result['generation_method']}\")\nprint(f\"是否有效: {result['is_valid']}\")"
+    },
+    {
+      "type": "heading",
+      "level": "H2",
+      "text": "4.4 进阶优化：让共情更“智能”"
+    },
+    {
+      "type": "paragraph",
+      "text": "引入用户画像增强个性化，结合向量数据库中的长期记忆，提取用户偏好（如“喜欢温柔语气”“抗拒建议”），进一步微调回复风格。"
+    },
+    {
+      "type": "paragraph",
+      "text": "多轮情感轨迹分析，不只看单次情绪，而是分析用户**情绪变化趋势**。例如："
+    },
+    {
+      "type": "list",
+      "items": [
+        "持续低落 → 启动积极引导策略；",
+        "情绪逐步好转 → 加强正向反馈。"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "A/B 测试不同策略，部署多个版本的响应策略，通过用户停留时长、满意度评分等指标，持续优化最佳方案。"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "五、结语：当 AI 学会“好好说话”，陪伴才真正开始"
+    },
+    {
+      "type": "paragraph",
+      "text": "当我们完成“核心功能开发 2”的构建，回望整个过程，会发现我们完成的不仅是技术模块的拼接，更是一次**人机关系的重新定义**。"
+    },
+    {
+      "type": "paragraph",
+      "text": "你亲手打造的，不再是一个机械应答的“对话机器”，而是一个懂得倾听、理解情绪、并能给予温暖回应的“数字伙伴”。它会为你的喜悦而雀跃，为你的悲伤而沉默，为你的迷茫而轻声引导。"
+    },
+    {
+      "type": "paragraph",
+      "text": "这正是大模型应用开发的魅力所在：我们不再只是编写函数，而是在**设计情感流动的路径**，在**构建数字世界的共情法则**。"
+    },
+    {
+      "type": "paragraph",
+      "text": "你今天掌握的，不仅是动态 Prompt、情感匹配、混合生成等技术，更是一种**以用户为中心的 AI 产品思维**——真正的智能，不在于技术多复杂，而在于能否真正贴近人心。"
+    },
+    {
+      "type": "paragraph",
+      "text": "“心语”机器人的每一次回复，都凝聚着你对人性的理解、对细节的打磨、对责任的坚守。"
+    },
+    {
+      "type": "paragraph",
+      "text": "但这还只是开始。在下一讲中，我们将为“心语”搭建可视化界面，让它从命令行走向真实用户的指尖。届时你会发现：当技术遇见设计，AI 的温度才能被真正触摸到。"
+    },
+    {
+      "type": "paragraph",
+      "text": "**完整代码实现如下。**"
+    },
+    {
+      "type": "list",
+      "items": [
+        "响应生成器：`backend/modules/intent/core/response_generator.py`",
+        "动态 Prompt 构建器：`backend/modules/intent/core/dynamic_prompt_builder.py`",
+        "危机干预模块：`backend/modules/intent/core/crisis_intervention.py`",
+        "情感一致性校验：`backend/utils/sentiment_classifier.py`",
+        "情感策略配置：`backend/config/emotion_strategy.yaml`",
+        "响应生成示例：`examples/response_generation_example.py`"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "GitHub：[https://github.com/congde/emotional_chat.git]()"
+    },
+    {
+      "type": "paragraph",
+      "text": "Gitee：[https://gitee.com/yuancongde/emotional_chat.git]() （一周同步一次 GitHub）"
+    },
+    {
+      "type": "paragraph",
+      "text": "产品体验链接：[http://8.130.162.82:3000/]()"
+    },
+    {
+      "type": "heading",
+      "level": "H1",
+      "text": "思考题"
+    },
+    {
+      "type": "paragraph",
+      "text": "用户在多轮对话中呈现了如下情绪变化轨迹："
+    },
+    {
+      "type": "paragraph",
+      "text": "初始输入：“下周要参加职业资格考试，还有好多知识点没看完，越看越慌，晚上都睡不着”（情绪识别为 “焦虑”，强度 6.5/10）；补充输入：“刚才做模拟题错了一半，感觉复习了这么久都白忙活了，特别挫败”（情绪转为 “沮丧”，强度 7.8/10）；最终输入：“其实我已经考了两次都没通过，这次再不过，感觉自己真的很没用”（情绪升级为 “悲伤 + 轻度自我否定”，强度 8.2/10，无高风险倾向）。"
+    },
+    {
+      "type": "paragraph",
+      "text": "请结合今天所学的“感知 — 决策 — 生成”响应链路、情感 - 策略映射、动态 Prompt 设计、混合生成架构及情感一致性校验等核心技术，回答以下问题："
+    },
+    {
+      "type": "paragraph",
+      "text": "针对用户每一轮的情绪状态，你会为“心语”机器人选择对应的响应策略（参考这一讲中的情感 - 策略映射表），并说明选择理由（需体现情绪强度对策略的影响）？请为第三轮（悲伤 + 轻度自我否定）设计完整的动态 Prompt，明确其中的关键变量（情绪标签、回应策略、语气要求、对话历史摘要等）如何落地？"
+    },
+    {
+      "type": "paragraph",
+      "text": "希望通过今天的学习，让你对情感机器人的开发全程有个大致认识。如果有任何疑问，期待你在留言区和我交流。"
+    },
+    {
+      "type": "image",
+      "src": "https://static001.geekbang.org/resource/image/5a/85/5a65bfb3c19c2b63944bec7a8e591985.jpg",
+      "alt": ""
+    }
+  ],
+  "images": [
+    {
+      "src": "https://static001.geekbang.org/resource/image/31/23/31633e9dcbeb64fce8d78f254d71f023.jpg?wh=3254x1447",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/92/4b/922eb2f491ef0e055677a715a771f44b.png?wh=756x415",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/8d/a0/8d9782851cfb8c134ba4f42d630642a0.jpg?wh=2920x2023",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/ef/f0/ef1bbd9e7eb69b728cc3728f749219f0.jpg?wh=4482x1621",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/54/d5/5491eb3ae19ca22913cc39320acf7dd5.jpg?wh=2064x726",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/9f/35/9f3d62706ee2df733870674058f8c235.jpg?wh=3966x3084",
+      "alt": ""
+    },
+    {
+      "src": "https://static001.geekbang.org/resource/image/5a/85/5a65bfb3c19c2b63944bec7a8e591985.jpg",
+      "alt": ""
+    }
+  ],
+  "totalBlocks": 355,
+  "textLength": 11960,
+  "imageFiles": {
+    "https://static001.geekbang.org/resource/image/31/23/31633e9dcbeb64fce8d78f254d71f023.jpg?wh=3254x1447": "assets/20260518-930200-01-头图.jpg",
+    "https://static001.geekbang.org/resource/image/92/4b/922eb2f491ef0e055677a715a771f44b.png?wh=756x415": "assets/20260518-930200-02-图片1.png",
+    "https://static001.geekbang.org/resource/image/8d/a0/8d9782851cfb8c134ba4f42d630642a0.jpg?wh=2920x2023": "assets/20260518-930200-03-图片2.jpg",
+    "https://static001.geekbang.org/resource/image/ef/f0/ef1bbd9e7eb69b728cc3728f749219f0.jpg?wh=4482x1621": "assets/20260518-930200-04-图片3.jpg",
+    "https://static001.geekbang.org/resource/image/54/d5/5491eb3ae19ca22913cc39320acf7dd5.jpg?wh=2064x726": "assets/20260518-930200-05-图片4.jpg",
+    "https://static001.geekbang.org/resource/image/9f/35/9f3d62706ee2df733870674058f8c235.jpg?wh=3966x3084": "assets/20260518-930200-06-图片5.jpg",
+    "https://static001.geekbang.org/resource/image/5a/85/5a65bfb3c19c2b63944bec7a8e591985.jpg": "assets/20260518-930200-07-图片6.jpg"
+  }
+}

@@ -1,0 +1,1852 @@
+{
+  "index": 43,
+  "title": "直播回放｜吃透 Claude Code 核心源码：架构设计与工程细节全解析",
+  "chapter": "直播回放 (2讲)",
+  "duration": "时长 01:47:52",
+  "blocks": [
+    {
+      "type": "text",
+      "text": "一、Claude Code 的真实身份"
+    },
+    {
+      "type": "text",
+      "text": "大家好，今天这场直播的主题有点不一样。我们不是来讲怎么用 Claude Code 写代码的——那是使用层面的事情。我们今天要做的，是把它当成一个工程样本来解剖。"
+    },
+    {
+      "type": "paragraph",
+      "text": "先问大家一个问题：你们有没有想过，Claude Code 是什么？"
+    },
+    {
+      "type": "text",
+      "text": "大多数人的第一反应是：AI 编程助手，Copilot 的升级版。这个认知是对的，但只对了一半，而且是不重要的那一半。"
+    },
+    {
+      "type": "paragraph",
+      "text": "Claude Code 更重要的身份是：Harness 的权威实现样本。"
+    },
+    {
+      "type": "text",
+      "text": "什么是 Harness？这里有一个公式："
+    },
+    {
+      "type": "paragraph",
+      "text": "Model 是模型本身，就是 Claude 3.7。Harness 是除了模型以外的一切——上下文管理、工具链、记忆系统、多 Agent 协作机制、安全管控体系。"
+    },
+    {
+      "type": "text",
+      "text": "说到 Harness 这个词，它本身的语义演变也值得梳理。Harness 最早来自测试领域，是一个工程术语。被引入 AI 领域时，Anthropic、OpenAI 最初用它来指\"驾驭 agent 本身\"——驾驭的对象是 agent，不是模型。在 Harness 概念被引入 AI 领域的早期讨论中，OpenAI 等公司提出的 Harness 三大支柱是：context engineering（上下文工程）、约束（constraint）、定期垃圾回收（garbage collection）——关注的是如何让 Agent 工程运转得更好。后来 LangChain 等框架把这个概念大幅泛化：Harness 变成了\"构建 agent 除了模型以外的一切\"。这个泛化让概念变得极度宽泛，也让很多人感到混乱。但看 Claude Code 源码，你就能看清楚这个概念的真实内核。"
+    },
+    {
+      "type": "text",
+      "text": "我们搞 AI 应用开发这么久，Model 的问题早就解了——调 API 就好了。真正让人头疼的是 Harness：上下文应该怎么组织？工具应该怎么接入？Agent 之间怎么通信？安全边界怎么画？这些问题一直没有权威的参考答案。"
+    },
+    {
+      "type": "paragraph",
+      "text": "直到 2026 年 3 月底，Anthropic 意外泄露了 Claude Code 的完整源码——60MB 的 Source Map，51.2 万行 TypeScript，23 分钟内被发现，6 小时 300 万浏览量。这件事的工程意义远超任何技术博客：Anthropic 官方，用生产级代码，告诉了你一个商业级 Harness 应该长什么样。"
+    },
+    {
+      "type": "text",
+      "text": "今天，我带你们把它拆开看。"
+    },
+    {
+      "type": "text",
+      "text": "二、架构全景：Harness 的五大支柱"
+    },
+    {
+      "type": "text",
+      "text": "先看全局。很多分析文章喜欢把 CC 拆成技术分层（入口层、UI 层、查询引擎……），但那是代码组织视角，对我们学 Harness 设计没有太大帮助。"
+    },
+    {
+      "type": "paragraph",
+      "text": "我换一个视角——从 Harness 组件视角来看 CC 的架构："
+    },
+    {
+      "type": "text",
+      "text": "五大支柱："
+    },
+    {
+      "type": "numbered",
+      "items": [
+        "上下文系统：System Prompt + System Content + User Content，决定模型\"知道什么\"",
+        "工具系统：52 个（含实验性工具）内置工具 + MCP + Skills + Agent OS，决定模型\"能做什么\"",
+        "记忆系统：MEMORY.md 索引 + autoDream 整合，决定模型\"记得什么\"",
+        "Agent 协作：5 种模式的多 Agent 编排，决定\"任务怎么分工\"",
+        "安全系统：权限 + 沙箱 + 注入防御 + 审计，决定\"边界在哪里\""
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "这五个支柱围绕同一个核心——query.ts 里的 Agentic Loop。我们今天就从这个核心开始，往外逐层展开。"
+    },
+    {
+      "type": "text",
+      "text": "技术栈补充说明：CC 用 TypeScript 全栈，React/Ink 写终端 UI（是的，用 Web 技术写终端），Bun 运行时打包（解决 Node 启动慢的问题）。整个项目 1,902 个 TS 文件。"
+    },
+    {
+      "type": "text",
+      "text": "三、核心循环：query.ts 的 AsyncGenerator 状态机"
+    },
+    {
+      "type": "paragraph",
+      "text": "如果你只能从 CC 源码里学一件事，我建议是这个——query.ts 里的 Agentic Loop 实现方式。"
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": ""
+    },
+    {
+      "type": "text",
+      "text": "State 数据结构"
+    },
+    {
+      "type": "paragraph",
+      "text": "先看 State 对象。CC 的 query loop 维护一个不可变的 State 对象，每一轮迭代不修改旧 State，而是返回新 State："
+    },
+    {
+      "type": "code",
+      "text": "// query.ts — State 对象（概念结构，已简化）\n\n\tinterface State {\n\n\t  messages: MessageParam[]        // 完整对话历史（不可变追加）\n\n\t  turnCount: number               // 当前对话轮次\n\n\t  shouldAutoCompact: boolean      // 是否触发自动压缩\n\n\t  autoCompactTracking: {\n\n\t    consecutiveFailures: number   // 连续压缩失败次数\n\n\t    totalMessages: number         // 压缩前消息总数\n\n\t  }\n\n\t  aborted: boolean                // 是否已被 AbortController 中止\n\n\t}\n\n\t \n\n\t// 状态转换：纯函数，不可变\n\n\tfunction next(current: State, reason: string, overrides?: Partial<State>): State {\n\n\t  return { ...current, ...overrides }\n\n\t}"
+    },
+    {
+      "type": "text",
+      "text": "这里有一个设计选择值得注意：为什么要用不可变 State？因为 Agentic Loop 是多轮迭代，如果允许就地修改状态，调试时你完全不知道哪一轮把状态改坏了。不可变设计让每一轮的状态转换都是可追踪、可重放的。"
+    },
+    {
+      "type": "text",
+      "text": "queryLoop 的完整流程"
+    },
+    {
+      "type": "paragraph",
+      "text": "queryLoop() 是 async function*（异步生成器），实现了 while(true) 无限循环："
+    },
+    {
+      "type": "code",
+      "text": "// query.ts:241 — 概念简化版\n\n\tasync function* queryLoop(state: State, tools: Tool[], systemPrompt: string) {\n\n\t  while (true) {\n\n\t    // ① 调用 Claude API，获取流式响应\n\n\t    const stream = await callAPI(state.messages, tools, systemPrompt)\n\n\t \n\n\t    // ② 消费流式响应，实时 yield 给 UI\n\n\t    for await (const chunk of stream) {\n\n\t      yield { type: 'stream_chunk', data: chunk }  // UI 实时更新\n\n\t    }\n\n\t \n\n\t    // ③ 判断是否有工具调用\n\n\t    const toolUses = extractToolUses(stream.finalMessage)\n\n\t    if (toolUses.length === 0) {\n\n\t      return  // 模型只回复文本，循环结束\n\n\t    }\n\n\t \n\n\t    // ④ 执行工具调用（可能触发权限检查）\n\n\t    const toolResults = await executeTools(toolUses, state)\n\n\t    yield { type: 'tool_results', data: toolResults }\n\n\t \n\n\t    // ⑤ 状态转换：追加消息，进入下一轮\n\n\t    state = next(state, 'tool_results', {\n\n\t      messages: [...state.messages, stream.finalMessage, ...toolResults],\n\n\t      turnCount: state.turnCount + 1\n\n\t    })\n\n\t \n\n\t    // ⑥ 检查是否需要压缩（Token 阈值）\n\n\t    if (shouldCompact(state)) {\n\n\t      state = await runCompaction(state)\n\n\t    }\n\n\t  }\n\n\t}"
+    },
+    {
+      "type": "text",
+      "text": "以一条请求为例走完全流程"
+    },
+    {
+      "type": "text",
+      "text": "假设你输入：“帮我分析一下这个项目的目录结构”"
+    },
+    {
+      "type": "code",
+      "text": "用户输入 → REPL.tsx:onSubmit\n\n\t    ↓\n\n\thandlePromptSubmit.ts → processUserInput\n\n\t    ↓\n\n\t构建三路上下文（并行）：\n\n\t  ├── getSystemPrompt()      → System Prompt（5 级优先级决策）\n\n\t  ├── getSystemContext()     → gitStatus + Agent 工具列表\n\n\t  └── getUserContext()       → CLAUDE.md + 当前日期\n\n\t    ↓\n\n\tquery.ts:query() → queryLoop(state, tools, systemPrompt)\n\n\t    ↓\n\n\t[轮次 1] API 请求 → Claude 回复：\"我需要先看看目录结构\"\n\n\t       → 工具调用：Bash(\"ls -la\")\n\n\t       → 权限检查：Allow（只读命令）\n\n\t       → 执行：返回目录列表\n\n\t       → yield tool_result → UI 显示执行过程\n\n\t    ↓\n\n\t[轮次 2] API 请求（带 ls 结果）→ Claude 回复：\"目录结构如下...\"\n\n\t       → 无工具调用\n\n\t       → yield 最终回复 → UI 显示结果\n\n\t    ↓\n\n\tqueryLoop 退出（return）"
+    },
+    {
+      "type": "paragraph",
+      "text": "for await...of queryLoop(...) 让 UI 层可以实时消费每一个 yield 出来的事件，这就是你看到的\"流式输出\"效果。AsyncGenerator 把\"多轮迭代 + 流式推送 + 状态管理\"三件事用一个语法糖优雅地合成了。\n给自己项目的启示：你的 Agentic Loop 也应该是状态机，State 不可变，每轮转换可追踪，用 AsyncGenerator 或类似机制做流式推送。不要用回调嵌套，那是调试地狱。"
+    },
+    {
+      "type": "text",
+      "text": "四、上下文管理：三路并行组装 + System Prompt 深解"
+    },
+    {
+      "type": "text",
+      "text": "三路并行组装"
+    },
+    {
+      "type": "text",
+      "text": "每次用户提交消息，CC 会并行构建三路上下文："
+    },
+    {
+      "type": "code",
+      "text": "// REPL.tsx:2768-2789 — 三路并行\n\n\tconst [, , defaultSystemPrompt, baseUserContext, systemContext] = await Promise.all([\n\n\t  checkAndDisableBypassPermissionsIfNeeded(...),\n\n\t  checkAndDisableAutoModeIfNeeded(...),\n\n\t  getSystemPrompt(freshTools, ...),     // ① System Prompt\n\n\t  getUserContext(),                       // ② User Content\n\n\t  getSystemContext()                      // ③ System Content\n\n\t])"
+    },
+    {
+      "type": "paragraph",
+      "text": "三路分工很清晰：\n① System Prompt（buildEffectiveSystemPrompt()）"
+    },
+    {
+      "type": "text",
+      "text": "5 级优先级，从高到低："
+    },
+    {
+      "type": "text",
+      "text": "优先级"
+    },
+    {
+      "type": "text",
+      "text": "类型"
+    },
+    {
+      "type": "text",
+      "text": "触发条件"
+    },
+    {
+      "type": "text",
+      "text": "0"
+    },
+    {
+      "type": "text",
+      "text": "overrideSystemPrompt"
+    },
+    {
+      "type": "text",
+      "text": "loop 模式、特殊场景"
+    },
+    {
+      "type": "text",
+      "text": "1"
+    },
+    {
+      "type": "text",
+      "text": "Coordinator prompt"
+    },
+    {
+      "type": "text",
+      "text": "COORDINATOR_MODE=1 时替换"
+    },
+    {
+      "type": "text",
+      "text": "2"
+    },
+    {
+      "type": "text",
+      "text": "Agent prompt"
+    },
+    {
+      "type": "text",
+      "text": "当前是自定义 Agent 时替换"
+    },
+    {
+      "type": "text",
+      "text": "3"
+    },
+    {
+      "type": "text",
+      "text": "customSystemPrompt"
+    },
+    {
+      "type": "text",
+      "text": "–system-prompt 参数指定"
+    },
+    {
+      "type": "text",
+      "text": "4"
+    },
+    {
+      "type": "text",
+      "text": "defaultSystemPrompt"
+    },
+    {
+      "type": "text",
+      "text": "默认 CC prompt"
+    },
+    {
+      "type": "text",
+      "text": "+"
+    },
+    {
+      "type": "text",
+      "text": "appendSystemPrompt"
+    },
+    {
+      "type": "text",
+      "text": "始终追加到末尾"
+    },
+    {
+      "type": "paragraph",
+      "text": "② System Content（getSystemContext()）：注入到 system 消息末尾"
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "gitStatus：实时 git 状态（标记为 uncached section，每轮重算）",
+        "Agent 工具可用列表 + 每个工具的 whenToUse 描述",
+        "MCP server 列表、Skills 列表"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "③ User Content（getUserContext()）：包装为第一条 user 消息"
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "CLAUDE.md（四层层级：企业 > 用户全局 > 项目 VCS > 本地）",
+        "当前日期",
+        "特意包装为 user 消息而非 system 消息——这样 CLAUDE.md 可以独立命中 prompt cache"
+      ]
+    },
+    {
+      "type": "text",
+      "text": "System Prompt 静 / 动分界：省钱的关键"
+    },
+    {
+      "type": "paragraph",
+      "text": "getSystemPrompt() 返回 string[] 数组而不是单一字符串，每个片段可独立缓存："
+    },
+    {
+      "type": "code",
+      "text": "[静态段，全局可缓存]\n\n\t  ├── getSimpleIntroSection()       身份介绍\n\n\t  ├── getSimpleSystemSection()      系统行为规范\n\n\t  ├── getSimpleDoingTasksSection()  任务执行指南\n\n\t  ├── getActionsSection()           操作安全指南\n\n\t  ├── getUsingYourToolsSection()    工具使用指南\n\n\t  ├── getSimpleToneAndStyleSection() 语调风格\n\n\t  └── getOutputEfficiencySection()  输出效率\n\n\t \n\n\tSYSTEM_PROMPT_DYNAMIC_BOUNDARY   ← 分界线\n\n\t \n\n\t[动态段，每轮重算]\n\n\t  ├── session_guidance             Agent 工具、Skills 上下文\n\n\t  ├── memory                       MEMORY.md 内容\n\n\t  └── gitStatus（uncached）        当前 git 状态"
+    },
+    {
+      "type": "text",
+      "text": "静态段跨 session 全局缓存，这不是小优化——每次请求省掉几千个 token，在高频调用场景下节省的成本相当可观。"
+    },
+    {
+      "type": "text",
+      "text": "从 CC 的 System Prompt 中可以学到什么"
+    },
+    {
+      "type": "text",
+      "text": "CC 的 defaultSystemPrompt 实际上就是你我现在用的 CC 版本里的 system prompt（就是这次对话里的 system 消息！）。拆开看，有几个工程细节值得学习："
+    },
+    {
+      "type": "paragraph",
+      "text": "1. 安全规则用 IMPORTANT 前缀，独立维护"
+    },
+    {
+      "type": "code",
+      "text": "IMPORTANT: Assist with authorized security testing...\n\n\tIMPORTANT: You must NEVER generate or guess URLs..."
+    },
+    {
+      "type": "paragraph",
+      "text": "这两条 IMPORTANT 来自独立的 cyberRiskInstruction.ts 文件，由 Safeguards 团队单独维护，修改需要特别审批。工程启示：把安全规则和业务规则分开维护，防止一次重构把安全边界删掉。\n2. 工具使用指南写\"什么时候用什么工具\"，而不是\"工具能做什么\""
+    },
+    {
+      "type": "text",
+      "text": "大多数人写 system prompt 只告诉模型工具的能力，CC 额外写了使用场景："
+    },
+    {
+      "type": "code",
+      "text": "\"For simple, directed searches use Glob/Grep directly.\n\n\t For broader exploration, use the Explore agent—it's slower,\n\n\t only when a single search isn't enough.\""
+    },
+    {
+      "type": "paragraph",
+      "text": "这让模型能做更好的工具选择路由决策。\n3. 输出效率指南是专门的一节"
+    },
+    {
+      "type": "code",
+      "text": "# Output efficiency\n\n\tGo straight to the point. Try the simplest approach first.\n\n\tLead with the answer or action, not the reasoning."
+    },
+    {
+      "type": "paragraph",
+      "text": "专门一节告诉模型怎么回复才算\"高效\"。这是 Anthropic 对用户体验的强制约束，写在 prompt 层面而不是模型训练层面——更灵活，可以被 customSystemPrompt 覆盖。"
+    },
+    {
+      "type": "text",
+      "text": "五、Token 管理：3 层降级压缩的完整 Pipeline"
+    },
+    {
+      "type": "text",
+      "text": "触发条件"
+    },
+    {
+      "type": "code",
+      "text": "// autoCompact.ts:62\n\n\tconst AUTOCOMPACT_BUFFER_TOKENS = 13_000\n\n\t \n\n\t// 触发条件：当前消息占用的 token > (model_context_window - 13000)\n\n\tif (currentTokens > contextWindow - AUTOCOMPACT_BUFFER_TOKENS) {\n\n\t  triggerCompaction()\n\n\t}"
+    },
+    {
+      "type": "text",
+      "text": "13,000 的 buffer 是为了给模型留出足够的生成空间，确保压缩完还能继续对话。"
+    },
+    {
+      "type": "text",
+      "text": "完整压缩 Pipeline"
+    },
+    {
+      "type": "text",
+      "text": "压缩不是一个操作，是一个有降级逻辑的 Pipeline："
+    },
+    {
+      "type": "code",
+      "text": "触发压缩\n\n\t    ↓\n\n\tStep 1: MicroCompact（每轮执行，廉价）\n\n\t    → 按配置保留最近 N 轮的消息（默认 10 轮），N 轮之前的 tool result 直接裁剪\n\n\t    → 最长的 message 就是 tool result，裁掉老轮次后 context 长度大幅受控\n\n\t    → 不调 API，不改对话结构\n\n\t    → 实现：src/query.ts:413-426，createMicrocompactBoundaryMessage\n\n\t \n\n\t    ↓ 仍然超出阈值？\n\n\t \n\n\tStep 2: Session Memory Compact（读预生成摘要，无 API 调用）\n\n\t    → 读取 session_memory.md（后台 Agent 预先写好的对话摘要文件）\n\n\t    → getLastSummarizedMessageId() 找到摘要边界\n\n\t    → 保留边界之后的消息 + 摘要内容 → 重组上下文\n\n\t    → 完全不需要调 Claude API\n\n\t    → 实现：src/services/compact/sessionMemoryCompact.ts:514-630\n\n\t \n\n\t    【session_memory.md 何时生成？】\n\n\t    正常对话进行中，每隔 N 次工具调用（toolCallsBetweenUpdates=3）\n\n\t    且 token 增长超过阈值（minimumTokensBetweenUpdate=5000）时，\n\n\t    registerPostSamplingHook 触发 → runForkedAgent() 后台提炼关键信息\n\n\t    → 写入 session_memory.md，记录 lastSummarizedMessageId\n\n\t    （用户无感知，对话照常进行；这里才有 API 调用，但与压缩无关）\n\n\t \n\n\t    关键点：** 预压缩是后台异步完成的，用户完全无感知 **。当对话进行中，token 使用量超过一定比例时，CC 就会异步将当前消息上下文存到磁盘，并同步启动后台压缩。等到真正触发阈值时，从磁盘直接加载已压好的内容，速度极快。\n\n\t \n\n\t    用户的体验差异来自这里：有时压缩一闪而过，有时要等很久——前者是命中了磁盘预压缩，后者是触发了第三层全量 Legacy Compact（需要实时生成大量 output token，就像早期 Cursor 的压缩一样让人等得焦急）。\n\n\t \n\n\t    ↓ 失败？（session_memory.md 不存在 / 为空）\n\n\t \n\n\tStep 3: Legacy Compact（全量摘要，最昂贵）\n\n\t    → 调 Claude API，让模型对历史对话生成摘要\n\n\t    → 追加压缩边界标记（compactBoundary）\n\n\t    → 未来加载时，从边界之后开始，边界前的内容丢弃\n\n\t    → 实现：src/services/compact/autoCompact.ts\n\n\t    → 成本：一次完整的 API 调用（但这是最后手段）"
+    },
+    {
+      "type": "text",
+      "text": "值得注意：Legacy Compact 不是\"自由文本摘要\"——CC 要求模型按结构化 JSON 格式（含用户问题、todo 清单、澄清事项等标准字段）输出压缩结果，确保摘要内容可机械处理、结构一致。"
+    },
+    {
+      "type": "text",
+      "text": "Preserved-tail Relinking：防止突然失忆"
+    },
+    {
+      "type": "text",
+      "text": "Legacy Compact 有一个精妙设计——压缩时不仅保留摘要，还保留一段\"最近活跃消息尾部\"："
+    },
+    {
+      "type": "code",
+      "text": "压缩结果 = [历史摘要] + [compactBoundary 标记] + [最近 N 条活跃消息]"
+    },
+    {
+      "type": "paragraph",
+      "text": "为什么要保留尾部？因为如果你正在中途实现一个功能，压缩后模型只看到\"之前做了什么\"的摘要，但没有\"刚刚在做什么\"的上下文，就会出现\"突然不知道我在干嘛了\"的问题。Preserved-tail 保留了当前工作集，让对话在压缩后仍然连贯。\n用户感受到的\"Claude 忘了\"，通常不是真的遗忘——是边界截断 + 摘要替换 + 尾部保留在尽力维持，只是摘要质量不够精确导致的信息失真。"
+    },
+    {
+      "type": "paragraph",
+      "text": "给自己项目的启示：三层降级设计的核心思想是\"按成本激活\"——能不调 API 就不调，磁盘方案解决了再不行才调模型。你自己的压缩策略也应该有降级层次，而不是一刀切。"
+    },
+    {
+      "type": "text",
+      "text": "六、长期记忆：克制哲学与两条后台通道"
+    },
+    {
+      "type": "paragraph",
+      "text": "很多人说 OpenClaw 比 Claude Code 好的一点，是长记忆做得更好。但这个判断不准确——CC 的长记忆能力一点也不差，差的是对普通用户开放程度。"
+    },
+    {
+      "type": "text",
+      "text": "为什么很多人觉得 CC 记忆不行？"
+    },
+    {
+      "type": "text",
+      "text": "CC 没有任何专门用来写记忆的工具或 Skill。它唯一依赖的，是 system prompt 里的一段话，大意是："
+    },
+    {
+      "type": "quote",
+      "text": "你拥有一个持久化的基于文件的记忆系统。你应该随着时间推移持续完善这套记忆系统，让未来的对话能全面了解用户是谁、他们希望如何与你协作……如果用户明确要求你记住某件事，立即将其保存为最合适的类型。"
+    },
+    {
+      "type": "text",
+      "text": "这段 prompt 有两层触发逻辑："
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "模糊触发：随时间推移主动维护——但这个指令极度模糊，模型遵循度通常不高",
+        "确定触发：用户明确要求记住某件事——这是 CC 直接写记忆的唯一可靠触发条件"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "结论：你必须明示 CC “记住这件事”，它才会主动写记忆。 靠它自行判断，基本不会触发。"
+    },
+    {
+      "type": "text",
+      "text": "克制是设计选择，不是能力缺失"
+    },
+    {
+      "type": "text",
+      "text": "CC 的克制是刻意为之。它的核心场景是代码开发，宁可少记，也不希望把记忆搞乱——一个混乱的记忆库对代码助手来说比没有记忆更糟糕。"
+    },
+    {
+      "type": "text",
+      "text": "相比之下，OpenClaw 的策略是激进写入——“只要能记的，全都记住”。两种哲学各有取舍：CC 追求精准，OpenClaw 追求完整。"
+    },
+    {
+      "type": "text",
+      "text": "机制 1：extractMemories（需环境变量开启，普通用户不可用）"
+    },
+    {
+      "type": "text",
+      "text": "这是 CC 里一个\"藏起来\"的主动记忆机制。开启后，每当模型完成一轮完整的 react loop（stop hook 时机——模型把最终结果返回给用户的那个时点），CC 会把当前的完整 message list fork 出来，交给一个后台 SubAgent 专门做记忆提取："
+    },
+    {
+      "type": "code",
+      "text": "每轮 react 完成（stop hook）\n\n\t  → 将完整 message list fork 给后台 SubAgent（用户无感知）\n\n\t  → SubAgent 从本轮对话中主动提取值得保留的信息\n\n\t  → 写入 CC 的 memory 体系（MEMORY.md 及相关文件）"
+    },
+    {
+      "type": "paragraph",
+      "text": "这样等于每轮对话结束后都会主动扫描是否有值得记的内容，而不是等用户明说。\n代价是：不再克制。自动提取意味着可能记错、记不该记的内容，或记下对后续毫无帮助的东西——这正是这个功能需要手动开关的原因。"
+    },
+    {
+      "type": "text",
+      "text": "机制 2：autoDream（需内部开关，普通用户不可用）"
+    },
+    {
+      "type": "paragraph",
+      "text": "autoDream 是解决 extractMemories\"可能记错\"问题的配套机制——相当于记忆的垃圾回收。"
+    },
+    {
+      "type": "text",
+      "text": "名字来自仿生学类比：人在睡眠时大脑不会停止工作，会把白天的事情过一遍，把需要记的归类记住，把不需要记的\"睡一觉就忘了\"。autoDream 做的是同样的事。"
+    },
+    {
+      "type": "paragraph",
+      "text": "触发条件：每隔约 24 小时，闲时自动运行。每次触发后扫描当前工作空间，4 个阶段完成整合："
+    },
+    {
+      "type": "code",
+      "text": "Phase 1: Orient — 扫描 MEMORY.md + 所有 CLAUDE.md，识别哪些记忆需要整合\n\n\tPhase 2: Gather — 捞取相关上下文，聚合碎片化信息和反复出现的主题\n\n\tPhase 3: Consolidate — 合并同主题条目，去重提炼，覆盖写入 MEMORY.md\n\n\tPhase 4: Prune — 删除过时信息、噪声、冲突条目，保持记忆库精简干净"
+    },
+    {
+      "type": "paragraph",
+      "text": "autoDream 的价值：让工程空间能持久运转而不劣化。没有 GC 的记忆系统，时间长了会充满过时、冲突、重复的信息，最终变得不可用。这对应 Harness 三大支柱里的\"定期垃圾回收\"。\n目前对普通用户不可用，但这个思路值得借鉴——你自己的 Agent 工程也应该有对应的 autoDream 机制。"
+    },
+    {
+      "type": "text",
+      "text": "互斥保护"
+    },
+    {
+      "type": "paragraph",
+      "text": "模型可以直接用 FileWriteTool / FileEditTool 写 MEMORY.md（显式指令时），但模型直写和后台 extractMemories 互斥——两者不能同时写同一文件，防止竞态覆盖。"
+    },
+    {
+      "type": "paragraph",
+      "text": "给自己项目的启示：CC 的记忆设计核心是\"克制 + 定期整合\"——不主动乱记，但用定期 GC 保持记忆质量。对于自己的 Agent 项目，比堆记忆数量更重要的是设计好记忆的清理机制：没有 Prune 的记忆系统会越来越重，最终拖慢而不是增强 Agent 的能力。"
+    },
+    {
+      "type": "text",
+      "text": "七、工具系统：统一接口 + 三层过滤"
+    },
+    {
+      "type": "text",
+      "text": "工具的统一接口"
+    },
+    {
+      "type": "text",
+      "text": "CC 的所有工具都实现同一个泛型接口："
+    },
+    {
+      "type": "code",
+      "text": "// Tool.ts — 核心接口\n\n\tinterface Tool<Input, Output, P extends ToolPermissionContext> {\n\n\t  name: string                    // 工具名（全局唯一）\n\n\t  description: string             // 模型看到的描述（影响路由决策）\n\n\t  inputSchema: ZodSchema<Input>   // 输入校验（Zod）\n\n\t  outputSchema: ZodSchema<Output> // 输出类型\n\n\t  call(input: Input, ctx: ToolUseContext<P>): Promise<ToolResult<Output>>\n\n\t  prompt: string                  // 工具使用指南（写入 System Prompt）\n\n\t  permissionRule?: PermissionRule // 权限规则\n\n\t}"
+    },
+    {
+      "type": "paragraph",
+      "text": "注意 ToolUseContext<P> 里的 P 是 ToolPermissionContext——权限上下文是注入给工具的，工具本身不主动引用权限模块。这是依赖注入模式：权限由 query.ts 构建，再通过 context 传递给每个工具调用，工具和权限系统完全解耦。"
+    },
+    {
+      "type": "text",
+      "text": "三层过滤：从 52 个工具到实际可用集"
+    },
+    {
+      "type": "code",
+      "text": "getAllBaseTools()    ← 所有内置工具（52 个，含实验性工具）\n\n\t    ↓\n\n\tFeature Flag 过滤：\n\n\t  某些工具需要 feature flag 开启才能加载\n\n\t  例如：KAIROS 相关工具、Coordinator 专用工具\n\n\t    ↓\n\n\t权限模式过滤：\n\n\t  REPL_ONLY_TOOLS：只在 REPL 模式可用（不能给 Agent 用）\n\n\t  ALL_AGENT_DISALLOWED_TOOLS：Agent 禁用的工具集\n\n\t  ASYNC_AGENT_ALLOWED_TOOLS：后台 Agent 可用工具\n\n\t  COORDINATOR_MODE_ALLOWED_TOOLS：Coordinator 可用工具\n\n\t    ↓\n\n\tDeny 规则过滤：\n\n\t  用户 / 项目 / 企业策略的 deny 规则\n\n\t    ↓\n\n\tgetTools()          ← 当前上下文的实际可用工具集\n\n\t \n\n\t---"
+    },
+    {
+      "type": "text",
+      "text": "八、工具能力层：基础工具清单 + MCP + Skills"
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": ""
+    },
+    {
+      "type": "text",
+      "text": "基础内置工具完整列表"
+    },
+    {
+      "type": "text",
+      "text": "CC 的内置工具按功能分为以下几组："
+    },
+    {
+      "type": "paragraph",
+      "text": "文件系统工具"
+    },
+    {
+      "type": "text",
+      "text": "工具名"
+    },
+    {
+      "type": "text",
+      "text": "说明"
+    },
+    {
+      "type": "text",
+      "text": "Read"
+    },
+    {
+      "type": "text",
+      "text": "读取文件内容，支持分页（offset/limit）"
+    },
+    {
+      "type": "text",
+      "text": "Write"
+    },
+    {
+      "type": "text",
+      "text": "写入整个文件（新建或覆盖）"
+    },
+    {
+      "type": "text",
+      "text": "Edit"
+    },
+    {
+      "type": "text",
+      "text": "精确字符串替换，比 Write 更安全"
+    },
+    {
+      "type": "text",
+      "text": "Glob"
+    },
+    {
+      "type": "text",
+      "text": "文件模式匹配，按修改时间排序"
+    },
+    {
+      "type": "text",
+      "text": "Grep"
+    },
+    {
+      "type": "text",
+      "text": "基于 ripgrep 的内容搜索，支持正则"
+    },
+    {
+      "type": "text",
+      "text": "LS"
+    },
+    {
+      "type": "text",
+      "text": "列出目录文件"
+    },
+    {
+      "type": "text",
+      "text": "NotebookRead"
+    },
+    {
+      "type": "text",
+      "text": "读取 Jupyter Notebook 含输出"
+    },
+    {
+      "type": "text",
+      "text": "NotebookEdit"
+    },
+    {
+      "type": "text",
+      "text": "修改 Notebook Cell"
+    },
+    {
+      "type": "paragraph",
+      "text": "Shell 执行"
+    },
+    {
+      "type": "text",
+      "text": "工具名"
+    },
+    {
+      "type": "text",
+      "text": "说明"
+    },
+    {
+      "type": "text",
+      "text": "Bash"
+    },
+    {
+      "type": "text",
+      "text": "执行 shell 命令，支持前 / 后台、超时、沙箱"
+    },
+    {
+      "type": "paragraph",
+      "text": "Web 工具"
+    },
+    {
+      "type": "text",
+      "text": "工具名"
+    },
+    {
+      "type": "text",
+      "text": "说明"
+    },
+    {
+      "type": "text",
+      "text": "WebFetch"
+    },
+    {
+      "type": "text",
+      "text": "抓取网页内容（含权限规则）"
+    },
+    {
+      "type": "text",
+      "text": "WebSearch"
+    },
+    {
+      "type": "text",
+      "text": "调用搜索引擎"
+    },
+    {
+      "type": "paragraph",
+      "text": "Agent 工具"
+    },
+    {
+      "type": "text",
+      "text": "工具名"
+    },
+    {
+      "type": "text",
+      "text": "说明"
+    },
+    {
+      "type": "text",
+      "text": "Agent"
+    },
+    {
+      "type": "text",
+      "text": "派生子 Agent（5 种模式的统一入口）"
+    },
+    {
+      "type": "text",
+      "text": "SendMessage"
+    },
+    {
+      "type": "text",
+      "text": "向 Swarm teammate 发消息"
+    },
+    {
+      "type": "text",
+      "text": "TaskOutput"
+    },
+    {
+      "type": "text",
+      "text": "读取后台 Agent 的输出"
+    },
+    {
+      "type": "text",
+      "text": "TaskStop"
+    },
+    {
+      "type": "text",
+      "text": "终止后台 Agent"
+    },
+    {
+      "type": "paragraph",
+      "text": "任务管理"
+    },
+    {
+      "type": "text",
+      "text": "工具名"
+    },
+    {
+      "type": "text",
+      "text": "说明"
+    },
+    {
+      "type": "text",
+      "text": "TodoWrite"
+    },
+    {
+      "type": "text",
+      "text": "写入 / 更新任务列表"
+    },
+    {
+      "type": "text",
+      "text": "TodoRead"
+    },
+    {
+      "type": "text",
+      "text": "读取任务列表（某些模式下）"
+    },
+    {
+      "type": "text",
+      "text": "CronCreate"
+    },
+    {
+      "type": "text",
+      "text": "创建定时任务"
+    },
+    {
+      "type": "text",
+      "text": "CronDelete"
+    },
+    {
+      "type": "text",
+      "text": "删除定时任务"
+    },
+    {
+      "type": "text",
+      "text": "CronList"
+    },
+    {
+      "type": "text",
+      "text": "列出定时任务"
+    },
+    {
+      "type": "paragraph",
+      "text": "工作模式"
+    },
+    {
+      "type": "text",
+      "text": "工具名"
+    },
+    {
+      "type": "text",
+      "text": "说明"
+    },
+    {
+      "type": "text",
+      "text": "EnterPlanMode"
+    },
+    {
+      "type": "text",
+      "text": "进入 Plan 模式（只规划不执行）"
+    },
+    {
+      "type": "text",
+      "text": "ExitPlanMode"
+    },
+    {
+      "type": "text",
+      "text": "退出 Plan 模式"
+    },
+    {
+      "type": "text",
+      "text": "EnterWorktree"
+    },
+    {
+      "type": "text",
+      "text": "进入 git worktree 隔离环境"
+    },
+    {
+      "type": "text",
+      "text": "ExitWorktree"
+    },
+    {
+      "type": "text",
+      "text": "退出 worktree"
+    },
+    {
+      "type": "paragraph",
+      "text": "交互工具"
+    },
+    {
+      "type": "text",
+      "text": "工具名"
+    },
+    {
+      "type": "text",
+      "text": "说明"
+    },
+    {
+      "type": "text",
+      "text": "AskUserQuestion"
+    },
+    {
+      "type": "text",
+      "text": "向用户提出结构化选择题"
+    },
+    {
+      "type": "text",
+      "text": "Skill"
+    },
+    {
+      "type": "text",
+      "text": "调用已注册的 Skill"
+    },
+    {
+      "type": "text",
+      "text": "RemoteTrigger"
+    },
+    {
+      "type": "text",
+      "text": "触发远程定时任务"
+    },
+    {
+      "type": "paragraph",
+      "text": "每个工具都有独立的prompt.ts，这是一个竞争式路由设计——模型读完每个工具的描述后，自主决定用哪个。工具描述的质量直接影响模型的工具选择质量。"
+    },
+    {
+      "type": "text",
+      "text": "MCP 集成"
+    },
+    {
+      "type": "paragraph",
+      "text": "MCP 工具通过 @modelcontextprotocol/sdk 动态注入，有一个特殊的设计：模板工具覆写。"
+    },
+    {
+      "type": "paragraph",
+      "text": "如果 MCP 工具和内置工具同名，MCP 工具可以覆盖内置工具的行为。这给了第三方极大的扩展空间。但有一条安全防线：沙箱始终阻止写入.claude/skills，这和保护 agents 定义文件是同等级别的防护，防止恶意 MCP server 注入自定义 Agent 定义。"
+    },
+    {
+      "type": "text",
+      "text": "Skills 系统"
+    },
+    {
+      "type": "text",
+      "text": "Skills 是一种\"可复用的 sub-prompt 包\"："
+    },
+    {
+      "type": "code",
+      "text": "6 种来源（按优先级）：\n\n\tbundled > plugin > user > project > flag > managed\n\n\t \n\n\t运行时行为：\n\n\t调用 Skill 工具 → 展开为 sub-prompt → 注入当前对话"
+    },
+    {
+      "type": "text",
+      "text": "Skills 不是工具，是 prompt 的组合方式。每个 Skill 就是一段结构化的指令，调用时展开插入对话，让模型\"临时掌握\"某种专项能力。"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "九、Agent 协作：从场景出发选择 5 种模式 %0A%0A"
+    },
+    {
+      "type": "paragraph",
+      "text": "在了解 5 种模式之前，先建立一个关键的对比框架：Coordinator 是做减法，Swarm/Team 是做加法。"
+    },
+    {
+      "type": "text",
+      "text": "CC 整体在工程上一直在做减法——收缩工具集，克制功能扩张，激发模型本身的能力。Coordinator 模式把这个原则推到极限：不只是限制 Worker 的工具，连主 Agent 的工具也全部去掉——它只能编排，连文件都不能碰。"
+    },
+    {
+      "type": "text",
+      "text": "Swarm/Team 相反，是在一个 Agent 基础上做加法：多个数字员工，各有独立 workspace、记忆、skill，通过邮箱系统协作。"
+    },
+    {
+      "type": "text",
+      "text": "不同设计哲学，适用不同场景。"
+    },
+    {
+      "type": "paragraph",
+      "text": "很多人看到 CC 的 Agent 协作是从代码变量切入的——team_name、COORDINATOR_MODE、FORK_SUBAGENT……这些变量对开发者有意义，但对选择使用哪种模式没有直接帮助。"
+    },
+    {
+      "type": "paragraph",
+      "text": "我换一个视角：根据你的场景需求来选。"
+    },
+    {
+      "type": "text",
+      "text": "场景一：我有 3 个独立的后台任务，想同时跑"
+    },
+    {
+      "type": "paragraph",
+      "text": "→ Fork Agent 模式"
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "派生 3 个 Fork child，每个继承完整上下文",
+        "强制后台异步执行，主 Agent 不阻塞",
+        "Prompt Cache 最大化（三个 fork 共享父 prompt 缓存）",
+        "适合：并行研究、批量处理、成本敏感场景"
+      ]
+    },
+    {
+      "type": "text",
+      "text": "场景二：我需要一个专项能力的 Agent（探索代码库、写计划、验证实现）"
+    },
+    {
+      "type": "paragraph",
+      "text": "→ Built-in Sub-type Agent"
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "选 Explore（haiku，只读，快且便宜）",
+        "选 Plan（继承模型，返回分步计划）",
+        "选 Verification（自动验证，禁止修改）",
+        "适合：专项能力分工，模型选型精细化"
+      ]
+    },
+    {
+      "type": "text",
+      "text": "场景三：我要把一个大任务拆分给多个 Agent 执行，需要编排"
+    },
+    {
+      "type": "paragraph",
+      "text": "→ Coordinator 模式"
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "Coordinator 只编排不执行，主 Coordinator Agent 没有任何执行工具（不只是限制，是真的没有工具）",
+        "Worker 子 Agent 被严格限制，不能再 fork 出其他 Agent",
+        "并行任务的 Worker 只有 Read + Bash（只读，无文件编辑权限），串行实现任务的 Worker 才有 Edit",
+        "task-notification XML 结构化汇报（机械解析，不依赖 LLM 理解）",
+        "并发 + 串行策略：研究类并行，实现类串行（避免文件冲突）",
+        "适合：大型任务编排、多步骤流程"
+      ]
+    },
+    {
+      "type": "text",
+      "text": "场景四：我需要多个 Agent 长期协作，每人有自己的上下文和\"工作台\""
+    },
+    {
+      "type": "paragraph",
+      "text": "→ Swarm/Team 模式"
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "每个 Teammate 在独立终端窗格（iTerm2/Tmux）或进程里运行",
+        "Mailbox/Actor 通信：SendMessage 点对点或广播",
+        "适合：长期团队协作、复杂的多角色交互"
+      ]
+    },
+    {
+      "type": "text",
+      "text": "场景五：我就是需要一个通用的 Agent 帮我完成任务"
+    },
+    {
+      "type": "paragraph",
+      "text": "→ General Purpose Agent（默认）"
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "全功能，全工具集",
+        "不需要任何特殊配置",
+        "适合：通用任务，没有特殊分工需求"
+      ]
+    },
+    {
+      "type": "text",
+      "text": "异步执行：何时后台运行？"
+    },
+    {
+      "type": "text",
+      "text": "以下 6 种条件，ANY 满足即进入后台异步模式："
+    },
+    {
+      "type": "code",
+      "text": "run_in_background = true     在 Agent 调用时显式指定\n\n\tagent.background = true      Agent 定义文件中配置\n\n\tisCoordinatorMode()          Coordinator 下的 Workers\n\n\tisForkSubagentEnabled()      Fork 模式\n\n\tkairosEnabled()              KAIROS 持续代理模式\n\n\tproactiveModule.isActive()   主动触发模式"
+    },
+    {
+      "type": "paragraph",
+      "text": "一个选型心智模型：Coordinator 是减法——限制越多，专注度越高，适合有明确边界的大任务分解；Swarm/Team 是加法——能力越堆越丰富，适合需要长期积累和协作的数字团队。其余三种（Fork、Sub-type、General Purpose）则是在主流单 Agent 模式上的功能延伸，先掌握这两个极端，中间的选择自然清晰。"
+    },
+    {
+      "type": "text",
+      "text": "十、后台任务：task-notification XML 让 Agent 协作可观测"
+    },
+    {
+      "type": "text",
+      "text": "为什么要结构化汇报？"
+    },
+    {
+      "type": "text",
+      "text": "当你有多个后台 Agent 在并行跑时，你需要知道：哪个完成了？结果是什么？有没有出错？"
+    },
+    {
+      "type": "text",
+      "text": "最直觉的做法是让 Agent 用自然语言汇报，然后让 Coordinator 解析。但这依赖 LLM 理解，引入了不确定性。"
+    },
+    {
+      "type": "text",
+      "text": "CC 的选择是结构化 XML——机械解析，零 LLM 依赖："
+    },
+    {
+      "type": "code",
+      "text": "<!-- 后台 Agent 完成时发送给 Coordinator -->\n\n\t<task-notification>\n\n\t  <task-id>agent_abc123</task-id>\n\n\t  <status>completed</status>   <!-- completed | failed | killed -->\n\n\t  <summary> 分析完成，发现 3 处 SQL 注入风险 </summary>\n\n\t  <result>\n\n\t    文件 api/users.py:47 存在未参数化的 SQL 查询...\n\n\t  </result>\n\n\t  <usage>\n\n\t    <total_tokens>4821</total_tokens>\n\n\t  </usage>\n\n\t</task-notification>"
+    },
+    {
+      "type": "paragraph",
+      "text": "Coordinator 用标准 XML 解析器处理这个输出，不需要 Claude 来\"理解\"结果是否成功——<status>completed</status> 就是完成。"
+    },
+    {
+      "type": "text",
+      "text": "生命周期管理"
+    },
+    {
+      "type": "code",
+      "text": "主 Agent / Coordinator\n\n\t    ↓ Agent({ run_in_background: true, ... })\n\n\t    ↓ 返回 agentId（立即）\n\n\t \n\n\t后台 Agent 运行中...\n\n\t    ↓ TaskOutput(agentId)  ← 随时查看中间输出\n\n\t    ↓ TaskStop(agentId)    ← 需要时主动终止\n\n\t \n\n\t后台 Agent 完成时：\n\n\t    ↓ Stop Hook 触发\n\n\t    ↓ 发送 <task-notification> XML\n\n\t    ↓ 主 Agent 收到并处理\n\n\t \n\n\t---"
+    },
+    {
+      "type": "text",
+      "text": "十一、Fork vs 通用 Sub-agent：缓存命中率的省钱数学"
+    },
+    {
+      "type": "text",
+      "text": "byte-identical 是关键"
+    },
+    {
+      "type": "paragraph",
+      "text": "Prompt Cache 的命中逻辑很简单：如果你的请求 prompt 和上一次一个字节都不差，就命中缓存，省掉 prompt 的处理费用。"
+    },
+    {
+      "type": "paragraph",
+      "text": "Fork Agent 为什么能最大化缓存命中？因为它直接继承父 Agent 的 renderedSystemPrompt——不是重新生成一遍，而是字面上同一份数据结构的引用（byte-exact）。"
+    },
+    {
+      "type": "text",
+      "text": "对比："
+    },
+    {
+      "type": "text",
+      "text": "维度"
+    },
+    {
+      "type": "text",
+      "text": "Fork Agent"
+    },
+    {
+      "type": "text",
+      "text": "通用 Sub-agent"
+    },
+    {
+      "type": "text",
+      "text": "System Prompt"
+    },
+    {
+      "type": "text",
+      "text": "继承父 renderedSystemPrompt（byte-exact）"
+    },
+    {
+      "type": "text",
+      "text": "重新生成（即使内容相同，因动态字段不同也可能 miss）"
+    },
+    {
+      "type": "text",
+      "text": "对话历史"
+    },
+    {
+      "type": "text",
+      "text": "继承父全部消息"
+    },
+    {
+      "type": "text",
+      "text": "空白起点"
+    },
+    {
+      "type": "text",
+      "text": "工具集"
+    },
+    {
+      "type": "text",
+      "text": "[‘*’]，与父完全一致"
+    },
+    {
+      "type": "text",
+      "text": "由 agent 定义决定"
+    },
+    {
+      "type": "text",
+      "text": "Prompt Cache"
+    },
+    {
+      "type": "text",
+      "text": "最大化命中"
+    },
+    {
+      "type": "text",
+      "text": "独立 cache，每次可能 miss"
+    },
+    {
+      "type": "text",
+      "text": "执行方式"
+    },
+    {
+      "type": "text",
+      "text": "强制后台异步"
+    },
+    {
+      "type": "text",
+      "text": "可同步可异步"
+    },
+    {
+      "type": "text",
+      "text": "递归保护"
+    },
+    {
+      "type": "text",
+      "text": "FORK_BOILERPLATE_TAG 阻止 fork 再 fork"
+    },
+    {
+      "type": "text",
+      "text": "无限制"
+    },
+    {
+      "type": "text",
+      "text": "Fork 的消息构建方式"
+    },
+    {
+      "type": "text",
+      "text": "Fork child 收到的\"消息\"不是普通的 user message，是一个特殊拼接："
+    },
+    {
+      "type": "code",
+      "text": "父 history（全部消息）\n\n\t    +\n\n\t父最后一条 assistant 消息（保留所有 tool_use 块和 thinking）\n\n\t    +\n\n\t每个 tool_use 的占位结果（\"Fork started — processing in background\"）\n\n\t    +\n\n\t<fork-boilerplate> 你是 fork child，不要再 fork，直接执行 </fork-boilerplate>\n\n\t    +\n\n\t📌 {实际要执行的指令}"
+    },
+    {
+      "type": "paragraph",
+      "text": "这个拼接结构确保：占位结果让 tool_use 有对应的 tool_result（Claude API 要求），boilerplate 防止无限递归，实际指令是最后追加的新内容。\n什么时候用 Fork，什么时候用通用 Sub-agent？"
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "需要并行执行多个任务、任务内容不同但背景相同 → Fork",
+        "需要独立的 System Prompt、专项角色、权限隔离 → 通用 Sub-agent"
+      ]
+    },
+    {
+      "type": "text",
+      "text": "十二、内置专项 Agent：正确的模型选型示范"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": ""
+    },
+    {
+      "type": "text",
+      "text": "CC 的 5 个内置专项 Agent，每个都是\"极简但足够\"的设计："
+    },
+    {
+      "type": "text",
+      "text": "Agent"
+    },
+    {
+      "type": "text",
+      "text": "模型"
+    },
+    {
+      "type": "text",
+      "text": "工具集"
+    },
+    {
+      "type": "text",
+      "text": "关键设计"
+    },
+    {
+      "type": "text",
+      "text": "Explore"
+    },
+    {
+      "type": "text",
+      "text": "Haiku（外部）/ inherit（内部）"
+    },
+    {
+      "type": "text",
+      "text": "只读（无 Edit/Write）"
+    },
+    {
+      "type": "text",
+      "text": "omitClaudeMd: true（跳过 CLAUDE.md，节省 token）；EXPLORE_AGENT_MIN_QUERIES 防止查太少就汇报"
+    },
+    {
+      "type": "text",
+      "text": "Plan"
+    },
+    {
+      "type": "text",
+      "text": "inherit"
+    },
+    {
+      "type": "text",
+      "text": "只读"
+    },
+    {
+      "type": "text",
+      "text": "返回分步计划，识别关键文件，评估架构权衡——只规划不执行"
+    },
+    {
+      "type": "text",
+      "text": "claude-code-guide"
+    },
+    {
+      "type": "text",
+      "text": "Haiku"
+    },
+    {
+      "type": "text",
+      "text": "WebFetch + 读类"
+    },
+    {
+      "type": "text",
+      "text": "启动时注入用户 skills/agents/MCP 配置；知道官方文档 map URL"
+    },
+    {
+      "type": "text",
+      "text": "Verification"
+    },
+    {
+      "type": "text",
+      "text": "inherit"
+    },
+    {
+      "type": "text",
+      "text": "dontAsk（拒绝需权限操作）"
+    },
+    {
+      "type": "text",
+      "text": "禁止修改文件"
+    },
+    {
+      "type": "text",
+      "text": "statusline-setup"
+    },
+    {
+      "type": "text",
+      "text": "Sonnet"
+    },
+    {
+      "type": "text",
+      "text": "Read + Edit"
+    },
+    {
+      "type": "text",
+      "text": "专门负责配置终端状态栏"
+    },
+    {
+      "type": "paragraph",
+      "text": "模型选型逻辑：Explore 和 Guide 用 Haiku，因为它们的任务是搜索和读取，不需要高质量推理，便宜且快。Verification 用 inherit（继承主模型），因为\"以破坏性思维验证实现\"需要足够的推理能力。"
+    },
+    {
+      "type": "paragraph",
+      "text": "这是 CC 给出的模型选型原则：任务越专用，模型应该越小——只要能完成任务。"
+    },
+    {
+      "type": "text",
+      "text": "十三、Coordinator 模式：举一个具体例子"
+    },
+    {
+      "type": "paragraph",
+      "text": "Coordinator 的概念说起来容易理解，但实际运作方式很多人没想清楚。我们用一个具体例子来走。"
+    },
+    {
+      "type": "text",
+      "text": "例子：大型 Python 项目的安全审计"
+    },
+    {
+      "type": "paragraph",
+      "text": "任务：对一个 5 万行的 Python 项目做全量安全审计，找出 SQL 注入、硬编码密钥、SSRF 漏洞。"
+    },
+    {
+      "type": "paragraph",
+      "text": "没有 Coordinator 的做法："
+    },
+    {
+      "type": "text",
+      "text": "主 Agent 一个个文件扫描，处理完才能分析下一个，时间 O(n)，上下文窗口还容易爆。"
+    },
+    {
+      "type": "paragraph",
+      "text": "Coordinator 的做法："
+    },
+    {
+      "type": "code",
+      "text": "Coordinator（不直接操作文件）\n\n\t    │\n\n\t    ├── 分析任务 → 拆解为 3 个并行研究任务\n\n\t    │\n\n\t    ├──▶ Worker1（并行）：扫描 SQL 注入\n\n\t    │    工具集：Bash + Read（只读）\n\n\t    │    任务：grep 所有 SQL 字符串拼接，找出未参数化查询\n\n\t    │    完成后发送 <task-notification>\n\n\t    │\n\n\t    ├──▶ Worker2（并行）：扫描硬编码密钥\n\n\t    │    工具集：Bash + Read（只读）\n\n\t    │    任务：搜索 API_KEY / password / secret 等关键词\n\n\t    │    完成后发送 <task-notification>\n\n\t    │\n\n\t    └──▶ Worker3（并行）：扫描 SSRF 漏洞\n\n\t         工具集：Bash + Read（只读）\n\n\t         任务：搜索所有 HTTP 请求构建，检查 URL 是否来自用户输入\n\n\t         完成后发送 <task-notification>\n\n\t \n\n\t[3 个 Worker 并行运行]\n\n\t    ↓\n\n\tCoordinator 收到 3 份 <task-notification> XML：\n\n\t  Worker1: completed - 发现 api/users.py:47 存在 SQL 注入\n\n\t  Worker2: completed - 发现 config.py:12 存在硬编码 API KEY\n\n\t  Worker3: completed - 发现 proxy/fetch.py:88 存在 SSRF 风险\n\n\t    ↓\n\n\tCoordinator 汇总 → 生成最终审计报告（串行，综合 3 份结果）"
+    },
+    {
+      "type": "text",
+      "text": "关键点："
+    },
+    {
+      "type": "numbered",
+      "items": [
+        "Coordinator 自己没有执行任何文件操作——它只做调度和汇总",
+        "Worker 工具集受限（只读 Bash + Read），不能修改文件（审计时不应修改）",
+        "3 个 Worker 并行运行，总时间接近 O(1) 而不是 O(n)",
+        "task-notification XML 是结构化的，Coordinator 机械解析，不依赖 LLM 理解"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "Coordinator 模式的适用场景：任务可以拆解为多个独立子任务、子任务结果需要汇总、对执行时间有要求。不适合：任务有强依赖关系（必须串行）、任务太简单（overhead 不值得）。"
+    },
+    {
+      "type": "text",
+      "text": "十四、Swarm/Team：Mailbox/Actor 模型"
+    },
+    {
+      "type": "paragraph",
+      "text": "在讲 Team 模式之前，先区分一个核心概念：Subagent ≠ 数字员工。"
+    },
+    {
+      "type": "text",
+      "text": "不论是普通 Subagent、Fork Agent 还是 Coordinator 的 Worker，本质上都是\"依附于主 Agent 的任务执行单元\"——没有自己的记忆，没有自己的技能积累，任务完成即消失。它们服务于主 Agent 的一次性目标，本质上是主 Agent 的临时执行单元。"
+    },
+    {
+      "type": "paragraph",
+      "text": "Team 模式才是真正意义上的\"数字员工\"：每个 Teammate 有自己的 workspace、自己的长期记忆、自己安装的 skill，实际上是一个独立运行的 Claude Code 实例。他们之间的协作不是通过共享上下文，而是通过通讯总线：有公共广播区域（所有成员可见）和点对点私聊。"
+    },
+    {
+      "type": "text",
+      "text": "这才是 Harness 时代真正意义上的 Multi-Agent 协作。"
+    },
+    {
+      "type": "text",
+      "text": "和 Coordinator 的区别"
+    },
+    {
+      "type": "text",
+      "text": "Coordinator"
+    },
+    {
+      "type": "text",
+      "text": "Swarm/Team"
+    },
+    {
+      "type": "text",
+      "text": "Worker 生命周期"
+    },
+    {
+      "type": "text",
+      "text": "短期（一个任务结束）"
+    },
+    {
+      "type": "text",
+      "text": "长期（团队成员持续存在）"
+    },
+    {
+      "type": "text",
+      "text": "执行环境"
+    },
+    {
+      "type": "text",
+      "text": "进程内异步"
+    },
+    {
+      "type": "text",
+      "text": "独立终端窗格（视觉分离）"
+    },
+    {
+      "type": "text",
+      "text": "通信方式"
+    },
+    {
+      "type": "text",
+      "text": "task-notification XML"
+    },
+    {
+      "type": "text",
+      "text": "SendMessage 邮箱 /Actor"
+    },
+    {
+      "type": "text",
+      "text": "适合场景"
+    },
+    {
+      "type": "text",
+      "text": "大任务编排"
+    },
+    {
+      "type": "text",
+      "text": "长期协作团队"
+    },
+    {
+      "type": "text",
+      "text": "多终端后端自适应"
+    },
+    {
+      "type": "code",
+      "text": "检测运行环境：\n\n\t    ↓\n\n\t在 macOS + iTerm2 + it2 CLI 可用？\n\n\t    → ITermBackend：split pane，图形化多窗格\n\n\t \n\n\t在 tmux session 中？\n\n\t    → TmuxBackend：tmux pane，终端复用\n\n\t \n\n\t都不满足？\n\n\t    → InProcessBackend：降级，进程内异步（显示 banner 提示）"
+    },
+    {
+      "type": "text",
+      "text": "启用方式（外部用户）："
+    },
+    {
+      "type": "code",
+      "text": "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude\n\n\t# 或\n\n\tclaude --agent-teams"
+    },
+    {
+      "type": "text",
+      "text": "Mailbox/Actor 通信"
+    },
+    {
+      "type": "text",
+      "text": "每个 Teammate 有独立的邮箱目录（mailbox），通过 SendMessage 收发消息："
+    },
+    {
+      "type": "code",
+      "text": "// 点对点\n\n\tSendMessage({ to: '@researcher', message: '请分析一下这个错误日志' })\n\n\t \n\n\t// 广播\n\n\tSendMessage({ to: '*', message: '前端任务完成，请后端同步状态' })"
+    },
+    {
+      "type": "text",
+      "text": "Team Lead 完成 Teammate 创建后，自己的角色转变为\"调度者 + 审批者\"。Teammate 完成任务后通过 Stop Hook 发送 idle 通知。"
+    },
+    {
+      "type": "text",
+      "text": "Plan Mode 审批机制"
+    },
+    {
+      "type": "paragraph",
+      "text": "当设置 CLAUDE_CODE_PLAN_MODE_REQUIRED=1 时，Teammate 在开始实现前必须获得 Leader 批准："
+    },
+    {
+      "type": "code",
+      "text": "Teammate 制定计划\n\n\t    ↓ ExitPlanMode 工具（申请批准）\n\n\t    ↓ SendMessage 给 Leader：\"我的计划是 A → B → C\"\n\n\t \n\n\tLeader 审批（通过 / 拒绝 / 修改）\n\n\t    ↓ 批准：Teammate 开始执行\n\n\t    ↓ 拒绝：Teammate 返回修改计划"
+    },
+    {
+      "type": "paragraph",
+      "text": "这个机制确保高风险操作在执行前经过人工或上级 Agent 的审批。\n给自己项目的启示：Team 模式适合长期、稳定的多角色协作场景——每个角色有固定的职责、需要积累专属记忆和技能。如果任务是一次性的（单次完成即解散），用 Subagent 或 Coordinator 更合适，Team 模式的配置成本不值得。评估核心问题是：这些 Agent 之间需要长期记住彼此的工作内容吗？ 如果是，Team 模式；如果不是，用更轻量的协作方式。"
+    },
+    {
+      "type": "text",
+      "text": "十五、安全架构：6 大原则贯穿始终"
+    },
+    {
+      "type": "paragraph",
+      "text": "CC 的安全设计有 6 个核心原则，值得每个做 Agent 的工程师背下来："
+    },
+    {
+      "type": "paragraph",
+      "text": "1. Defense in Depth（纵深防御）"
+    },
+    {
+      "type": "text",
+      "text": "不依赖单一防线。权限检查失效了，还有沙箱；沙箱绕过了，还有审计日志。每一层独立失效，不会导致全线崩溃。"
+    },
+    {
+      "type": "paragraph",
+      "text": "2. Least Privilege（最小权限）"
+    },
+    {
+      "type": "text",
+      "text": "Agent 只有完成任务所需的最小工具集。Explore Agent 没有 Edit/Write，Verification Agent 拒绝所有文件修改——权限最小化，爆炸半径最小化。"
+    },
+    {
+      "type": "paragraph",
+      "text": "3. Secure by Default（安全默认）"
+    },
+    {
+      "type": "text",
+      "text": "默认拒绝，需要时显式授权。不是\"默认允许然后拦截危险操作\"，而是\"默认拒绝然后放行安全操作\"。"
+    },
+    {
+      "type": "paragraph",
+      "text": "4. Zero Trust on Model Output（零信任模型输出）"
+    },
+    {
+      "type": "paragraph",
+      "text": "AI 说\"我要执行 rm -rf\"，CC 不相信它被授权——仍然走权限检查流程。模型的判断不等于系统的授权。这一条是最重要的。"
+    },
+    {
+      "type": "paragraph",
+      "text": "5. TOCTOU Defense（时间竞争防御）"
+    },
+    {
+      "type": "text",
+      "text": "检查时刻（Time of Check）和使用时刻（Time of Use）之间的不一致会被攻击。CC 在沙箱层防止这种攻击（例如防 Git fsmonitor 逃逸）。"
+    },
+    {
+      "type": "paragraph",
+      "text": "6. Enterprise Controllability（企业可控性）"
+    },
+    {
+      "type": "text",
+      "text": "企业可以通过 policySettings 层集中控制所有 Agent 的行为。这是面向 B 端场景的必备能力。"
+    },
+    {
+      "type": "text",
+      "text": "十六、权限机制：Deny > Ask > Allow"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": ""
+    },
+    {
+      "type": "text",
+      "text": "权限模式（6 种）"
+    },
+    {
+      "type": "code",
+      "text": "// PermissionMode.ts\n\n\t// 概念示意，非真实代码\n\n\tconst PERMISSION_MODE_CONFIG = {\n\n\t  default:            // 每次工具调用需要用户确认\n\n\t  plan:               // 只生成计划，不执行（ExitPlanMode 申请执行权）\n\n\t  acceptEdits:        // 自动允许文件编辑\n\n\t  bypassPermissions:  // 跳过所有检查（红色警告，危险）\n\n\t  dontAsk:            // 自动拒绝需要权限的操作（用于只读 Agent）\n\n\t  auto:               // 仅 USER_TYPE=ant 可用，YOLO 分类器\n\n\t}"
+    },
+    {
+      "type": "text",
+      "text": "权限决策流（从上往下，第一个命中即返回）"
+    },
+    {
+      "type": "code",
+      "text": "1. Deny 规则检查 → 命中 → 直接拒绝 ❌\n\n\t2. Ask 规则检查  → 命中 → 弹出确认对话框 ❓\n\n\t3. Allow 规则检查 → 命中 → 自动放行 ✅\n\n\t4. 权限模式默认值 → 按当前模式决策\n\n\t5. YOLO 分类器（仅 auto 模式）→ Haiku 快速判断"
+    },
+    {
+      "type": "paragraph",
+      "text": "规则优先级（高 → 低）："
+    },
+    {
+      "type": "code",
+      "text": "企业策略（policySettings）\n\n\t  > 用户设置（user）\n\n\t  > 项目设置（project）\n\n\t  > 本地设置（local）\n\n\t  > CLI 参数（cliArg）\n\n\t  > 命令定义（command）\n\n\t  > 会话级（session）"
+    },
+    {
+      "type": "text",
+      "text": "拒绝跟踪（denialTracking.ts）"
+    },
+    {
+      "type": "code",
+      "text": "// 防止 AI 反复尝试被拒绝的操作\n\n\tconst DENIAL_LIMITS = {\n\n\t  maxConsecutive: 3,   // 连续 3 次拒绝 → 强制返回交互确认\n\n\t  maxTotal: 20,        // 累计 20 次拒绝 → 同上\n\n\t}"
+    },
+    {
+      "type": "text",
+      "text": "没有这个机制，一个设计不良的 prompt 可能让 AI 不断重试被拒绝的操作，造成无谓的 API 消耗和用户体验问题。"
+    },
+    {
+      "type": "text",
+      "text": "十七、沙箱：OS 级隔离"
+    },
+    {
+      "type": "paragraph",
+      "text": "为什么 CC 在编码场景很少默认启用沙箱？"
+    },
+    {
+      "type": "paragraph",
+      "text": "核心矛盾在于网络访问：编码场景下常需要运行 npm install、pip install 等依赖安装命令，这些命令需要访问外部网络。沙箱的网络访问严格限制（只允许 WebFetch 权限规则里的白名单域名）会让这类命令直接失败。文件系统写入方面相对宽松（工作目录和临时目录可写），但系统调用层面的限制同样可能导致某些构建工具行为异常。"
+    },
+    {
+      "type": "paragraph",
+      "text": "沙箱的真正优势在于网络层拦截：如果 Agent 写了 Python 代码然后执行 requests.get(url)，bash 层的规则拦不住（命令本身是合法的），但沙箱层可以在 OS 级别阻断这次网络请求。这是沙箱相比 bash 规则的核心价值——对于需要严格网络出口控制的场景，沙箱是必要的。"
+    },
+    {
+      "type": "text",
+      "text": "底层技术"
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "Linux：bubblewrap（bwrap）——Linux 容器沙箱工具",
+        "macOS：sandbox-exec（Seatbelt）——macOS 原生沙箱框架",
+        "实现文件：utils/sandbox/sandbox-adapter.ts（封装 @anthropic-ai/sandbox-runtime）"
+      ]
+    },
+    {
+      "type": "text",
+      "text": "5 项核心安全转换（convertToSandboxRuntimeConfig）"
+    },
+    {
+      "type": "code",
+      "text": "① 从 WebFetch 权限规则提取网络域名白名单\n\n\t   只有显式授权的域名才能访问，其他全拒\n\n\t \n\n\t② 始终允许写入：当前工作目录 + 临时目录\n\n\t   Agent 需要能在工作区操作文件\n\n\t \n\n\t③ 始终拒绝写入：配置文件（~/.config/... 等）\n\n\t   防止 Agent 修改系统配置，这是沙箱逃逸的常见路径\n\n\t \n\n\t④ 阻止写入 .claude/skills\n\n\t   与 agents 定义文件同等级别的保护\n\n\t   防止恶意 MCP server 注入自定义 Agent 定义\n\n\t \n\n\t⑤ 防裸 Git 仓库攻击（core.fsmonitor 沙箱逃逸）\n\n\t   攻击路径：在工作目录放恶意 .git/config\n\n\t   → 触发 core.fsmonitor 钩子执行任意命令\n\n\t   CC 直接在沙箱层阻断这条路"
+    },
+    {
+      "type": "paragraph",
+      "text": "failIfUnavailable: true 意味着沙箱不可用时 CC 会拒绝启动，而不是降级为无保护模式运行。"
+    },
+    {
+      "type": "text",
+      "text": "十八、提示注入防控：4 层纵深防御"
+    },
+    {
+      "type": "paragraph",
+      "text": "安全没有一招鲜——没有一个安全系统能拦住所有风险。CC 的做法是：有什么攻击路径，就针对性地补什么。以下 4 层防御，每一层对应一类具体的攻击场景。"
+    },
+    {
+      "type": "paragraph",
+      "text": "提示注入的本质威胁：AI 被诱导执行恶意命令 → 通过 Shell 扩展（如 ${ANTHROPIC_API_KEY}）泄露敏感变量，或通过污染的 Skill 文件接管 Agent 行为。CC 的防御全部在代码层面，不依赖模型判断。"
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "层 1：子进程环境变量清洁（utils/subprocessEnv.ts）"
+    },
+    {
+      "type": "text",
+      "text": "在 CI/ 后台环境中，执行 Bash 命令前自动清理子进程环境变量："
+    },
+    {
+      "type": "code",
+      "text": "清理范围：\n\n\t· Anthropic 认证凭据：ANTHROPIC_API_KEY、CLAUDE_CODE_OAUTH_TOKEN、ANTHROPIC_AUTH_TOKEN 等\n\n\t· OTEL 导出器 Headers（携带 Bearer token）\n\n\t· 云服务凭据：AWS_SECRET_ACCESS_KEY、AWS_SESSION_TOKEN、GOOGLE_APPLICATION_CREDENTIALS、AZURE_CLIENT_SECRET\n\n\t· GitHub Actions OIDC：ACTIONS_ID_TOKEN_REQUEST_TOKEN/URL（可铸造安装令牌 → 仓库接管）\n\n\t· GitHub Actions 缓存：ACTIONS_RUNTIME_TOKEN/URL（缓存投毒 → 供应链攻击）"
+    },
+    {
+      "type": "paragraph",
+      "text": "攻击场景：注入攻击者在文件 / 网页中埋入 echo ${ANTHROPIC_API_KEY} → AI 执行 Bash → 密钥泄露。子进程清洁确保即使 AI 被诱导，敏感变量在子进程中根本不存在。"
+    },
+    {
+      "type": "text",
+      "text": "层 2：Bundled Skills 防篡改（每进程随机 nonce）"
+    },
+    {
+      "type": "paragraph",
+      "text": "攻击路径：本地攻击者预创建 .claude/skills/ 目录 → Claude 读取污染的 Skill → 提示注入。"
+    },
+    {
+      "type": "paragraph",
+      "text": "防御：每次进程启动生成随机 nonce，Skills 目录路径包含 nonce，使路径不可预测，预创建攻击无效。"
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "层 3：路径遍历防御（normalize() 规范化）"
+    },
+    {
+      "type": "paragraph",
+      "text": "文件系统权限检查在多处调用 normalize() 处理路径，.. 段的遍历绕过被规范化后与权限白名单重新比对，路径逃逸在到达实际 FS 操作之前被拦截。"
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "层 4：元数据安全类型分析（_PROTO_ 前缀剥离）"
+    },
+    {
+      "type": "paragraph",
+      "text": "使用类型系统强制验证：_PROTO_ 前缀字段在序列化时被自动剥离，防止内部元数据泄露到通用存储或外部 API 调用中。"
+    },
+    {
+      "type": "paragraph",
+      "text": "设计共性：4 层防御全部是确定性代码逻辑（类型系统、正则、nonce、env 清理），没有依赖 LLM 判断——这才是真正可信的安全层。"
+    },
+    {
+      "type": "text",
+      "text": "十九、可观测性：双轨上报 + 全链路审计"
+    },
+    {
+      "type": "text",
+      "text": "双轨遥测"
+    },
+    {
+      "type": "text",
+      "text": "CC 同时维护两套上报："
+    },
+    {
+      "type": "paragraph",
+      "text": "Statsig（业务分析）："
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "功能使用统计（哪个工具被调用最多）",
+        "A/B 测试分组（GrowthBook 功能门控）",
+        "Feature Flag 状态上报"
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "OpenTelemetry（技术链路）："
+    },
+    {
+      "type": "bullet",
+      "items": [
+        "分布式追踪（每次 Agent 调用有 trace_id）",
+        "性能监控（工具执行耗时、API 延迟）",
+        "Datadog 可选集成"
+      ]
+    },
+    {
+      "type": "text",
+      "text": "权限决策日志（permissionLogging.ts）"
+    },
+    {
+      "type": "text",
+      "text": "每次权限决策（Allow 或 Deny）都有结构化记录："
+    },
+    {
+      "type": "code",
+      "text": "// permissionLogging.ts\n\n\tlogPermissionDecision({\n\n\t  source: 'rule',           // classifier | hook | rule | sandboxOverride | mode\n\n\t  toolName: 'BashTool',\n\n\t  input: 'git commit -m ...',\n\n\t  decision: 'ALLOW',\n\n\t  reason: 'matches allow rule: git commit'\n\n\t})\n\n\t// fan-out: Statsig analytics + OTel telemetry + code-edit metrics"
+    },
+    {
+      "type": "paragraph",
+      "text": "为什么要记录决策来源（source）？ 当出现安全事件时，你需要快速定位是哪层防线触发的——是规则？是沙箱覆盖？是权限模式？结构化的 source 字段让根因分析变得机械可查。"
+    },
+    {
+      "type": "text",
+      "text": "成本双轨追踪"
+    },
+    {
+      "type": "code",
+      "text": "token 级精确计数：\n\n\t  每次 API 响应包含 usage: { input_tokens, output_tokens, cache_read_tokens }\n\n\t  query.ts 精确累加\n\n\t \n\n\tsession 级累计：\n\n\t  REPL 状态栏实时显示当前 session 消耗\n\n\t  上次 session 费用在启动时上报（setup.ts）"
+    },
+    {
+      "type": "text",
+      "text": "Claude 自述（被某 X.com 帖子挖出）：“大部分工程为降成本”——这不是玩笑，双轨成本追踪是这个工程哲学的直接体现。"
+    },
+    {
+      "type": "text",
+      "text": "二十、总结：5 个可直接复用的工程模式"
+    },
+    {
+      "type": "paragraph",
+      "text": "今天拆了这么多，最后帮大家提炼 5 个可以直接搬到自己项目里的工程模式："
+    },
+    {
+      "type": "paragraph",
+      "text": "① AsyncGenerator 状态机 → 你的 Agentic Loop"
+    },
+    {
+      "type": "code",
+      "text": "async function* myAgentLoop(state: State) {\n\n\t  while (true) {\n\n\t    const response = await callModel(state.messages)\n\n\t    yield response  // 实时推送给 UI\n\n\t    if (!response.toolCalls.length) return\n\n\t    const results = await executeTools(response.toolCalls)\n\n\t    state = next(state, 'tool_results', { messages: [...state.messages, ...results] })\n\n\t  }\n\n\t}"
+    },
+    {
+      "type": "paragraph",
+      "text": "不可变 State，每轮纯函数转换，AsyncGenerator 流式推送。\n② 三路上下文 + 静 / 动分界 → 你的 System Prompt 工程"
+    },
+    {
+      "type": "paragraph",
+      "text": "把 System Prompt 拆成 string[]，明确哪些段静态（可缓存），哪些段动态（每轮重算）。静态段跨 session 缓存，token 成本线性下降。"
+    },
+    {
+      "type": "paragraph",
+      "text": "③ MEMORY.md 索引模式 → 你的长期记忆"
+    },
+    {
+      "type": "text",
+      "text": "不需要向量数据库。一个结构化的纯文本索引文件 + Stop Hook 触发的主动整合，足以给 Agent 提供工程级的跨 session 记忆。"
+    },
+    {
+      "type": "paragraph",
+      "text": "④ Fork byte-identical → 你的成本优化"
+    },
+    {
+      "type": "text",
+      "text": "需要并行子 Agent 时，让每个子 Agent 继承父 prompt（byte-exact），而不是重新生成。Prompt Cache 命中率接近 100%，并行 N 个子任务的 prompt 开销 ≈ 1 个单任务。"
+    },
+    {
+      "type": "paragraph",
+      "text": "⑤ 多层权限决策链 + 拒绝跟踪 → 你的安全管控"
+    },
+    {
+      "type": "text",
+      "text": "工具不直接引用权限模块——PermissionContext 由上层注入。Deny > Ask > Allow 决策链，加上拒绝跟踪防止 AI 无限重试，这是商业级 Agent 安全管控的最小可行方案。"
+    },
+    {
+      "type": "text",
+      "text": "二十一、未竟之问：我们拿到的只是一半答案"
+    },
+    {
+      "type": "paragraph",
+      "text": "今天讲的是 CC 的运行态 Harness——CC 在运行时长什么样，每个模块怎么工作。"
+    },
+    {
+      "type": "paragraph",
+      "text": "但还有另一半我们没看到：构建态 Harness——CC 是怎么被造出来的。"
+    },
+    {
+      "type": "text",
+      "text": "这是下一个值得系统研究的领域："
+    },
+    {
+      "type": "text",
+      "text": "待探索"
+    },
+    {
+      "type": "text",
+      "text": "已知线索"
+    },
+    {
+      "type": "text",
+      "text": "核心问题"
+    },
+    {
+      "type": "text",
+      "text": "开发工作流"
+    },
+    {
+      "type": "text",
+      "text": "代码有大量 AI 生成迹象；内部代号 Capybara/Numbat"
+    },
+    {
+      "type": "text",
+      "text": "Anthropic 用 CC 开发 CC 到什么程度？自举闭环怎么做的？"
+    },
+    {
+      "type": "text",
+      "text": "Eval 评估体系"
+    },
+    {
+      "type": "text",
+      "text": "Verification Agent 在 A/B 测试；Statsig 基础设施完整"
+    },
+    {
+      "type": "text",
+      "text": "模型行为的测试套件长什么样？如何防止\"测试通过但生产挂\"？"
+    },
+    {
+      "type": "text",
+      "text": "Prompt 工程流水线"
+    },
+    {
+      "type": "text",
+      "text": "cyberRiskInstruction.ts 需特别审批"
+    },
+    {
+      "type": "text",
+      "text": "生产级 Prompt 如何版本管理、评审、灰度发布？"
+    },
+    {
+      "type": "text",
+      "text": "Safety & Red-teaming"
+    },
+    {
+      "type": "text",
+      "text": "ANTI_DISTILLATION 存在，red-team 流程不可见"
+    },
+    {
+      "type": "text",
+      "text": "商业 Agent 的 red-team 标准是什么？怎么测？"
+    },
+    {
+      "type": "text",
+      "text": "CC 是 Harness 的一个版本的答案，但 Harness 的故事还没有结束。"
+    },
+    {
+      "type": "paragraph",
+      "text": "终极问题是：如何用 Agent 来构建更好的 Agent？"
+    },
+    {
+      "type": "text",
+      "text": "这不是哲学问题，是下一代 AI 工程的核心工程问题。"
+    }
+  ],
+  "text": "一、Claude Code 的真实身份\n\n大家好，今天这场直播的主题有点不一样。我们不是来讲怎么用 Claude Code 写代码的——那是使用层面的事情。我们今天要做的，是把它当成一个工程样本来解剖。\n\n\n先问大家一个问题：你们有没有想过，Claude Code 是什么？\n\n大多数人的第一反应是：AI 编程助手，Copilot 的升级版。这个认知是对的，但只对了一半，而且是不重要的那一半。\n\nClaude Code 更重要的身份是：Harness 的权威实现样本。\n\n什么是 Harness？这里有一个公式：\n\n\nModel 是模型本身，就是 Claude 3.7。Harness 是除了模型以外的一切——上下文管理、工具链、记忆系统、多 Agent 协作机制、安全管控体系。\n\n说到 Harness 这个词，它本身的语义演变也值得梳理。Harness 最早来自测试领域，是一个工程术语。被引入 AI 领域时，Anthropic、OpenAI 最初用它来指\"驾驭 agent 本身\"——驾驭的对象是 agent，不是模型。在 Harness 概念被引入 AI 领域的早期讨论中，OpenAI 等公司提出的 Harness 三大支柱是：context engineering（上下文工程）、约束（constraint）、定期垃圾回收（garbage collection）——关注的是如何让 Agent 工程运转得更好。后来 LangChain 等框架把这个概念大幅泛化：Harness 变成了\"构建 agent 除了模型以外的一切\"。这个泛化让概念变得极度宽泛，也让很多人感到混乱。但看 Claude Code 源码，你就能看清楚这个概念的真实内核。\n\n我们搞 AI 应用开发这么久，Model 的问题早就解了——调 API 就好了。真正让人头疼的是 Harness：上下文应该怎么组织？工具应该怎么接入？Agent 之间怎么通信？安全边界怎么画？这些问题一直没有权威的参考答案。\n\n直到 2026 年 3 月底，Anthropic 意外泄露了 Claude Code 的完整源码——60MB 的 Source Map，51.2 万行 TypeScript，23 分钟内被发现，6 小时 300 万浏览量。这件事的工程意义远超任何技术博客：Anthropic 官方，用生产级代码，告诉了你一个商业级 Harness 应该长什么样。\n\n今天，我带你们把它拆开看。\n\n二、架构全景：Harness 的五大支柱\n\n先看全局。很多分析文章喜欢把 CC 拆成技术分层（入口层、UI 层、查询引擎……），但那是代码组织视角，对我们学 Harness 设计没有太大帮助。\n\n我换一个视角——从 Harness 组件视角来看 CC 的架构：\n\n五大支柱：\n\n上下文系统：System Prompt + System Content + User Content，决定模型\"知道什么\"\n\n工具系统：52 个（含实验性工具）内置工具 + MCP + Skills + Agent OS，决定模型\"能做什么\"\n\n记忆系统：MEMORY.md 索引 + autoDream 整合，决定模型\"记得什么\"\n\nAgent 协作：5 种模式的多 Agent 编排，决定\"任务怎么分工\"\n\n安全系统：权限 + 沙箱 + 注入防御 + 审计，决定\"边界在哪里\"\n\n这五个支柱围绕同一个核心——query.ts 里的 Agentic Loop。我们今天就从这个核心开始，往外逐层展开。\n\n技术栈补充说明：CC 用 TypeScript 全栈，React/Ink 写终端 UI（是的，用 Web 技术写终端），Bun 运行时打包（解决 Node 启动慢的问题）。整个项目 1,902 个 TS 文件。\n\n三、核心循环：query.ts 的 AsyncGenerator 状态机\n\n如果你只能从 CC 源码里学一件事，我建议是这个——query.ts 里的 Agentic Loop 实现方式。\n\nState 数据结构\n\n先看 State 对象。CC 的 query loop 维护一个不可变的 State 对象，每一轮迭代不修改旧 State，而是返回新 State：\n\n\t// query.ts — State 对象（概念结构，已简化）\n\n\tinterface State {\n\n\t  messages: MessageParam[]        // 完整对话历史（不可变追加）\n\n\t  turnCount: number               // 当前对话轮次\n\n\t  shouldAutoCompact: boolean      // 是否触发自动压缩\n\n\t  autoCompactTracking: {\n\n\t    consecutiveFailures: number   // 连续压缩失败次数\n\n\t    totalMessages: number         // 压缩前消息总数\n\n\t  }\n\n\t  aborted: boolean                // 是否已被 AbortController 中止\n\n\t}\n\n\t \n\n\t// 状态转换：纯函数，不可变\n\n\tfunction next(current: State, reason: string, overrides?: Partial<State>): State {\n\n\t  return { ...current, ...overrides }\n\n\t}\n\n这里有一个设计选择值得注意：为什么要用不可变 State？因为 Agentic Loop 是多轮迭代，如果允许就地修改状态，调试时你完全不知道哪一轮把状态改坏了。不可变设计让每一轮的状态转换都是可追踪、可重放的。\n\nqueryLoop 的完整流程\n\nqueryLoop() 是 async function*（异步生成器），实现了 while(true) 无限循环：\n\n\t// query.ts:241 — 概念简化版\n\n\tasync function* queryLoop(state: State, tools: Tool[], systemPrompt: string) {\n\n\t  while (true) {\n\n\t    // ① 调用 Claude API，获取流式响应\n\n\t    const stream = await callAPI(state.messages, tools, systemPrompt)\n\n\t \n\n\t    // ② 消费流式响应，实时 yield 给 UI\n\n\t    for await (const chunk of stream) {\n\n\t      yield { type: 'stream_chunk', data: chunk }  // UI 实时更新\n\n\t    }\n\n\t \n\n\t    // ③ 判断是否有工具调用\n\n\t    const toolUses = extractToolUses(stream.finalMessage)\n\n\t    if (toolUses.length === 0) {\n\n\t      return  // 模型只回复文本，循环结束\n\n\t    }\n\n\t \n\n\t    // ④ 执行工具调用（可能触发权限检查）\n\n\t    const toolResults = await executeTools(toolUses, state)\n\n\t    yield { type: 'tool_results', data: toolResults }\n\n\t \n\n\t    // ⑤ 状态转换：追加消息，进入下一轮\n\n\t    state = next(state, 'tool_results', {\n\n\t      messages: [...state.messages, stream.finalMessage, ...toolResults],\n\n\t      turnCount: state.turnCount + 1\n\n\t    })\n\n\t \n\n\t    // ⑥ 检查是否需要压缩（Token 阈值）\n\n\t    if (shouldCompact(state)) {\n\n\t      state = await runCompaction(state)\n\n\t    }\n\n\t  }\n\n\t}\n以一条请求为例走完全流程\n\n假设你输入：“帮我分析一下这个项目的目录结构”\n\n\t用户输入 → REPL.tsx:onSubmit\n\n\t    ↓\n\n\thandlePromptSubmit.ts → processUserInput\n\n\t    ↓\n\n\t构建三路上下文（并行）：\n\n\t  ├── getSystemPrompt()      → System Prompt（5 级优先级决策）\n\n\t  ├── getSystemContext()     → gitStatus + Agent 工具列表\n\n\t  └── getUserContext()       → CLAUDE.md + 当前日期\n\n\t    ↓\n\n\tquery.ts:query() → queryLoop(state, tools, systemPrompt)\n\n\t    ↓\n\n\t[轮次 1] API 请求 → Claude 回复：\"我需要先看看目录结构\"\n\n\t       → 工具调用：Bash(\"ls -la\")\n\n\t       → 权限检查：Allow（只读命令）\n\n\t       → 执行：返回目录列表\n\n\t       → yield tool_result → UI 显示执行过程\n\n\t    ↓\n\n\t[轮次 2] API 请求（带 ls 结果）→ Claude 回复：\"目录结构如下...\"\n\n\t       → 无工具调用\n\n\t       → yield 最终回复 → UI 显示结果\n\n\t    ↓\n\n\tqueryLoop 退出（return）\n\nfor await...of queryLoop(...) 让 UI 层可以实时消费每一个 yield 出来的事件，这就是你看到的\"流式输出\"效果。AsyncGenerator 把\"多轮迭代 + 流式推送 + 状态管理\"三件事用一个语法糖优雅地合成了。\n给自己项目的启示：你的 Agentic Loop 也应该是状态机，State 不可变，每轮转换可追踪，用 AsyncGenerator 或类似机制做流式推送。不要用回调嵌套，那是调试地狱。\n\n四、上下文管理：三路并行组装 + System Prompt 深解\n\n三路并行组装\n\n每次用户提交消息，CC 会并行构建三路上下文：\n\n\t// REPL.tsx:2768-2789 — 三路并行\n\n\tconst [, , defaultSystemPrompt, baseUserContext, systemContext] = await Promise.all([\n\n\t  checkAndDisableBypassPermissionsIfNeeded(...),\n\n\t  checkAndDisableAutoModeIfNeeded(...),\n\n\t  getSystemPrompt(freshTools, ...),     // ① System Prompt\n\n\t  getUserContext(),                       // ② User Content\n\n\t  getSystemContext()                      // ③ System Content\n\n\t])\n\n三路分工很清晰：\n① System Prompt（buildEffectiveSystemPrompt()）\n\n5 级优先级，从高到低：\n\n优先级\t类型\t触发条件\n0\toverrideSystemPrompt\tloop 模式、特殊场景\n1\tCoordinator prompt\tCOORDINATOR_MODE=1 时替换\n2\tAgent prompt\t当前是自定义 Agent 时替换\n3\tcustomSystemPrompt\t–system-prompt 参数指定\n4\tdefaultSystemPrompt\t默认 CC prompt\n+\tappendSystemPrompt\t始终追加到末尾\n\n② System Content（getSystemContext()）：注入到 system 消息末尾\n\ngitStatus：实时 git 状态（标记为 uncached section，每轮重算）\n\nAgent 工具可用列表 + 每个工具的 whenToUse 描述\n\nMCP server 列表、Skills 列表\n\n③ User Content（getUserContext()）：包装为第一条 user 消息\n\nCLAUDE.md（四层层级：企业 > 用户全局 > 项目 VCS > 本地）\n\n当前日期\n\n特意包装为 user 消息而非 system 消息——这样 CLAUDE.md 可以独立命中 prompt cache\n\nSystem Prompt 静 / 动分界：省钱的关键\n\ngetSystemPrompt() 返回 string[] 数组而不是单一字符串，每个片段可独立缓存：\n\n\t[静态段，全局可缓存]\n\n\t  ├── getSimpleIntroSection()       身份介绍\n\n\t  ├── getSimpleSystemSection()      系统行为规范\n\n\t  ├── getSimpleDoingTasksSection()  任务执行指南\n\n\t  ├── getActionsSection()           操作安全指南\n\n\t  ├── getUsingYourToolsSection()    工具使用指南\n\n\t  ├── getSimpleToneAndStyleSection() 语调风格\n\n\t  └── getOutputEfficiencySection()  输出效率\n\n\t \n\n\tSYSTEM_PROMPT_DYNAMIC_BOUNDARY   ← 分界线\n\n\t \n\n\t[动态段，每轮重算]\n\n\t  ├── session_guidance             Agent 工具、Skills 上下文\n\n\t  ├── memory                       MEMORY.md 内容\n\n\t  └── gitStatus（uncached）        当前 git 状态\n\n静态段跨 session 全局缓存，这不是小优化——每次请求省掉几千个 token，在高频调用场景下节省的成本相当可观。\n\n从 CC 的 System Prompt 中可以学到什么\n\nCC 的 defaultSystemPrompt 实际上就是你我现在用的 CC 版本里的 system prompt（就是这次对话里的 system 消息！）。拆开看，有几个工程细节值得学习：\n\n1. 安全规则用 IMPORTANT 前缀，独立维护\n\n\tIMPORTANT: Assist with authorized security testing...\n\n\tIMPORTANT: You must NEVER generate or guess URLs...\n\n这两条 IMPORTANT 来自独立的 cyberRiskInstruction.ts 文件，由 Safeguards 团队单独维护，修改需要特别审批。工程启示：把安全规则和业务规则分开维护，防止一次重构把安全边界删掉。\n2. 工具使用指南写\"什么时候用什么工具\"，而不是\"工具能做什么\"\n\n大多数人写 system prompt 只告诉模型工具的能力，CC 额外写了使用场景：\n\n\t\"For simple, directed searches use Glob/Grep directly.\n\n\t For broader exploration, use the Explore agent—it's slower,\n\n\t only when a single search isn't enough.\"\n\n这让模型能做更好的工具选择路由决策。\n3. 输出效率指南是专门的一节\n\n\t# Output efficiency\n\n\tGo straight to the point. Try the simplest approach first.\n\n\tLead with the answer or action, not the reasoning.\n\n专门一节告诉模型怎么回复才算\"高效\"。这是 Anthropic 对用户体验的强制约束，写在 prompt 层面而不是模型训练层面——更灵活，可以被 customSystemPrompt 覆盖。\n\n五、Token 管理：3 层降级压缩的完整 Pipeline\n\n触发条件\n\t// autoCompact.ts:62\n\n\tconst AUTOCOMPACT_BUFFER_TOKENS = 13_000\n\n\t \n\n\t// 触发条件：当前消息占用的 token > (model_context_window - 13000)\n\n\tif (currentTokens > contextWindow - AUTOCOMPACT_BUFFER_TOKENS) {\n\n\t  triggerCompaction()\n\n\t}\n\n13,000 的 buffer 是为了给模型留出足够的生成空间，确保压缩完还能继续对话。\n\n完整压缩 Pipeline\n\n压缩不是一个操作，是一个有降级逻辑的 Pipeline：\n\n\t触发压缩\n\n\t    ↓\n\n\tStep 1: MicroCompact（每轮执行，廉价）\n\n\t    → 按配置保留最近 N 轮的消息（默认 10 轮），N 轮之前的 tool result 直接裁剪\n\n\t    → 最长的 message 就是 tool result，裁掉老轮次后 context 长度大幅受控\n\n\t    → 不调 API，不改对话结构\n\n\t    → 实现：src/query.ts:413-426，createMicrocompactBoundaryMessage\n\n\t \n\n\t    ↓ 仍然超出阈值？\n\n\t \n\n\tStep 2: Session Memory Compact（读预生成摘要，无 API 调用）\n\n\t    → 读取 session_memory.md（后台 Agent 预先写好的对话摘要文件）\n\n\t    → getLastSummarizedMessageId() 找到摘要边界\n\n\t    → 保留边界之后的消息 + 摘要内容 → 重组上下文\n\n\t    → 完全不需要调 Claude API\n\n\t    → 实现：src/services/compact/sessionMemoryCompact.ts:514-630\n\n\t \n\n\t    【session_memory.md 何时生成？】\n\n\t    正常对话进行中，每隔 N 次工具调用（toolCallsBetweenUpdates=3）\n\n\t    且 token 增长超过阈值（minimumTokensBetweenUpdate=5000）时，\n\n\t    registerPostSamplingHook 触发 → runForkedAgent() 后台提炼关键信息\n\n\t    → 写入 session_memory.md，记录 lastSummarizedMessageId\n\n\t    （用户无感知，对话照常进行；这里才有 API 调用，但与压缩无关）\n\n\t \n\n\t    关键点：** 预压缩是后台异步完成的，用户完全无感知 **。当对话进行中，token 使用量超过一定比例时，CC 就会异步将当前消息上下文存到磁盘，并同步启动后台压缩。等到真正触发阈值时，从磁盘直接加载已压好的内容，速度极快。\n\n\t \n\n\t    用户的体验差异来自这里：有时压缩一闪而过，有时要等很久——前者是命中了磁盘预压缩，后者是触发了第三层全量 Legacy Compact（需要实时生成大量 output token，就像早期 Cursor 的压缩一样让人等得焦急）。\n\n\t \n\n\t    ↓ 失败？（session_memory.md 不存在 / 为空）\n\n\t \n\n\tStep 3: Legacy Compact（全量摘要，最昂贵）\n\n\t    → 调 Claude API，让模型对历史对话生成摘要\n\n\t    → 追加压缩边界标记（compactBoundary）\n\n\t    → 未来加载时，从边界之后开始，边界前的内容丢弃\n\n\t    → 实现：src/services/compact/autoCompact.ts\n\n\t    → 成本：一次完整的 API 调用（但这是最后手段）\n\n值得注意：Legacy Compact 不是\"自由文本摘要\"——CC 要求模型按结构化 JSON 格式（含用户问题、todo 清单、澄清事项等标准字段）输出压缩结果，确保摘要内容可机械处理、结构一致。\n\nPreserved-tail Relinking：防止突然失忆\n\nLegacy Compact 有一个精妙设计——压缩时不仅保留摘要，还保留一段\"最近活跃消息尾部\"：\n\n\t压缩结果 = [历史摘要] + [compactBoundary 标记] + [最近 N 条活跃消息]\n\n为什么要保留尾部？因为如果你正在中途实现一个功能，压缩后模型只看到\"之前做了什么\"的摘要，但没有\"刚刚在做什么\"的上下文，就会出现\"突然不知道我在干嘛了\"的问题。Preserved-tail 保留了当前工作集，让对话在压缩后仍然连贯。\n用户感受到的\"Claude 忘了\"，通常不是真的遗忘——是边界截断 + 摘要替换 + 尾部保留在尽力维持，只是摘要质量不够精确导致的信息失真。\n\n给自己项目的启示：三层降级设计的核心思想是\"按成本激活\"——能不调 API 就不调，磁盘方案解决了再不行才调模型。你自己的压缩策略也应该有降级层次，而不是一刀切。\n\n六、长期记忆：克制哲学与两条后台通道\n\n\n很多人说 OpenClaw 比 Claude Code 好的一点，是长记忆做得更好。但这个判断不准确——CC 的长记忆能力一点也不差，差的是对普通用户开放程度。\n\n为什么很多人觉得 CC 记忆不行？\n\nCC 没有任何专门用来写记忆的工具或 Skill。它唯一依赖的，是 system prompt 里的一段话，大意是：\n\n你拥有一个持久化的基于文件的记忆系统。你应该随着时间推移持续完善这套记忆系统，让未来的对话能全面了解用户是谁、他们希望如何与你协作……如果用户明确要求你记住某件事，立即将其保存为最合适的类型。\n\n这段 prompt 有两层触发逻辑：\n\n模糊触发：随时间推移主动维护——但这个指令极度模糊，模型遵循度通常不高\n\n确定触发：用户明确要求记住某件事——这是 CC 直接写记忆的唯一可靠触发条件\n\n结论：你必须明示 CC “记住这件事”，它才会主动写记忆。 靠它自行判断，基本不会触发。\n\n克制是设计选择，不是能力缺失\n\nCC 的克制是刻意为之。它的核心场景是代码开发，宁可少记，也不希望把记忆搞乱——一个混乱的记忆库对代码助手来说比没有记忆更糟糕。\n\n相比之下，OpenClaw 的策略是激进写入——“只要能记的，全都记住”。两种哲学各有取舍：CC 追求精准，OpenClaw 追求完整。\n\n机制 1：extractMemories（需环境变量开启，普通用户不可用）\n\n这是 CC 里一个\"藏起来\"的主动记忆机制。开启后，每当模型完成一轮完整的 react loop（stop hook 时机——模型把最终结果返回给用户的那个时点），CC 会把当前的完整 message list fork 出来，交给一个后台 SubAgent 专门做记忆提取：\n\n\t每轮 react 完成（stop hook）\n\n\t  → 将完整 message list fork 给后台 SubAgent（用户无感知）\n\n\t  → SubAgent 从本轮对话中主动提取值得保留的信息\n\n\t  → 写入 CC 的 memory 体系（MEMORY.md 及相关文件）\n\n这样等于每轮对话结束后都会主动扫描是否有值得记的内容，而不是等用户明说。\n代价是：不再克制。自动提取意味着可能记错、记不该记的内容，或记下对后续毫无帮助的东西——这正是这个功能需要手动开关的原因。\n\n机制 2：autoDream（需内部开关，普通用户不可用）\n\nautoDream 是解决 extractMemories\"可能记错\"问题的配套机制——相当于记忆的垃圾回收。\n\n名字来自仿生学类比：人在睡眠时大脑不会停止工作，会把白天的事情过一遍，把需要记的归类记住，把不需要记的\"睡一觉就忘了\"。autoDream 做的是同样的事。\n\n触发条件：每隔约 24 小时，闲时自动运行。每次触发后扫描当前工作空间，4 个阶段完成整合：\n\n\tPhase 1: Orient — 扫描 MEMORY.md + 所有 CLAUDE.md，识别哪些记忆需要整合\n\n\tPhase 2: Gather — 捞取相关上下文，聚合碎片化信息和反复出现的主题\n\n\tPhase 3: Consolidate — 合并同主题条目，去重提炼，覆盖写入 MEMORY.md\n\n\tPhase 4: Prune — 删除过时信息、噪声、冲突条目，保持记忆库精简干净\n\nautoDream 的价值：让工程空间能持久运转而不劣化。没有 GC 的记忆系统，时间长了会充满过时、冲突、重复的信息，最终变得不可用。这对应 Harness 三大支柱里的\"定期垃圾回收\"。\n目前对普通用户不可用，但这个思路值得借鉴——你自己的 Agent 工程也应该有对应的 autoDream 机制。\n\n互斥保护\n\n模型可以直接用 FileWriteTool / FileEditTool 写 MEMORY.md（显式指令时），但模型直写和后台 extractMemories 互斥——两者不能同时写同一文件，防止竞态覆盖。\n\n给自己项目的启示：CC 的记忆设计核心是\"克制 + 定期整合\"——不主动乱记，但用定期 GC 保持记忆质量。对于自己的 Agent 项目，比堆记忆数量更重要的是设计好记忆的清理机制：没有 Prune 的记忆系统会越来越重，最终拖慢而不是增强 Agent 的能力。\n\n七、工具系统：统一接口 + 三层过滤\n\n工具的统一接口\n\nCC 的所有工具都实现同一个泛型接口：\n\n\t// Tool.ts — 核心接口\n\n\tinterface Tool<Input, Output, P extends ToolPermissionContext> {\n\n\t  name: string                    // 工具名（全局唯一）\n\n\t  description: string             // 模型看到的描述（影响路由决策）\n\n\t  inputSchema: ZodSchema<Input>   // 输入校验（Zod）\n\n\t  outputSchema: ZodSchema<Output> // 输出类型\n\n\t  call(input: Input, ctx: ToolUseContext<P>): Promise<ToolResult<Output>>\n\n\t  prompt: string                  // 工具使用指南（写入 System Prompt）\n\n\t  permissionRule?: PermissionRule // 权限规则\n\n\t}\n\n注意 ToolUseContext<P> 里的 P 是 ToolPermissionContext——权限上下文是注入给工具的，工具本身不主动引用权限模块。这是依赖注入模式：权限由 query.ts 构建，再通过 context 传递给每个工具调用，工具和权限系统完全解耦。\n\n三层过滤：从 52 个工具到实际可用集\n\tgetAllBaseTools()    ← 所有内置工具（52 个，含实验性工具）\n\n\t    ↓\n\n\tFeature Flag 过滤：\n\n\t  某些工具需要 feature flag 开启才能加载\n\n\t  例如：KAIROS 相关工具、Coordinator 专用工具\n\n\t    ↓\n\n\t权限模式过滤：\n\n\t  REPL_ONLY_TOOLS：只在 REPL 模式可用（不能给 Agent 用）\n\n\t  ALL_AGENT_DISALLOWED_TOOLS：Agent 禁用的工具集\n\n\t  ASYNC_AGENT_ALLOWED_TOOLS：后台 Agent 可用工具\n\n\t  COORDINATOR_MODE_ALLOWED_TOOLS：Coordinator 可用工具\n\n\t    ↓\n\n\tDeny 规则过滤：\n\n\t  用户 / 项目 / 企业策略的 deny 规则\n\n\t    ↓\n\n\tgetTools()          ← 当前上下文的实际可用工具集\n\n\t \n\n\t---\n八、工具能力层：基础工具清单 + MCP + Skills\n基础内置工具完整列表\n\nCC 的内置工具按功能分为以下几组：\n\n文件系统工具\n\n工具名\t说明\nRead\t读取文件内容，支持分页（offset/limit）\nWrite\t写入整个文件（新建或覆盖）\nEdit\t精确字符串替换，比 Write 更安全\nGlob\t文件模式匹配，按修改时间排序\nGrep\t基于 ripgrep 的内容搜索，支持正则\nLS\t列出目录文件\nNotebookRead\t读取 Jupyter Notebook 含输出\nNotebookEdit\t修改 Notebook Cell\n\nShell 执行\n\n工具名\t说明\nBash\t执行 shell 命令，支持前 / 后台、超时、沙箱\n\nWeb 工具\n\n工具名\t说明\nWebFetch\t抓取网页内容（含权限规则）\nWebSearch\t调用搜索引擎\n\nAgent 工具\n\n工具名\t说明\nAgent\t派生子 Agent（5 种模式的统一入口）\nSendMessage\t向 Swarm teammate 发消息\nTaskOutput\t读取后台 Agent 的输出\nTaskStop\t终止后台 Agent\n\n任务管理\n\n工具名\t说明\nTodoWrite\t写入 / 更新任务列表\nTodoRead\t读取任务列表（某些模式下）\nCronCreate\t创建定时任务\nCronDelete\t删除定时任务\nCronList\t列出定时任务\n\n工作模式\n\n工具名\t说明\nEnterPlanMode\t进入 Plan 模式（只规划不执行）\nExitPlanMode\t退出 Plan 模式\nEnterWorktree\t进入 git worktree 隔离环境\nExitWorktree\t退出 worktree\n\n交互工具\n\n工具名\t说明\nAskUserQuestion\t向用户提出结构化选择题\nSkill\t调用已注册的 Skill\nRemoteTrigger\t触发远程定时任务\n\n每个工具都有独立的prompt.ts，这是一个竞争式路由设计——模型读完每个工具的描述后，自主决定用哪个。工具描述的质量直接影响模型的工具选择质量。\n\nMCP 集成\n\nMCP 工具通过 @modelcontextprotocol/sdk 动态注入，有一个特殊的设计：模板工具覆写。\n\n如果 MCP 工具和内置工具同名，MCP 工具可以覆盖内置工具的行为。这给了第三方极大的扩展空间。但有一条安全防线：沙箱始终阻止写入.claude/skills，这和保护 agents 定义文件是同等级别的防护，防止恶意 MCP server 注入自定义 Agent 定义。\n\nSkills 系统\n\nSkills 是一种\"可复用的 sub-prompt 包\"：\n\n\t6 种来源（按优先级）：\n\n\tbundled > plugin > user > project > flag > managed\n\n\t \n\n\t运行时行为：\n\n\t调用 Skill 工具 → 展开为 sub-prompt → 注入当前对话\n\nSkills 不是工具，是 prompt 的组合方式。每个 Skill 就是一段结构化的指令，调用时展开插入对话，让模型\"临时掌握\"某种专项能力。\n\n九、Agent 协作：从场景出发选择 5 种模式 %0A%0A\n\n在了解 5 种模式之前，先建立一个关键的对比框架：Coordinator 是做减法，Swarm/Team 是做加法。\n\nCC 整体在工程上一直在做减法——收缩工具集，克制功能扩张，激发模型本身的能力。Coordinator 模式把这个原则推到极限：不只是限制 Worker 的工具，连主 Agent 的工具也全部去掉——它只能编排，连文件都不能碰。\n\nSwarm/Team 相反，是在一个 Agent 基础上做加法：多个数字员工，各有独立 workspace、记忆、skill，通过邮箱系统协作。\n\n不同设计哲学，适用不同场景。\n\n很多人看到 CC 的 Agent 协作是从代码变量切入的——team_name、COORDINATOR_MODE、FORK_SUBAGENT……这些变量对开发者有意义，但对选择使用哪种模式没有直接帮助。\n\n我换一个视角：根据你的场景需求来选。\n\n场景一：我有 3 个独立的后台任务，想同时跑\n\n→ Fork Agent 模式\n\n派生 3 个 Fork child，每个继承完整上下文\n\n强制后台异步执行，主 Agent 不阻塞\n\nPrompt Cache 最大化（三个 fork 共享父 prompt 缓存）\n\n适合：并行研究、批量处理、成本敏感场景\n\n场景二：我需要一个专项能力的 Agent（探索代码库、写计划、验证实现）\n\n→ Built-in Sub-type Agent\n\n选 Explore（haiku，只读，快且便宜）\n\n选 Plan（继承模型，返回分步计划）\n\n选 Verification（自动验证，禁止修改）\n\n适合：专项能力分工，模型选型精细化\n\n场景三：我要把一个大任务拆分给多个 Agent 执行，需要编排\n\n→ Coordinator 模式\n\nCoordinator 只编排不执行，主 Coordinator Agent 没有任何执行工具（不只是限制，是真的没有工具）\n\nWorker 子 Agent 被严格限制，不能再 fork 出其他 Agent\n\n并行任务的 Worker 只有 Read + Bash（只读，无文件编辑权限），串行实现任务的 Worker 才有 Edit\n\ntask-notification XML 结构化汇报（机械解析，不依赖 LLM 理解）\n\n并发 + 串行策略：研究类并行，实现类串行（避免文件冲突）\n\n适合：大型任务编排、多步骤流程\n\n场景四：我需要多个 Agent 长期协作，每人有自己的上下文和\"工作台\"\n\n→ Swarm/Team 模式\n\n每个 Teammate 在独立终端窗格（iTerm2/Tmux）或进程里运行\n\nMailbox/Actor 通信：SendMessage 点对点或广播\n\n适合：长期团队协作、复杂的多角色交互\n\n场景五：我就是需要一个通用的 Agent 帮我完成任务\n\n→ General Purpose Agent（默认）\n\n全功能，全工具集\n\n不需要任何特殊配置\n\n适合：通用任务，没有特殊分工需求\n\n异步执行：何时后台运行？\n\n以下 6 种条件，ANY 满足即进入后台异步模式：\n\n\trun_in_background = true     在 Agent 调用时显式指定\n\n\tagent.background = true      Agent 定义文件中配置\n\n\tisCoordinatorMode()          Coordinator 下的 Workers\n\n\tisForkSubagentEnabled()      Fork 模式\n\n\tkairosEnabled()              KAIROS 持续代理模式\n\n\tproactiveModule.isActive()   主动触发模式\n\n一个选型心智模型：Coordinator 是减法——限制越多，专注度越高，适合有明确边界的大任务分解；Swarm/Team 是加法——能力越堆越丰富，适合需要长期积累和协作的数字团队。其余三种（Fork、Sub-type、General Purpose）则是在主流单 Agent 模式上的功能延伸，先掌握这两个极端，中间的选择自然清晰。\n\n十、后台任务：task-notification XML 让 Agent 协作可观测\n\n为什么要结构化汇报？\n\n当你有多个后台 Agent 在并行跑时，你需要知道：哪个完成了？结果是什么？有没有出错？\n\n最直觉的做法是让 Agent 用自然语言汇报，然后让 Coordinator 解析。但这依赖 LLM 理解，引入了不确定性。\n\nCC 的选择是结构化 XML——机械解析，零 LLM 依赖：\n\n\t<!-- 后台 Agent 完成时发送给 Coordinator -->\n\n\t<task-notification>\n\n\t  <task-id>agent_abc123</task-id>\n\n\t  <status>completed</status>   <!-- completed | failed | killed -->\n\n\t  <summary> 分析完成，发现 3 处 SQL 注入风险 </summary>\n\n\t  <result>\n\n\t    文件 api/users.py:47 存在未参数化的 SQL 查询...\n\n\t  </result>\n\n\t  <usage>\n\n\t    <total_tokens>4821</total_tokens>\n\n\t  </usage>\n\n\t</task-notification>\n\nCoordinator 用标准 XML 解析器处理这个输出，不需要 Claude 来\"理解\"结果是否成功——<status>completed</status> 就是完成。\n\n生命周期管理\n\t主 Agent / Coordinator\n\n\t    ↓ Agent({ run_in_background: true, ... })\n\n\t    ↓ 返回 agentId（立即）\n\n\t \n\n\t后台 Agent 运行中...\n\n\t    ↓ TaskOutput(agentId)  ← 随时查看中间输出\n\n\t    ↓ TaskStop(agentId)    ← 需要时主动终止\n\n\t \n\n\t后台 Agent 完成时：\n\n\t    ↓ Stop Hook 触发\n\n\t    ↓ 发送 <task-notification> XML\n\n\t    ↓ 主 Agent 收到并处理\n\n\t \n\n\t---\n十一、Fork vs 通用 Sub-agent：缓存命中率的省钱数学\n\nbyte-identical 是关键\n\nPrompt Cache 的命中逻辑很简单：如果你的请求 prompt 和上一次一个字节都不差，就命中缓存，省掉 prompt 的处理费用。\n\nFork Agent 为什么能最大化缓存命中？因为它直接继承父 Agent 的 renderedSystemPrompt——不是重新生成一遍，而是字面上同一份数据结构的引用（byte-exact）。\n\n对比：\n\n维度\tFork Agent\t通用 Sub-agent\nSystem Prompt\t继承父 renderedSystemPrompt（byte-exact）\t重新生成（即使内容相同，因动态字段不同也可能 miss）\n对话历史\t继承父全部消息\t空白起点\n工具集\t[‘*’]，与父完全一致\t由 agent 定义决定\nPrompt Cache\t最大化命中\t独立 cache，每次可能 miss\n执行方式\t强制后台异步\t可同步可异步\n递归保护\tFORK_BOILERPLATE_TAG 阻止 fork 再 fork\t无限制\nFork 的消息构建方式\n\nFork child 收到的\"消息\"不是普通的 user message，是一个特殊拼接：\n\n\t父 history（全部消息）\n\n\t    +\n\n\t父最后一条 assistant 消息（保留所有 tool_use 块和 thinking）\n\n\t    +\n\n\t每个 tool_use 的占位结果（\"Fork started — processing in background\"）\n\n\t    +\n\n\t<fork-boilerplate> 你是 fork child，不要再 fork，直接执行 </fork-boilerplate>\n\n\t    +\n\n\t📌 {实际要执行的指令}\n\n这个拼接结构确保：占位结果让 tool_use 有对应的 tool_result（Claude API 要求），boilerplate 防止无限递归，实际指令是最后追加的新内容。\n什么时候用 Fork，什么时候用通用 Sub-agent？\n\n需要并行执行多个任务、任务内容不同但背景相同 → Fork\n\n需要独立的 System Prompt、专项角色、权限隔离 → 通用 Sub-agent\n\n十二、内置专项 Agent：正确的模型选型示范\n\nCC 的 5 个内置专项 Agent，每个都是\"极简但足够\"的设计：\n\nAgent\t模型\t工具集\t关键设计\nExplore\tHaiku（外部）/ inherit（内部）\t只读（无 Edit/Write）\tomitClaudeMd: true（跳过 CLAUDE.md，节省 token）；EXPLORE_AGENT_MIN_QUERIES 防止查太少就汇报\nPlan\tinherit\t只读\t返回分步计划，识别关键文件，评估架构权衡——只规划不执行\nclaude-code-guide\tHaiku\tWebFetch + 读类\t启动时注入用户 skills/agents/MCP 配置；知道官方文档 map URL\nVerification\tinherit\tdontAsk（拒绝需权限操作）\tPASS/FAIL/PARTIAL；禁止修改文件；主 Agent 不能自我验证\nstatusline-setup\tSonnet\tRead + Edit\t专门负责配置终端状态栏\n\n模型选型逻辑：Explore 和 Guide 用 Haiku，因为它们的任务是搜索和读取，不需要高质量推理，便宜且快。Verification 用 inherit（继承主模型），因为\"以破坏性思维验证实现\"需要足够的推理能力。\n\n这是 CC 给出的模型选型原则：任务越专用，模型应该越小——只要能完成任务。\n\n十三、Coordinator 模式：举一个具体例子\n\n\nCoordinator 的概念说起来容易理解，但实际运作方式很多人没想清楚。我们用一个具体例子来走。\n\n例子：大型 Python 项目的安全审计\n\n任务：对一个 5 万行的 Python 项目做全量安全审计，找出 SQL 注入、硬编码密钥、SSRF 漏洞。\n\n没有 Coordinator 的做法：\n\n主 Agent 一个个文件扫描，处理完才能分析下一个，时间 O(n)，上下文窗口还容易爆。\n\nCoordinator 的做法：\n\n\tCoordinator（不直接操作文件）\n\n\t    │\n\n\t    ├── 分析任务 → 拆解为 3 个并行研究任务\n\n\t    │\n\n\t    ├──▶ Worker1（并行）：扫描 SQL 注入\n\n\t    │    工具集：Bash + Read（只读）\n\n\t    │    任务：grep 所有 SQL 字符串拼接，找出未参数化查询\n\n\t    │    完成后发送 <task-notification>\n\n\t    │\n\n\t    ├──▶ Worker2（并行）：扫描硬编码密钥\n\n\t    │    工具集：Bash + Read（只读）\n\n\t    │    任务：搜索 API_KEY / password / secret 等关键词\n\n\t    │    完成后发送 <task-notification>\n\n\t    │\n\n\t    └──▶ Worker3（并行）：扫描 SSRF 漏洞\n\n\t         工具集：Bash + Read（只读）\n\n\t         任务：搜索所有 HTTP 请求构建，检查 URL 是否来自用户输入\n\n\t         完成后发送 <task-notification>\n\n\t \n\n\t[3 个 Worker 并行运行]\n\n\t    ↓\n\n\tCoordinator 收到 3 份 <task-notification> XML：\n\n\t  Worker1: completed - 发现 api/users.py:47 存在 SQL 注入\n\n\t  Worker2: completed - 发现 config.py:12 存在硬编码 API KEY\n\n\t  Worker3: completed - 发现 proxy/fetch.py:88 存在 SSRF 风险\n\n\t    ↓\n\n\tCoordinator 汇总 → 生成最终审计报告（串行，综合 3 份结果）\n\n关键点：\n\nCoordinator 自己没有执行任何文件操作——它只做调度和汇总\n\nWorker 工具集受限（只读 Bash + Read），不能修改文件（审计时不应修改）\n\n3 个 Worker 并行运行，总时间接近 O(1) 而不是 O(n)\n\ntask-notification XML 是结构化的，Coordinator 机械解析，不依赖 LLM 理解\n\nCoordinator 模式的适用场景：任务可以拆解为多个独立子任务、子任务结果需要汇总、对执行时间有要求。不适合：任务有强依赖关系（必须串行）、任务太简单（overhead 不值得）。\n\n十四、Swarm/Team：Mailbox/Actor 模型\n\n\n在讲 Team 模式之前，先区分一个核心概念：Subagent ≠ 数字员工。\n\n不论是普通 Subagent、Fork Agent 还是 Coordinator 的 Worker，本质上都是\"依附于主 Agent 的任务执行单元\"——没有自己的记忆，没有自己的技能积累，任务完成即消失。它们服务于主 Agent 的一次性目标，本质上是主 Agent 的临时执行单元。\n\nTeam 模式才是真正意义上的\"数字员工\"：每个 Teammate 有自己的 workspace、自己的长期记忆、自己安装的 skill，实际上是一个独立运行的 Claude Code 实例。他们之间的协作不是通过共享上下文，而是通过通讯总线：有公共广播区域（所有成员可见）和点对点私聊。\n\n这才是 Harness 时代真正意义上的 Multi-Agent 协作。\n\n和 Coordinator 的区别\n\tCoordinator\tSwarm/Team\nWorker 生命周期\t短期（一个任务结束）\t长期（团队成员持续存在）\n执行环境\t进程内异步\t独立终端窗格（视觉分离）\n通信方式\ttask-notification XML\tSendMessage 邮箱 /Actor\n适合场景\t大任务编排\t长期协作团队\n多终端后端自适应\n\t检测运行环境：\n\n\t    ↓\n\n\t在 macOS + iTerm2 + it2 CLI 可用？\n\n\t    → ITermBackend：split pane，图形化多窗格\n\n\t \n\n\t在 tmux session 中？\n\n\t    → TmuxBackend：tmux pane，终端复用\n\n\t \n\n\t都不满足？\n\n\t    → InProcessBackend：降级，进程内异步（显示 banner 提示）\n\n启用方式（外部用户）：\n\n\tCLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 claude\n\n\t# 或\n\n\tclaude --agent-teams\nMailbox/Actor 通信\n\n每个 Teammate 有独立的邮箱目录（mailbox），通过 SendMessage 收发消息：\n\n\t// 点对点\n\n\tSendMessage({ to: '@researcher', message: '请分析一下这个错误日志' })\n\n\t \n\n\t// 广播\n\n\tSendMessage({ to: '*', message: '前端任务完成，请后端同步状态' })\n\nTeam Lead 完成 Teammate 创建后，自己的角色转变为\"调度者 + 审批者\"。Teammate 完成任务后通过 Stop Hook 发送 idle 通知。\n\nPlan Mode 审批机制\n\n当设置 CLAUDE_CODE_PLAN_MODE_REQUIRED=1 时，Teammate 在开始实现前必须获得 Leader 批准：\n\n\tTeammate 制定计划\n\n\t    ↓ ExitPlanMode 工具（申请批准）\n\n\t    ↓ SendMessage 给 Leader：\"我的计划是 A → B → C\"\n\n\t \n\n\tLeader 审批（通过 / 拒绝 / 修改）\n\n\t    ↓ 批准：Teammate 开始执行\n\n\t    ↓ 拒绝：Teammate 返回修改计划\n\n这个机制确保高风险操作在执行前经过人工或上级 Agent 的审批。\n给自己项目的启示：Team 模式适合长期、稳定的多角色协作场景——每个角色有固定的职责、需要积累专属记忆和技能。如果任务是一次性的（单次完成即解散），用 Subagent 或 Coordinator 更合适，Team 模式的配置成本不值得。评估核心问题是：这些 Agent 之间需要长期记住彼此的工作内容吗？ 如果是，Team 模式；如果不是，用更轻量的协作方式。\n\n十五、安全架构：6 大原则贯穿始终\n\n\nCC 的安全设计有 6 个核心原则，值得每个做 Agent 的工程师背下来：\n\n1. Defense in Depth（纵深防御）\n\n不依赖单一防线。权限检查失效了，还有沙箱；沙箱绕过了，还有审计日志。每一层独立失效，不会导致全线崩溃。\n\n2. Least Privilege（最小权限）\n\nAgent 只有完成任务所需的最小工具集。Explore Agent 没有 Edit/Write，Verification Agent 拒绝所有文件修改——权限最小化，爆炸半径最小化。\n\n3. Secure by Default（安全默认）\n\n默认拒绝，需要时显式授权。不是\"默认允许然后拦截危险操作\"，而是\"默认拒绝然后放行安全操作\"。\n\n4. Zero Trust on Model Output（零信任模型输出）\n\nAI 说\"我要执行 rm -rf\"，CC 不相信它被授权——仍然走权限检查流程。模型的判断不等于系统的授权。这一条是最重要的。\n\n5. TOCTOU Defense（时间竞争防御）\n\n检查时刻（Time of Check）和使用时刻（Time of Use）之间的不一致会被攻击。CC 在沙箱层防止这种攻击（例如防 Git fsmonitor 逃逸）。\n\n6. Enterprise Controllability（企业可控性）\n\n企业可以通过 policySettings 层集中控制所有 Agent 的行为。这是面向 B 端场景的必备能力。\n\n十六、权限机制：Deny > Ask > Allow\n权限模式（6 种）\n\t// PermissionMode.ts\n\n\t// 概念示意，非真实代码\n\n\tconst PERMISSION_MODE_CONFIG = {\n\n\t  default:            // 每次工具调用需要用户确认\n\n\t  plan:               // 只生成计划，不执行（ExitPlanMode 申请执行权）\n\n\t  acceptEdits:        // 自动允许文件编辑\n\n\t  bypassPermissions:  // 跳过所有检查（红色警告，危险）\n\n\t  dontAsk:            // 自动拒绝需要权限的操作（用于只读 Agent）\n\n\t  auto:               // 仅 USER_TYPE=ant 可用，YOLO 分类器\n\n\t}\n权限决策流（从上往下，第一个命中即返回）\n\t1. Deny 规则检查 → 命中 → 直接拒绝 ❌\n\n\t2. Ask 规则检查  → 命中 → 弹出确认对话框 ❓\n\n\t3. Allow 规则检查 → 命中 → 自动放行 ✅\n\n\t4. 权限模式默认值 → 按当前模式决策\n\n\t5. YOLO 分类器（仅 auto 模式）→ Haiku 快速判断\n\n规则优先级（高 → 低）：\n\n\t企业策略（policySettings）\n\n\t  > 用户设置（user）\n\n\t  > 项目设置（project）\n\n\t  > 本地设置（local）\n\n\t  > CLI 参数（cliArg）\n\n\t  > 命令定义（command）\n\n\t  > 会话级（session）\n拒绝跟踪（denialTracking.ts）\n\t// 防止 AI 反复尝试被拒绝的操作\n\n\tconst DENIAL_LIMITS = {\n\n\t  maxConsecutive: 3,   // 连续 3 次拒绝 → 强制返回交互确认\n\n\t  maxTotal: 20,        // 累计 20 次拒绝 → 同上\n\n\t}\n\n没有这个机制，一个设计不良的 prompt 可能让 AI 不断重试被拒绝的操作，造成无谓的 API 消耗和用户体验问题。\n\n十七、沙箱：OS 级隔离\n\n\n为什么 CC 在编码场景很少默认启用沙箱？\n\n核心矛盾在于网络访问：编码场景下常需要运行 npm install、pip install 等依赖安装命令，这些命令需要访问外部网络。沙箱的网络访问严格限制（只允许 WebFetch 权限规则里的白名单域名）会让这类命令直接失败。文件系统写入方面相对宽松（工作目录和临时目录可写），但系统调用层面的限制同样可能导致某些构建工具行为异常。\n\n沙箱的真正优势在于网络层拦截：如果 Agent 写了 Python 代码然后执行 requests.get(url)，bash 层的规则拦不住（命令本身是合法的），但沙箱层可以在 OS 级别阻断这次网络请求。这是沙箱相比 bash 规则的核心价值——对于需要严格网络出口控制的场景，沙箱是必要的。\n\n底层技术\n\nLinux：bubblewrap（bwrap）——Linux 容器沙箱工具\n\nmacOS：sandbox-exec（Seatbelt）——macOS 原生沙箱框架\n\n实现文件：utils/sandbox/sandbox-adapter.ts（封装 @anthropic-ai/sandbox-runtime）\n\n5 项核心安全转换（convertToSandboxRuntimeConfig）\n\t① 从 WebFetch 权限规则提取网络域名白名单\n\n\t   只有显式授权的域名才能访问，其他全拒\n\n\t \n\n\t② 始终允许写入：当前工作目录 + 临时目录\n\n\t   Agent 需要能在工作区操作文件\n\n\t \n\n\t③ 始终拒绝写入：配置文件（~/.config/... 等）\n\n\t   防止 Agent 修改系统配置，这是沙箱逃逸的常见路径\n\n\t \n\n\t④ 阻止写入 .claude/skills\n\n\t   与 agents 定义文件同等级别的保护\n\n\t   防止恶意 MCP server 注入自定义 Agent 定义\n\n\t \n\n\t⑤ 防裸 Git 仓库攻击（core.fsmonitor 沙箱逃逸）\n\n\t   攻击路径：在工作目录放恶意 .git/config\n\n\t   → 触发 core.fsmonitor 钩子执行任意命令\n\n\t   CC 直接在沙箱层阻断这条路\n\nfailIfUnavailable: true 意味着沙箱不可用时 CC 会拒绝启动，而不是降级为无保护模式运行。\n\n十八、提示注入防控：4 层纵深防御\n\n\n安全没有一招鲜——没有一个安全系统能拦住所有风险。CC 的做法是：有什么攻击路径，就针对性地补什么。以下 4 层防御，每一层对应一类具体的攻击场景。\n\n提示注入的本质威胁：AI 被诱导执行恶意命令 → 通过 Shell 扩展（如 ${ANTHROPIC_API_KEY}）泄露敏感变量，或通过污染的 Skill 文件接管 Agent 行为。CC 的防御全部在代码层面，不依赖模型判断。\n\n层 1：子进程环境变量清洁（utils/subprocessEnv.ts）\n\n在 CI/ 后台环境中，执行 Bash 命令前自动清理子进程环境变量：\n\n\t清理范围：\n\n\t· Anthropic 认证凭据：ANTHROPIC_API_KEY、CLAUDE_CODE_OAUTH_TOKEN、ANTHROPIC_AUTH_TOKEN 等\n\n\t· OTEL 导出器 Headers（携带 Bearer token）\n\n\t· 云服务凭据：AWS_SECRET_ACCESS_KEY、AWS_SESSION_TOKEN、GOOGLE_APPLICATION_CREDENTIALS、AZURE_CLIENT_SECRET\n\n\t· GitHub Actions OIDC：ACTIONS_ID_TOKEN_REQUEST_TOKEN/URL（可铸造安装令牌 → 仓库接管）\n\n\t· GitHub Actions 缓存：ACTIONS_RUNTIME_TOKEN/URL（缓存投毒 → 供应链攻击）\n\n攻击场景：注入攻击者在文件 / 网页中埋入 echo ${ANTHROPIC_API_KEY} → AI 执行 Bash → 密钥泄露。子进程清洁确保即使 AI 被诱导，敏感变量在子进程中根本不存在。\n\n层 2：Bundled Skills 防篡改（每进程随机 nonce）\n\n攻击路径：本地攻击者预创建 .claude/skills/ 目录 → Claude 读取污染的 Skill → 提示注入。\n\n防御：每次进程启动生成随机 nonce，Skills 目录路径包含 nonce，使路径不可预测，预创建攻击无效。\n\n层 3：路径遍历防御（normalize() 规范化）\n\n文件系统权限检查在多处调用 normalize() 处理路径，.. 段的遍历绕过被规范化后与权限白名单重新比对，路径逃逸在到达实际 FS 操作之前被拦截。\n\n层 4：元数据安全类型分析（_PROTO_ 前缀剥离）\n\n使用类型系统强制验证：_PROTO_ 前缀字段在序列化时被自动剥离，防止内部元数据泄露到通用存储或外部 API 调用中。\n\n设计共性：4 层防御全部是确定性代码逻辑（类型系统、正则、nonce、env 清理），没有依赖 LLM 判断——这才是真正可信的安全层。\n\n十九、可观测性：双轨上报 + 全链路审计\n\n双轨遥测\n\nCC 同时维护两套上报：\n\nStatsig（业务分析）：\n\n功能使用统计（哪个工具被调用最多）\n\nA/B 测试分组（GrowthBook 功能门控）\n\nFeature Flag 状态上报\n\nOpenTelemetry（技术链路）：\n\n分布式追踪（每次 Agent 调用有 trace_id）\n\n性能监控（工具执行耗时、API 延迟）\n\nDatadog 可选集成\n\n权限决策日志（permissionLogging.ts）\n\n每次权限决策（Allow 或 Deny）都有结构化记录：\n\n\t// permissionLogging.ts\n\n\tlogPermissionDecision({\n\n\t  source: 'rule',           // classifier | hook | rule | sandboxOverride | mode\n\n\t  toolName: 'BashTool',\n\n\t  input: 'git commit -m ...',\n\n\t  decision: 'ALLOW',\n\n\t  reason: 'matches allow rule: git commit'\n\n\t})\n\n\t// fan-out: Statsig analytics + OTel telemetry + code-edit metrics\n\n为什么要记录决策来源（source）？ 当出现安全事件时，你需要快速定位是哪层防线触发的——是规则？是沙箱覆盖？是权限模式？结构化的 source 字段让根因分析变得机械可查。\n\n成本双轨追踪\n\ttoken 级精确计数：\n\n\t  每次 API 响应包含 usage: { input_tokens, output_tokens, cache_read_tokens }\n\n\t  query.ts 精确累加\n\n\t \n\n\tsession 级累计：\n\n\t  REPL 状态栏实时显示当前 session 消耗\n\n\t  上次 session 费用在启动时上报（setup.ts）\n\nClaude 自述（被某 X.com 帖子挖出）：“大部分工程为降成本”——这不是玩笑，双轨成本追踪是这个工程哲学的直接体现。\n\n二十、总结：5 个可直接复用的工程模式\n\n\n今天拆了这么多，最后帮大家提炼 5 个可以直接搬到自己项目里的工程模式：\n\n① AsyncGenerator 状态机 → 你的 Agentic Loop\n\n\tasync function* myAgentLoop(state: State) {\n\n\t  while (true) {\n\n\t    const response = await callModel(state.messages)\n\n\t    yield response  // 实时推送给 UI\n\n\t    if (!response.toolCalls.length) return\n\n\t    const results = await executeTools(response.toolCalls)\n\n\t    state = next(state, 'tool_results', { messages: [...state.messages, ...results] })\n\n\t  }\n\n\t}\n\n不可变 State，每轮纯函数转换，AsyncGenerator 流式推送。\n② 三路上下文 + 静 / 动分界 → 你的 System Prompt 工程\n\n把 System Prompt 拆成 string[]，明确哪些段静态（可缓存），哪些段动态（每轮重算）。静态段跨 session 缓存，token 成本线性下降。\n\n③ MEMORY.md 索引模式 → 你的长期记忆\n\n不需要向量数据库。一个结构化的纯文本索引文件 + Stop Hook 触发的主动整合，足以给 Agent 提供工程级的跨 session 记忆。\n\n④ Fork byte-identical → 你的成本优化\n\n需要并行子 Agent 时，让每个子 Agent 继承父 prompt（byte-exact），而不是重新生成。Prompt Cache 命中率接近 100%，并行 N 个子任务的 prompt 开销 ≈ 1 个单任务。\n\n⑤ 多层权限决策链 + 拒绝跟踪 → 你的安全管控\n\n工具不直接引用权限模块——PermissionContext 由上层注入。Deny > Ask > Allow 决策链，加上拒绝跟踪防止 AI 无限重试，这是商业级 Agent 安全管控的最小可行方案。\n\n二十一、未竟之问：我们拿到的只是一半答案\n\n今天讲的是 CC 的运行态 Harness——CC 在运行时长什么样，每个模块怎么工作。\n\n但还有另一半我们没看到：构建态 Harness——CC 是怎么被造出来的。\n\n这是下一个值得系统研究的领域：\n\n待探索\t已知线索\t核心问题\n开发工作流\t代码有大量 AI 生成迹象；内部代号 Capybara/Numbat\tAnthropic 用 CC 开发 CC 到什么程度？自举闭环怎么做的？\nEval 评估体系\tVerification Agent 在 A/B 测试；Statsig 基础设施完整\t模型行为的测试套件长什么样？如何防止\"测试通过但生产挂\"？\nPrompt 工程流水线\tcyberRiskInstruction.ts 需特别审批\t生产级 Prompt 如何版本管理、评审、灰度发布？\nSafety & Red-teaming\tANTI_DISTILLATION 存在，red-team 流程不可见\t商业 Agent 的 red-team 标准是什么？怎么测？\n\nCC 是 Harness 的一个版本的答案，但 Harness 的故事还没有结束。\n\n终极问题是：如何用 Agent 来构建更好的 Agent？\n\n这不是哲学问题，是下一代 AI 工程的核心工程问题。",
+  "extractedAt": "2026-06-02T02:21:58.937Z"
+}

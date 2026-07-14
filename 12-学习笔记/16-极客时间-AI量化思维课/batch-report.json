@@ -1,0 +1,15 @@
+{
+  "ok": 30,
+  "fail": 2,
+  "validated": 3,
+  "failedArticles": [
+    {
+      "id": "944796",
+      "reason": "Node is detached from document"
+    },
+    {
+      "id": "952983",
+      "reason": "paywall"
+    }
+  ]
+}

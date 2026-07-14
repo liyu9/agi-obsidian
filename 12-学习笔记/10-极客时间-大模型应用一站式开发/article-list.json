@@ -1,0 +1,176 @@
+[
+  {
+    "id": "923498",
+    "title": "开篇词｜从对话到陪伴：大模型应用开发的全景实战课",
+    "mdFileName": "开篇词｜从对话到陪伴：大模型应用开发的全景实战课.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\00-开篇词"
+  },
+  {
+    "id": "923514",
+    "title": "01｜蓝图构建：大模型应用开发全景图",
+    "mdFileName": "01｜蓝图构建：大模型应用开发全景图.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\01-蓝图构建"
+  },
+  {
+    "id": "923839",
+    "title": "02｜场景选择：为什么选择情感聊天切入？",
+    "mdFileName": "02｜场景选择：为什么选择情感聊天切入？.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\02-场景选择"
+  },
+  {
+    "id": "924410",
+    "title": "03｜架构与选型：如何从0到1构建AI情感伙伴？",
+    "mdFileName": "03｜架构与选型：如何从0到1构建AI情感伙伴？.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\03-架构与选型"
+  },
+  {
+    "id": "925227",
+    "title": "04｜\"黑箱\"揭秘：Transformer架构与文本生成机制",
+    "mdFileName": "04｜_黑箱_揭秘：Transformer架构与文本生成机制.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\04-黑箱揭秘"
+  },
+  {
+    "id": "926037",
+    "title": "05｜Prompt工程入门：如何让大模型精准理解你的情感聊天需求",
+    "mdFileName": "05｜Prompt工程入门：如何让大模型精准理解你的情感聊天需求.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\05-Prompt工程入门"
+  },
+  {
+    "id": "926460",
+    "title": "06｜上下文管理技巧：打造连贯自然的情感聊天对话体验",
+    "mdFileName": "06｜上下文管理技巧：打造连贯自然的情感聊天对话体验.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\06-上下文管理技巧"
+  },
+  {
+    "id": "926955",
+    "title": "07｜从\"对话机器\"到\"陪伴伙伴\"：用Agent架构重塑情感聊天机器人的智能边界",
+    "mdFileName": "07｜从_对话机器_到_陪伴伙伴_：用Agent架构重塑情感聊天机器人的智能边界.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\07-Agent架构"
+  },
+  {
+    "id": "928089",
+    "title": "08｜检索增强生成：让大模型\"言之有据\"",
+    "mdFileName": "08｜检索增强生成：让大模型_言之有据_.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\08-检索增强生成"
+  },
+  {
+    "id": "928235",
+    "title": "09｜开发环境搭建：大模型应用项目初始化",
+    "mdFileName": "09｜开发环境搭建：大模型应用项目初始化.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\09-开发环境搭建"
+  },
+  {
+    "id": "928987",
+    "title": "10｜向量数据库入门：为情感聊天机器人注入长期记忆",
+    "mdFileName": "10｜向量数据库入门：为情感聊天机器人注入长期记忆.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\10-向量数据库入门"
+  },
+  {
+    "id": "929589",
+    "title": "11｜核心功能开发1：用户输入处理与情感意图识别",
+    "mdFileName": "11｜核心功能开发1：用户输入处理与情感意图识别.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\11-核心功能开发1"
+  },
+  {
+    "id": "930200",
+    "title": "12｜核心功能开发2：大模型响应生成与情感匹配优化",
+    "mdFileName": "12｜核心功能开发2：大模型响应生成与情感匹配优化.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\12-核心功能开发2"
+  },
+  {
+    "id": "931918",
+    "title": "13｜界面设计入门：Python+React搭建情感聊天可视化界面",
+    "mdFileName": "13｜界面设计入门：Python+React搭建情感聊天可视化界面.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\13-界面设计入门"
+  },
+  {
+    "id": "932431",
+    "title": "14｜情感分析集成：让大模型读懂用户情绪并给出适配回复",
+    "mdFileName": "14｜情感分析集成：让大模型读懂用户情绪并给出适配回复.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\14-情感分析集成"
+  },
+  {
+    "id": "933522",
+    "title": "15｜个性化配置：支持用户自定义聊天风格、语气与角色设定",
+    "mdFileName": "15｜个性化配置：支持用户自定义聊天风格、语气与角色设定.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\15-个性化配置"
+  },
+  {
+    "id": "934186",
+    "title": "16｜多轮对话优化：基于记忆机制实现上下文连贯交互",
+    "mdFileName": "16｜多轮对话优化：基于记忆机制实现上下文连贯交互.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\16-多轮对话优化"
+  },
+  {
+    "id": "934821",
+    "title": "17｜敏感内容过滤：保障情感聊天应用的合规性与安全性",
+    "mdFileName": "17｜敏感内容过滤：保障情感聊天应用的合规性与安全性.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\17-敏感内容过滤"
+  },
+  {
+    "id": "935126",
+    "title": "18｜本地知识库接入：让情感聊天具备专属领域知识应答能力",
+    "mdFileName": "18｜本地知识库接入：让情感聊天具备专属领域知识应答能力.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\18-本地知识库接入"
+  },
+  {
+    "id": "935858",
+    "title": "19｜性能优化技巧：提升情感聊天应用的响应速度与稳定性",
+    "mdFileName": "19｜性能优化技巧：提升情感聊天应用的响应速度与稳定性.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\19-性能优化技巧"
+  },
+  {
+    "id": "936274",
+    "title": "20｜多模态情感交互：集成图片、语音的沉浸式聊天体验开发",
+    "mdFileName": "20｜多模态情感交互：集成图片、语音的沉浸式聊天体验开发.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\20-多模态情感交互"
+  },
+  {
+    "id": "936781",
+    "title": "21｜微调实战：基于私有数据优化情感聊天模型效果",
+    "mdFileName": "21｜微调实战：基于私有数据优化情感聊天模型效果.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\21-微调实战"
+  },
+  {
+    "id": "937281",
+    "title": "22｜插件开发：为情感聊天应用添加天气、新闻等扩展功能",
+    "mdFileName": "22｜插件开发：为情感聊天应用添加天气、新闻等扩展功能.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\22-插件开发"
+  },
+  {
+    "id": "937449",
+    "title": "23｜A/B测试实践：对比不同模型与Prompt方案的聊天效果",
+    "mdFileName": "23｜A_B测试实践：对比不同模型与Prompt方案的聊天效果.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\23-AB测试实践"
+  },
+  {
+    "id": "937680",
+    "title": "24｜多平台部署指南：从本地运行到云服务器、Docker容器上线",
+    "mdFileName": "24｜多平台部署指南：从本地运行到云服务器、Docker容器上线.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\24-多平台部署指南"
+  },
+  {
+    "id": "938095",
+    "title": "25｜应用监控与运维：日志分析、性能监控及故障快速恢复",
+    "mdFileName": "25｜应用监控与运维：日志分析、性能监控及故障快速恢复.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\25-应用监控与运维"
+  },
+  {
+    "id": "938292",
+    "title": "26｜大模型应用商业化路径：从情感聊天到垂直领域解决方案的拓展",
+    "mdFileName": "26｜大模型应用商业化路径：从情感聊天到垂直领域解决方案的拓展.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\26-大模型应用商业化路径"
+  },
+  {
+    "id": "924928",
+    "title": "直播回放｜1小时带你入门大模型应用开发",
+    "mdFileName": "直播回放｜1小时带你入门大模型应用开发.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\27-直播回放"
+  },
+  {
+    "id": "938528",
+    "title": "结束语｜让AI更有温度，让陪伴更懂你",
+    "mdFileName": "结束语｜让AI更有温度，让陪伴更懂你.md",
+    "cacheDir": "d:\\360MoveData\\Users\\admin\\Desktop\\AgiP\\AGI-obsidian\\12-学习笔记\\raw-data\\大模型应用一站式开发\\28-结束语"
+  }
+]

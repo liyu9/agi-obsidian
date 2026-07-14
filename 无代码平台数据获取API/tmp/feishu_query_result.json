@@ -1,0 +1,158 @@
+{
+  "code": 0,
+  "data": {
+    "has_more": false,
+    "items": [
+      {
+        "fields": {
+          "修改时间": 1775723695000,
+          "分类目录": {
+            "link_record_ids": [
+              "recpW3pZvUWYio"
+            ]
+          },
+          "创建时间": 1775723695000,
+          "发布状态": "未发布",
+          "审核人": [
+            {
+              "avatar_url": "https://s3-imfile.feishucdn.com/static-resource/v1/v3_00vk_a5a4c58d-40cd-4689-addd-5883175e9a6g~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+              "email": "",
+              "en_name": "姜姜",
+              "id": "ou_4be548e74d37227c6d3dea21af850585",
+              "name": "姜姜"
+            }
+          ],
+          "审核意见": [
+            {
+              "text": "无",
+              "type": "text"
+            }
+          ],
+          "审核状态": "待审核",
+          "提交人": [
+            {
+              "avatar_url": "https://s3-imfile.feishucdn.com/static-resource/v1/v3_00vk_a5a4c58d-40cd-4689-addd-5883175e9a6g~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+              "email": "",
+              "en_name": "姜姜",
+              "id": "ou_4be548e74d37227c6d3dea21af850585",
+              "name": "姜姜"
+            }
+          ],
+          "知识ID": "1",
+          "知识内容": [
+            {
+              "text": "首先倾听客户诉求，记录关键信息，然后根据公司政策给出解决方案，最后跟进确认客户满意度。",
+              "type": "text"
+            }
+          ],
+          "知识标题": [
+            {
+              "text": "如何处理客户投诉",
+              "type": "text"
+            }
+          ]
+        },
+        "record_id": "recFaBu8Xph06U"
+      },
+      {
+        "fields": {
+          "修改时间": 1775723695000,
+          "分类目录": {
+            "link_record_ids": [
+              "recEMTz6YhOFg9"
+            ]
+          },
+          "创建时间": 1775723695000,
+          "发布状态": "已发布",
+          "审核人": [
+            {
+              "avatar_url": "https://s3-imfile.feishucdn.com/static-resource/v1/v3_00vk_a5a4c58d-40cd-4689-addd-5883175e9a6g~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+              "email": "",
+              "en_name": "姜姜",
+              "id": "ou_4be548e74d37227c6d3dea21af850585",
+              "name": "姜姜"
+            }
+          ],
+          "审核意见": [
+            {
+              "text": "无",
+              "type": "text"
+            }
+          ],
+          "审核状态": "审核通过",
+          "提交人": [
+            {
+              "avatar_url": "https://s3-imfile.feishucdn.com/static-resource/v1/v3_00vk_a5a4c58d-40cd-4689-addd-5883175e9a6g~?image_size=72x72&cut_type=default-face&quality=&format=jpeg&sticker_format=.webp",
+              "email": "",
+              "en_name": "姜姜",
+              "id": "ou_4be548e74d37227c6d3dea21af850585",
+              "name": "姜姜"
+            }
+          ],
+          "知识ID": "5",
+          "知识内容": [
+            {
+              "text": "一般问题24小时内响应，复杂问题48小时内给出解决方案。",
+              "type": "text"
+            }
+          ],
+          "知识标题": [
+            {
+              "text": "售后服务响应时间",
+              "type": "text"
+            }
+          ]
+        },
+        "record_id": "recLFL2eY3Jq19"
+      },
+      {
+        "fields": {
+          "修改时间": 1778478938000,
+          "分类目录": {
+            "link_record_ids": null
+          },
+          "创建时间": 1778478938000,
+          "知识ID": "59",
+          "知识内容": [
+            {
+              "text": "一般售后投诉24小时内给出解决方案，复杂投诉48小时内反馈进展，72小时内解决。",
+              "type": "text"
+            }
+          ],
+          "知识标题": [
+            {
+              "text": "售后投诉处理时效",
+              "type": "text"
+            }
+          ]
+        },
+        "record_id": "recvjhWnd7210h"
+      },
+      {
+        "fields": {
+          "修改时间": 1778478938000,
+          "分类目录": {
+            "link_record_ids": null
+          },
+          "创建时间": 1778478938000,
+          "知识ID": "98",
+          "知识内容": [
+            {
+              "text": "客户投诉需在1小时内响应，24小时内给出初步解决方案，72小时内完成处理。",
+              "type": "text"
+            }
+          ],
+          "知识标题": [
+            {
+              "text": "客户投诉处理时效规范",
+              "type": "text"
+            }
+          ]
+        },
+        "record_id": "recvjhWnd7JUIo"
+      }
+    ],
+    "total": 4
+  },
+  "msg": "success"
+}
